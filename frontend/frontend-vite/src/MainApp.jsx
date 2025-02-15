@@ -21,10 +21,12 @@ const ProtectedRoute = () => {
 const Layout = () => {
   return (
     <>
+    <div className='app-layout'>
       <Navbar />
-      <div className="container">
+      <div className="container-main">
         <Outlet /> {/* Renders the child route element */}
       </div>
+    </div>
     </>
   );
 };
@@ -33,8 +35,16 @@ const MainApp = () => {
   return ( 
     //IMAGINARY <ROUTER>
     <Routes>
+
       {/* Public routes */}
       <Route path="/login" element={<Login />} />
+
+
+
+
+
+
+
 
       {/* Protected routes */}
       <Route element={<ProtectedRoute />}>

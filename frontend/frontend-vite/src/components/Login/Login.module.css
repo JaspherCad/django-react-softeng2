@@ -1,0 +1,21 @@
+.loginContainer {
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  width: 100vw;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+.loginCard {
+  border: none;
+  transition: transform 0.2s ease;
+  width: 100%;
+  max-width: 450px; /* Optional: limit the card width on very large screens */
+  margin: 0 auto;
+}
+
+.loginCard:hover {
+  transform: translateY(-5px);
+}
+
+/* Add any other Login-specific styles */ 
