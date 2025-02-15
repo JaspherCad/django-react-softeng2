@@ -42,74 +42,36 @@ from .permissions import IsTeller, IsAdmin, IsDoctor, IsNurse, IsReceptionist  #
 
 
 
-# Create your views here.
-class CreateUserView(generics.CreateAPIView):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
-    permission_classes = [AllowAny]
-
-
-
-# api/views.py
-
-from django.http import HttpResponse
-
-def about(request):
-    return HttpResponse("This is the ABOUT page.")
-    
-####################################################################
-# % API TESTING % #
-####################################################################
-
-
-@api_view(["GET"])
-@permission_classes([IsAuthenticated, IsTeller])  # GROUP BASED PERMISSION (not actual role)
-def protected_view(request):
-    # Fetch the user with prefetched groups
-    user = get_object_or_404(User.objects.prefetch_related('groups'), id=request.user.id)
-    user_group = user.groups.first()
-    group_name = user_group.name if user_group else "No group assigned"
-    return Response({"SUCCESS MSG": f"You are in the {group_name} group."}, status=status.HTTP_200_OK)
-
-@api_view(["GET"])
-@permission_classes([IsAuthenticated, IsDoctor])   # GROUP BASED PERMISSION (not actual role)
-def doctorOnly(request):
-    # Fetch the user with prefetched groups
-    user = get_object_or_404(User.objects.prefetch_related('groups'), id=request.user.id)
-    user_group = user.groups.first() 
-    group_name = user_group.name if user_group else "No group assigned"
-    return Response({"SUCCESS MSG": f"You are in the {group_name} group."}, status=status.HTTP_200_OK)
-
-
-####################################################################
-# % API TESTING % #
-####################################################################
-
-
-
-
-
-
-
-
 ####################################################################
 # % PATIENT VIEWS % #
 ####################################################################
+#TBH ai generated but please do understand
+
 
 
 @api_view(['GET', 'POST'])
 @permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist])
 def patient_list_create(request):#we can do GET list and POST create
+
     if request.method == "GET":
         #get object all
         list_of_patients = Patient.objects.filter(is_active='Active')
-        #serialiez it 
+
+        #serialiez it
+        #Why? study serializer.
+            #Simple analogy: before we send the PYTHON object to FROTNEND (javascript)
+            #We have to serialize it AKA== Converting PYTHON object to JAVASCRIPT object
+
         serialized_data = PatientSerializer(list_of_patients, many=True)
-        #return Response
+
         return Response(serialized_data.data, status=status.HTTP_200_OK)
     
     if request.method == 'POST':
-        patient_serializer = PatientSerializer(data=request.data) #from JSON --- PYTON OBJ
+        #Again review SERIALIZERS..
+
+        #from JAVASCRIPT OBJECT REQUREST  into PYTON OBJ
+        patient_serializer = PatientSerializer(data=request.data) 
+        
         if patient_serializer.is_valid():
             patient_serializer.save()
             return Response(patient_serializer.data, status=status.HTTP_201_CREATED)
@@ -143,3 +105,91 @@ def patient_detail(request, pk):
 ####################################################################
 # % PATIENT VIEWS % #
 ####################################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Create your views here.
+class CreateUserView(generics.CreateAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [AllowAny]
+
+
+
+# api/views.py
+
+from django.http import HttpResponse
+
+def about(request):
+    return HttpResponse("This is the ABOUT page.")
+    
+
+
+
+
+
+
+
+####################################################################
+# % API TESTING % # 
+####################################################################
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated, IsTeller])  # GROUP BASED PERMISSION (not actual role)
+def protected_view(request):
+    # Fetch the user with prefetched groups
+    user = get_object_or_404(User.objects.prefetch_related('groups'), id=request.user.id)
+    user_group = user.groups.first()
+    group_name = user_group.name if user_group else "No group assigned"
+    return Response({"SUCCESS MSG": f"You are in the {group_name} group."}, status=status.HTTP_200_OK)
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated, IsDoctor])   # GROUP BASED PERMISSION (not actual role)
+def doctorOnly(request):
+    # Fetch the user with prefetched groups
+    user = get_object_or_404(User.objects.prefetch_related('groups'), id=request.user.id)
+    user_group = user.groups.first() 
+    group_name = user_group.name if user_group else "No group assigned"
+    return Response({"SUCCESS MSG": f"You are in the {group_name} group."}, status=status.HTTP_200_OK)
+
+
+####################################################################
+# % API TESTING % #
+####################################################################
+
+
+
+
+
