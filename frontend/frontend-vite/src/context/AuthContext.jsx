@@ -7,9 +7,12 @@ export const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
 
-  // Function to login
-  const login = (username) => {
-    setUser({ name: username });
+  // Updated login to include role
+  const login = (username, role) => {
+    setUser({ 
+      name: username,
+      role: role // 'Admin', 'Doctor', 'Nurse', 'Staff', 'Teller'
+    });
   };
 
   // Function to logout
