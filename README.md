@@ -1,4 +1,4 @@
-![image](https://github.com/user-attachments/assets/dd04d2e5-c82d-46a5-a6ff-4f9c09900573)# PREREQUISITES
+# PREREQUISITES
 Before you begin, ensure you have the following installed on your machine:
 
 - **PYTHON 3.X** (for Django backend): [Download Python](https://www.python.org/downloads/)
