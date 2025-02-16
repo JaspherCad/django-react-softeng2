@@ -57,4 +57,12 @@ body {
   margin-left: 250px; /* Width of the sidebar */
   padding: 20px;
   background-color: #f5f7fa;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .container-main {
+    margin-left: 0;
+    padding: 60px 15px 15px; /* Added top padding for menu button */
+  }
 } 

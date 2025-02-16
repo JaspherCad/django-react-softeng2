@@ -1,0 +1,65 @@
+/* PatientManagement.css */
+.patientManagement {
+  font-family: Arial, sans-serif;
+  padding: 20px;
+}
+
+.patientForm {
+  background-color: #f9f9f9;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+}
+
+.patientForm h2 {
+  margin-bottom: 20px;
+}
+
+.patientForm label {
+  display: block;
+  margin-bottom: 10px;
+}
+
+.patientForm input,
+.patientForm select,
+.patientForm textarea {
+  width: 100%;
+  padding: 8px;
+  margin-top: 5px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.patientForm button {
+  background-color: #4CAF50;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.patientForm button:hover {
+  background-color: #45a049;
+}
+
+.patientList {
+  margin-top: 20px;
+}
+
+.patientCard {
+  background-color: #fff;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 10px;
+}
+
+.patientCard h3 {
+  margin-top: 0;
+}
+
+.patientCard p {
+  margin: 5px 0;
+}

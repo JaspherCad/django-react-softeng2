@@ -5,6 +5,7 @@ import Home from './components/Home';
 import Dashboard from './components/Dashboard';
 import Login from './components/Login';
 import { AuthContext } from './context/AuthContext';
+import Patients from './components/Patients';
 
 // Protected Route Component
 const ProtectedRoute = () => {
@@ -35,21 +36,13 @@ const MainApp = () => {
   return ( 
     //IMAGINARY <ROUTER>
     <Routes>
-
-      {/* Public routes */}
       <Route path="/login" element={<Login />} />
-
-
-
-
-
-
-
-
-      {/* Protected routes */}
       <Route element={<ProtectedRoute />}>
-        <Route path="/" element={<Home />} />
-        <Route path="/dashboard" element={<Dashboard />} />
+        <Route element={<Layout />}>
+          <Route path="/" element={<Home />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/patients/*" element={<Patients />} />
+        </Route>
       </Route>
     </Routes>
     //IMAGINARY <ROUTER>
