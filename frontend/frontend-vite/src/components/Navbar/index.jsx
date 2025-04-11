@@ -52,8 +52,16 @@ const Navbar = () => {
       >
         <span className={styles.hamburger}></span>
       </button>
+      {/* Mobile Menu Toggle Button */}
 
-      <div className={`${styles.sidebar} ${isMobileMenuOpen ? styles.sidebarOpen : ''}`}>
+
+
+
+
+
+
+
+      <div className={`${isMobileMenuOpen ? styles.sidebarOpen : ''} ${styles.sidebar}`}>
         {/* Mobile Close Button */}
         <button 
           className={styles.mobileCloseButton}

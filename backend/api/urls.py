@@ -6,14 +6,33 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 #api/
 urlpatterns = [
-    path('about', views.about, name='about'),
+    path('about', views.about, name='aboutss'),
+    
     path('user/register', views.CreateUserView.as_view(), name='register'),
     path('user/login', TokenObtainPairView.as_view(), name='login'),
     path('token/refresh', TokenRefreshView.as_view(), name='refresh'),
     path('protected', views.protected_view, name='test-protected-view'),
     path('doctor', views.doctorOnly, name='test-doctor-view'),
 
+    path('auth/check', views.auth_check, name='test-doctor-view'),
 
+
+    # CRUD FOR PATIENTS
+    path('patients/list', views.patient_list, name='patient_list'),
+    path('patients/create', views.patient_create, name='patient_create'),
+    path('patients/<int:pk>', views.patient_details, name='patient_get_specific'),
+    path('patients/update/<int:pk>', views.patient_update, name='patient_update'),
+    path('patients/deactivate/<int:pk>', views.patient_deactivate, name='patient_deactivate'),
+
+
+
+    #User Logs
+    path('userlogs', views.get_user_logs, name='user_userlog'),
+
+
+    #billing
+    path('billings/list', views.get_bill_items, name='billing_list'),
+    path('billings/add-billing-item/<int:pk>', views.create_bill_item, name='create_billing'),
 
 
 ]   

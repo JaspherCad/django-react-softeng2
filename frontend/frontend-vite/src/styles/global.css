@@ -45,24 +45,48 @@ body {
 
 /* Layout styles */
 .app-layout {
-  display: flex;
-  min-height: 100vh;
-  width: 100%;
+  display: grid;
+  grid-template-columns: 240px 1fr; /* Sidebar is fixed, content fills rest 140 original */ 
+  height: 100vh; /* Full height of the viewport */
+  background-color: aquamarine;
   
 }
+
 
 /* Main content area */
 .container-main {
   flex: 1;
-  margin-left: 250px; /* Width of the sidebar */
   padding: 20px;
   background-color: #f5f7fa;
 }
 
 /* Mobile Responsive */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .container-main {
     margin-left: 0;
     padding: 60px 15px 15px; /* Added top padding for menu button */
   }
+
+  .app-layout {
+    grid-template-columns: 1fr; /* Single column layout */
+  }
+
+  .navBarClass {
+    position: absolute; /*just keep shit out of frame!*/
+  }
+
+  
+
+  
 } 
+
+
+
+
+
+
+
+
+
+
+

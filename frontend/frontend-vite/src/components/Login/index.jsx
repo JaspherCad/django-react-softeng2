@@ -12,43 +12,49 @@ const Login = () => {
     password: '',
     levelOfAccess: 'Admin'
   });
+  const [error, setError] = useState({
+    userError: '',
+    passwordError: '',
+    apiError: '',
+  }); //FOR GENERAL ERRORS AND API RETURN ERRORS
 
 
-
-/*
-NOTE:
-how the authentication works here
-
- const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const isAuthenticated login(formData.userId); //must return TRUE or FALSE
-    if (isAuthenticated){
-      navigate('/dashboard');
-      other logics for frotnend only... backend logic and web config logic is in AuthContext login WHERE
-    }
+    setError({
+      userError: '',
+      passwordError: '',
+      apiError: '',
+    });
     
-  };
+    try {
+      const success = await login(
+        formData.userId,
+        formData.password,
+        formData.levelOfAccess
+      );
 
-
-  Inside AuthContextLogin we will call the  LOGINAPi
-  try
-    if succeed
-      set the userId token etc
-
-
-  catch
-    redo process
-
-*/
-
-
-
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // Pass both userId and role to login function
-    login(formData.userId, formData.levelOfAccess);
-    navigate('/dashboard');
+      if (success) {
+        navigate('/dashboard');
+      }
+    } catch (error) {
+      console.error(error)
+      if (error.code == "ERR_NETWORK") {
+        // setErrozr('Unable to connect to server. Please check your connection.');
+        setError((prevError) => ({
+          ...prevError,
+          apiError: 'Unable to connect to server. Please check your connection.'
+        }));
+      } else {
+        // setErrzor(error.response?.data?.message || 'An error occurred during login');
+        setError((prevError) => ({
+          ...prevError,
+          apiError: 'An error occurred during login'
+        }));
+        
+      }
+      console.error('Login error details:', error);
+    }
   };
 
   const handleChange = (e) => {
@@ -56,6 +62,34 @@ how the authentication works here
       ...prevData, // Spread previous state
       [e.target.name]: e.target.value // Update the specific field
     }));
+
+    if (e.target.value === "" && e.target.name == "userId"){
+      setError((prevError) => ({
+        ...prevError,
+        userError: 'no null values'
+      }));
+    }else if (e.target.value === "ERROR" && e.target.name == "userId"){
+      setError((prevError) => ({
+        ...prevError,
+        userError: 'ERROR'
+      }));
+    }else if (isNaN(e.target.value) && e.target.name == "userId"){
+      setError((prevError) => ({
+        ...prevError,
+        userError: 'ID should be Integer'
+      }));
+    }else{
+      setError({
+        userError: '',
+        passwordError: '',
+        apiError: '',
+      });
+    }
+    
+
+
+    
+    
   };
   
 
@@ -77,6 +111,9 @@ how the authentication works here
                   <h2 className="h6 text-muted">Patient Information Management System</h2>
                 </div>
 
+                {error.apiError && <div className="text-danger small">{error.apiError}</div>}
+
+
                 <form onSubmit={handleSubmit}>
                   <div className="mb-2">
                     <label className="form-label small">User ID</label>
@@ -88,6 +125,8 @@ how the authentication works here
                       className="form-control"
                       required
                     />
+                    
+                    {error.userError && <div className="text-danger small">{error.userError}</div>}
                   </div>
 
                   <div className="mb-2">

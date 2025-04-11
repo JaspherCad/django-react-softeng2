@@ -12,12 +12,12 @@
 .sidebar {
   width: 250px;
   height: 100vh;
-  position: fixed;
+  position: relative;
   left: 0;
   top: 0;
   background-color: #1a7a9c;
   color: white;
-  display: flex;
+  display: block;
   flex-direction: column;
   box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
   z-index: 1000;
@@ -102,12 +102,12 @@
 
 /* Mobile Menu Button */
 .mobileMenuButton {
-  display: none;
+  display: block;  /* SET TO NONE */
   position: fixed;
   top: 15px;
   left: 15px;
   z-index: 1001;
-  background: none;
+  background: red;
   border: none;
   padding: 10px;
   cursor: pointer;
@@ -158,16 +158,16 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 85, 138, 0.5);
   z-index: 999;
 }
 
 /* Mobile Styles */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .sidebar {
     transform: translateX(-100%);
   }
-
+/* ORDER MATTERS */
   .sidebarOpen {
     transform: translateX(0);
   }

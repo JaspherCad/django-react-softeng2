@@ -4,10 +4,13 @@ from django.core.validators import MinValueValidator
 
 # Custom User Manager
 class CustomUserManager(BaseUserManager):
+    #wait. this is boiler plate ng django no need to overThink
+    #yung role,department,is_activel,is_staff attributes is passed into **extra_fields
     def create_user(self, user_id, password=None, **extra_fields):
         if not user_id:
             raise ValueError("User ID is required")
         user = self.model(user_id=user_id, **extra_fields)
+        #password hashed here
         user.set_password(password)
         user.save(using=self._db)
         return user
@@ -33,7 +36,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False) #has access to admin site, in short ito ay admin
     
-    # Removed security Q&A due to security concerns - use password reset instead
+    
+    #this is where the actual user creation is happening
     objects = CustomUserManager()
     
     USERNAME_FIELD = 'user_id'
@@ -79,13 +83,16 @@ class Patient(models.Model):
         ('Deleted', 'Deleted'),
     ]
 
+    #Essential Fields for Emergency Admission
     name = models.CharField(max_length=255)
-    date_of_birth = models.DateField()
-    address = models.CharField(max_length=255)
-    admission_date = models.DateField(null=True, blank=True)  # Nullable for non-admitted
-    discharge_date = models.DateField(null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES)
-    current_condition = models.TextField(blank=True)
+    admission_date = models.DateField()  
+    current_condition = models.TextField()
+
+    # Optional Fields (Can Be Added Later)
+    date_of_birth = models.DateField(null=True, blank=True)
+    address = models.CharField(max_length=255, null=True, blank=True)
+    discharge_date = models.DateField(null=True, blank=True)
     phone = models.CharField(max_length=15, blank=True, null=True)
     email = models.EmailField(blank=True, null=True)
     emergency_contact_name = models.CharField(max_length=255, blank=True, null=True)
@@ -103,6 +110,9 @@ class Patient(models.Model):
 
 # Medical History (Separate model for better structure)
 class MedicalHistory(models.Model):
+
+    #WHY CASCADE????
+    # It's particularly useful when the related objects (like medical histories) don't make sense without their parent object (the patient). For example, a  record without a  would lack crucial context and likely cause errors or confusion in your application.
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='medical_histories')
     entry_date = models.DateField(auto_now_add=True)
     notes = models.TextField()
@@ -168,6 +178,7 @@ class Service(models.Model):
         return self.name
 
 # Patient Services Availed with historical pricing
+#DELETE? no Keep PatientService to maintain historical pricing, decoupled service tracking, and accurate billing. It is a core part of your system’s design.
 class PatientService(models.Model):
     #Many PatientService to One patient
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='services')
@@ -192,7 +203,7 @@ class PatientService(models.Model):
 
     def __str__(self):
         return f"{self.patient.name} - {self.service.name}"
-
+#safe safe
 # Billing Model with calculated total
 #PATIENT SERVICE MUST BE NULL AT FIRST
 
@@ -206,13 +217,25 @@ class Billing(models.Model):
         ('Cancelled', 'Cancelled'),
     ]
     #Many Billing to One patient
-    #Who OWNS the BILL
+    #Who OWNS the BILL.... so one to MANY (no need models.oneToMany)
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='bills')
     #To connect Patient and Service
+    
+
+    #NONSENSE ITOOO NEVERMIND THIS SHIT BUT DONT REMOVE
     patient_services = models.ManyToManyField(PatientService, through='BillingItem', blank=True)
+    #NONSENSE ITOOO NEVERMIND THIS SHIT BUT DONT REMOVE
+
+
+
     date_created = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Unpaid')
     total_due = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+
+    #TODO: THIS IS TWO WAY RELATIONSHIO.. implicitly / hidden association
+    # billing_items = models.ForeignKey(Billing, on_delete=models.CASCADE, related_name='billing_items')
+
+
 
     def update_total(self):
         """Recalculate the total amount based on services availed."""
@@ -221,20 +244,20 @@ class Billing(models.Model):
     def save(self, *args, **kwargs):
         """Override save method to prevent recursion and save related objects"""
         # Save the instance first to generate the primary key
-        if not self.pk:  # Only save if not saved yet (first save)
-            super().save(*args, **kwargs)
-        
-        # After saving the Billing instance, calculate the total
-        self.update_total()
-        
-        # Now save the instance with the updated total_due
+        if self.pk:
+            self.update_total()
         super().save(*args, **kwargs)
 
+
     def __str__(self):
-        return f"Bill #{self.id} - {self.patient.name} ({self.status})"
+        return f"Bill # {self.id}  -  {self.patient.name} ({self.status})"
 
 class BillingItem(models.Model):
     #Many BillingItem to One billing
+
+
+
+    # Exactly. The related_name attribute in a model’s foreign key is used to create a reverse relationship. This reverse relationship lets you access all instances of the related model—even though you didn’t explicitly declare a field in the first model to store that data.
     billing = models.ForeignKey(Billing, on_delete=models.CASCADE, related_name='billing_items')
     #Many BillingItem to One service_availed
     service_availed = models.ForeignKey(PatientService, on_delete=models.CASCADE)
@@ -246,12 +269,17 @@ class BillingItem(models.Model):
         self.quantity = self.service_availed.quantity
         self.subtotal = self.service_availed.subtotal
         super().save(*args, **kwargs)
+        #IF SAVED, we have signal listener to update the billing.totalDue
 
     def __str__(self):
         return f"{self.service_availed.service.name} - {self.service_availed.quantity} x {self.service_availed.service.current_cost}"
     
 
 
+#     { POST SAMPLE DATA
+#     "billing": 5, id
+#     "service_availed": 12
+# }
 
 
 
@@ -286,6 +314,7 @@ class LaboratoryResult(models.Model):
         return f"{self.patient.name} - {self.test_type}"
 
 class LabResultFile(models.Model):
+    #MANY LabResultFile TO ONE
     result = models.ForeignKey(LaboratoryResult, on_delete=models.CASCADE, related_name='attachments')
     file = models.FileField(upload_to=lab_result_upload_path)
     description = models.CharField(max_length=255, blank=True)
@@ -346,4 +375,4 @@ class Payment(models.Model):
     received_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
 
     def __str__(self):
-        return f"Payment for Bill #{self.billing.id} - {self.amount_paid}"
+        return f"Payment for Bill # - {self.amount_paid}"

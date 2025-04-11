@@ -1,9 +1,17 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react';
+import { testApi } from '../api/axios';
 
 const Dashboard = () => {
-  return (
-    <div>Dashboard</div>
-  )
-}
+  const [testMessage, setTestMessage] = useState('');
+  const [error, setError] = useState(null);
 
-export default Dashboard
+  
+  return (
+    <div className="dashboardContainer">
+      <h2>Dashboard</h2>
+      
+    </div>
+  );
+};
+
+export default Dashboard;

@@ -1,63 +1,322 @@
 import axios from 'axios';
 
+// You can toggle this based on your backend configuration
+const USE_HTTP_ONLY = false; // Set to false if using localStorage JWT
+
 const axiosInstance = axios.create({
-  baseURL: 'http://your-django-backend.com/api',
-  withCredentials: true, // Required for HTTP-only cookies
+  baseURL: 'http://127.0.0.1:8000/api',
+  withCredentials: true, // Always true for both approaches to handle cookies
   headers: {
     'Content-Type': 'application/json',
+    'Accept': 'application/json',
   },
 });
 
-// Request interceptor
-axiosInstance.interceptors.request.use(
-  (config) => {
-    // If using localStorage JWT, attach the token to the request
-    const token = localStorage.getItem('accessToken'); // Replace with your token key
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+
+
+
+//NOTE FOR ME:
+  //LOCALSTORAGE:
+    //if we are rfreshing using the localstorage we do this
+      //1. get the refresh token from localstorage
+      //2. send the refresh token to the server
+      //3. server returns a new access token
+      //4. we save the new access token to localstorage
+      //5. we send the new access token to the server
+      // DO U REALIZE THAT WE DONT NEED HEADERS???
+
+// Add these constants
+const AUTH_ENDPOINTS = ['/user/login', '/token/refresh'];
+const REFRESH_COOKIE_NAME = 'refresh_token';
+
+axiosInstance.interceptors.request.use(config => {
+  // Skip auth header for auth endpoints and cookie-based auth
+  if (AUTH_ENDPOINTS.some(path => config.url.includes(path)) || USE_HTTP_ONLY) {
     return config;
-  },
-  (error) => {
-    return Promise.reject(error);
   }
-);
 
-// Response interceptor
+  //other endpoints REQUIRES BEARER TOKEN
+
+  const token = localStorage.getItem('token');
+  console.log("HEADER HAS BEEN SET: " +  token)
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
+
+
+
+
+
 axiosInstance.interceptors.response.use(
-  (response) => {
-    return response;
-  },
-  async (error) => {
+  response => response,
+  async error => {
     const originalRequest = error.config;
-
-    // Handle token refresh (if using localStorage JWT)
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-
-      try {
-        // Refresh the token
-        const refreshToken = localStorage.getItem('refreshToken'); // Replace with your refresh token key
-        const response = await axiosInstance.post('/auth/refresh', { refreshToken });
-
-        // Update the access token in localStorage
-        localStorage.setItem('accessToken', response.data.accessToken);
-
-        // Retry the original request with the new token
-        originalRequest.headers.Authorization = `Bearer ${response.data.accessToken}`;
-        return axiosInstance(originalRequest);
-      } catch (refreshError) {
-        // Handle refresh token failure (e.g., logout the user)
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        window.location.href = '/login'; // Redirect to login page
-        return Promise.reject(refreshError);
-      }
+    
+    // Skip handling for auth endpoints and non-401 errors (500,300,400,etc)
+    if (AUTH_ENDPOINTS.some(path => originalRequest.url.includes(path)) || 
+        
+        originalRequest._retryCount >= 2) {
+        if (error.code === "ERR_NETWORK"){
+          alert("ERR_NETWORK: PLEASE CHECK CONNETION")
+        }
+        console.log("ERROR IS NOT 401, so skipping handling expired tokens")
+        return Promise.reject(error);
+          //AFAIK this throws other errors to catch statements 
     }
 
-    // Handle other errors
-    return Promise.reject(error);
+    const statusCode = error.response?.status;
+
+
+    switch(statusCode){
+      case 401:
+            //if error 401: NO TOKEN or EXPIRED TOKEN. do this
+
+        //The retry logic is triggered only when a request receives a 401 Unauthorized error,
+        originalRequest._retryCount = (originalRequest._retryCount || 0) + 1;
+
+        // Check for valid refresh credentials
+        const hasRefresh = USE_HTTP_ONLY ?
+          document.cookie.includes(REFRESH_COOKIE_NAME) :
+          localStorage.getItem('refreshToken');
+
+        if (!hasRefresh) {
+          // this.handleAuthFailure();  //axiosInstance.interceptors.response.use is '.this'
+          axiosInstance.handleAuthFailure() //redirects to login (walang tokens ee)
+          return Promise.reject(error);
+          //stop here
+        }
+
+
+
+        //USE THE REFRESH TOKEN TO GET ACCESS TOKEN AGAIN
+          //if localstorage
+            //get the access token on localStorage then use it 
+                //if refreshtoken is expired, remove all tokens(access/refresh) then redirect to login
+
+        alert("BRO! TOKEN IS EXPIRED... refreshing token")
+        try {
+          if (USE_HTTP_ONLY) {
+            await axiosInstance.post('/token/refresh');
+          } 
+          else { //LOCAL STORAGE
+            const { data } = await axiosInstance.post('/token/refresh', {
+              refresh: localStorage.getItem('refreshToken')
+            });
+            localStorage.setItem('token', data.access);
+          }
+          return axiosInstance(originalRequest); //retry original request
+        } catch (refreshError) {
+          alert("REFRESH TOKEN EXPIRED. RELOGIN AGAIN...")
+          // this.handleAuthFailure();  //axiosInstance.interceptors.response.use is '.this'
+          axiosInstance.handleAuthFailure()
+          return Promise.reject(refreshError);
+        }
+
+        case 403: // Forbidden
+        console.error("Error 403: You do not have permission.");
+        alert("You are not authorized to access this resource.");
+        return Promise.reject(error);
+
+      case 500: // Internal Server Error
+        console.error("Error 500: Server-side issue.");
+        alert("The server encountered an error. Please try again later.");
+        return Promise.reject(error);
+
+      case 404: // Not Found
+        console.error("Error 404: Resource not found.");
+        alert("The requested resource could not be found.");
+        return Promise.reject(error);
+
+      default:
+        console.error(`Unhandled error status: ${statusCode}`);
+        alert(`An error occurred: ${statusCode}`);
+        return Promise.reject(error);
+    }
+
+    
   }
 );
+
+// Add auth handling methods
+axiosInstance.handleAuthFailure = () => {
+  console.log("Handling auth failure..."); // Add this line
+
+  if (!USE_HTTP_ONLY) {
+    localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
+  }
+  console.log("Redirecting to /login..."); // Add this line
+
+  window.location.href = '/login';
+};
+
+axiosInstance.handleLoginRedirect = () => {
+  if (!window.location.pathname.includes('/login')) {
+    window.location.href = '/login';
+  }
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// // Response interceptor
+// axiosInstance.interceptors.response.use(
+//   //if no error, return response
+//   (response) => {
+//     return response;
+//   },
+
+//   //if error, return error
+//   async (error) => {
+//     const originalRequest = error.config;
+
+
+//     //error 401: NO TOKEN or EXPIRED TOKEN.
+//     if (error.response?.status === 401 && !originalRequest._retry) {
+//       originalRequest._retry = true;
+
+//       try {
+//         if (USE_HTTP_ONLY) {
+//           // For HTTP-only cookies, just hit the refresh endpoint
+//           // The cookie will be automatically sent
+//           const response = await axiosInstance.post('/token/refresh');
+//           return axiosInstance(originalRequest);
+//         } else {
+//           // For localStorage JWT
+//           const refreshToken = localStorage.getItem('refreshToken');
+//           const response = await axiosInstance.post('/token/refresh', { 
+//             refresh: refreshToken 
+//           }); //returns new access token
+
+//           if (response.data.access) { //JWT is access token
+//             localStorage.setItem('token', response.data.access);
+//             originalRequest.headers.Authorization = `Bearer ${response.data.access}`;
+//             return axiosInstance(originalRequest);
+//           }
+//         }
+//       } catch (error) {
+//         if (!USE_HTTP_ONLY) {
+//           // Clear localStorage tokens
+//           localStorage.removeItem('token');
+//           localStorage.removeItem('refreshToken');
+//         }
+//         window.location.href = '/login';
+//       }
+//     }
+
+//     return Promise.reject(error);
+//   }
+// );
+
+// API calls
+export const testApi = async () => {
+  try {
+    const response = await axiosInstance.get('/protected');
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+
+
+export const listOfPatientAPI = async () => {
+  try {
+    const response = await axiosInstance.get('/patients/list');
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+
+export const listOfBillingsAPI = async () => {
+  try {
+    const response = await axiosInstance.get('/billings/list');
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const addPatientAPI = async (newPatientData) => {
+  try {
+    const response = await axiosInstance.post('/patients/create', 
+      newPatientData
+    );
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const patientDetailsAPI = async (patientId) =>{
+  try{
+    const response = await axiosInstance.get(`/patients/${patientId}`)
+    return response
+  }catch (error) {
+    throw error;
+  }
+}
+
+export const editPatientAPI = async (patientId, updatedPatientData) => {
+  try {
+    console.log(`/patients/update/${patientId}`)
+    const response = await axiosInstance.put(`/patients/update/${patientId}`, {
+      ...updatedPatientData
+    });
+    return response;
+  } catch (error) {
+    throw error;
+  }
+}
+
+
+export const loginApi = async (user_id, password) => {
+  try {
+    const response = await axiosInstance.post('/user/login', {
+      user_id,
+      password
+    });
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+
+export const checkAuthApi = async () => {
+  try {
+    const response = await axiosInstance.get('/auth/check');
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+
+
+export const currentUserLogs = async () => {
+  try {
+    const response = await axiosInstance.get('/userlogs');
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
 
 export default axiosInstance;

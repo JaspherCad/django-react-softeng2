@@ -1,0 +1,23 @@
+SSE????????
+
+hmm consider SSE at 90% of development phase. why??
+BECAUSE OF REDIS
+
+implementing REDIS will make deployment difficult AND setup of my members. 
+
+PERSONAL TAKE: we can try ONLY WHEN these conditions are met
+    //we are comfortable on django
+    //phase is 90% progress done. maybe.
+
+    //IF EVER WE IMPLEMENTED THIS SSE (redis) CONSIDER USING """docker"""?????
+CONCLUSION: FOR NOW, LET'S FOCUS ON THE FOUNDATION OF APP
+
+
+
+
+
+
+
+
+
+=====NEXT TOPIC=====
