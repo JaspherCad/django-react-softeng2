@@ -243,9 +243,45 @@ export const listOfPatientAPI = async () => {
 };
 
 
+export const addBillingsApi = async (patientData) => {
+  try {
+    const response = await axiosInstance.post('/billings/add', 
+      patientData);
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+
+export const SearchBillingsApi = async (searchTerm) => {
+  try {
+    const response = await axiosInstance.get('/billings/search',{
+      params: {q : searchTerm}
+    }
+
+    );
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+
+
 export const listOfBillingsAPI = async () => {
   try {
     const response = await axiosInstance.get('/billings/list');
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+
+export const getBillingByID = async (id) => {
+  try {
+    const response = await axiosInstance.get(`/billings/id/${id}`);
     return response;
   } catch (error) {
     throw error;

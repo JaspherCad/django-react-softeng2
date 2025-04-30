@@ -8,6 +8,7 @@ import Dashboard from './components/Dashboard';
 import Login from './components/Login';
 import { AuthContext } from './context/AuthContext';
 import Patients from './components/Patients';
+import Billing from './components/Billing'
 
 // Protected Route Component
 const ProtectedRoute = () => {
@@ -81,7 +82,7 @@ const MainApp = () => {
           <Route path="/" element={<Home />} />
           <Route path="/dashboard" element={<DashBoardDoctor />} />
           <Route path="/patients/*" element={<Patients />} />
-          <Route path="/billing/*" element={<Patients />} />
+          <Route path="/billing/*" element={<Billing />} />
 
 
         </Route>
