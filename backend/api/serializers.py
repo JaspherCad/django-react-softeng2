@@ -63,7 +63,7 @@ class LabResultFileSerializer(serializers.ModelSerializer):
 class LaboratoryResultSerializer(serializers.ModelSerializer):
     #result.. this is the result LaboratoryResult
     attachments = LabResultFileSerializer(many=True, read_only=True)  # For displaying uploaded files
-
+    
     class Meta:
         model = LaboratoryResult
         fields = ['id', 'patient', 'test_type', 'result_summary', 'date_performed', 'performed_by', 'attachments']
@@ -125,6 +125,14 @@ class BillingItemSerializer(serializers.ModelSerializer):
 from rest_framework import serializers
 from .models import Billing
 
+
+class Billing_User_Serializer(serializers.ModelSerializer):
+    class Meta:
+        model = Patient
+        fields = ['id', 'name', 'code']
+
+
+#ONLY FOR SPECIFIC BILLING... for general, remove the list of BILLING ITEM for faster laoding
 class BillingSerializer(serializers.ModelSerializer):
     #WITH THIS... pwede maging ganto
 #     {
@@ -151,22 +159,70 @@ class BillingSerializer(serializers.ModelSerializer):
 
     # Exactly. The related_name attribute in a model’s foreign key is used to create a reverse relationship. This reverse relationship lets you access all instances of the related model—even though you didn’t explicitly declare a field in the first model to store that data.
     billing_items = BillingItemSerializer(many=True, read_only=True)
-
+    created_by = UserSerializer(read_only=True)
+    operator = UserSerializer(many=True, read_only=True)
     class Meta:
         model = Billing
-        fields = ['id', 'patient', 'date_created', 'status', 'total_due', 'billing_items']
+        fields = ['id', 'code', 'patient', 'date_created', 'status', 'total_due', 'billing_items', 'created_by', 'operator']
         extra_kwargs = {
             'total_due': {'read_only': True},
+            'code': {'read_only': True},
+            'created_by': {'read_only': True},
+            'operator': {'read_only': True},
+
+
         }
 
 
+
+class BillingSerializerNoList(serializers.ModelSerializer):
+    #since we cant see the name of the Patient name (instead we got id)
+    #find way to do it where patient == id and name
+    created_by = UserSerializer(read_only=True)
+    operator = UserSerializer(many=True, read_only=True)
+    patient = Billing_User_Serializer(read_only=True)
+    class Meta:
+        model = Billing
+        fields = ['id', 'patient', 'date_created', 'status', 'total_due', 'code', 'created_by', 'operator']
+        extra_kwargs = {
+            'total_due': {'read_only': True},
+            'date_created': {'read_only': True},
+        
+        }
+
+class Billing_PatientInfo_Serializer(serializers.ModelSerializer):
+    #since we cant see the name of the Patient name (instead we got id)
+    #find way to do it where patient == id and name
+
+    created_by = UserSerializer(read_only=True)
+    operator = UserSerializer(many=True, read_only=True)
+    patient = Billing_User_Serializer(read_only=True)
+
+    patient = PatientSerializer(read_only=True)
+    billing_items = BillingItemSerializer(many=True, read_only=True)
+    class Meta:
+        model = Billing
+        fields = ['id', 'patient', 'date_created', 'status', 'total_due', 'billing_items', 'code', 'created_by', 'operator']
+        extra_kwargs = {
+            'total_due': {'read_only': True},
+            'date_created': {'read_only': True},
+        
+        }
+
+
+
+
 class BillingCreateSerializer(serializers.ModelSerializer):
+    created_by = UserSerializer(read_only=True)
+    operator = UserSerializer(many=True, read_only=True)
     class Meta:
         model = Billing
         # You may not allow updating of total_due via API, as it's computed.
-        fields = ['patient', 'status']  
+        fields = ['patient', 'status', 'created_by', 'operator']  
         extra_kwargs = {
             'status': {'default': 'Unpaid'},
+            'created_by': {'read_only': True},
+            'operator': {'read_only': True},
         }
 
 #BILLING SERIALIZERS #BILLING SERIALIZERS #BILLING SERIALIZERS #BILLING SERIALIZERS #BILLING SERIALIZERS

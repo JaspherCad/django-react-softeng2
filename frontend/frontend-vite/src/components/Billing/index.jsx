@@ -1,40 +1,190 @@
 import React, { useEffect, useState } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
-import PatientList from './PatientList';
-import PatientForm from './PatientForm';
-import { listOfBillingsAPI } from '../../api/axios';
 
+import { getBillingByID, listOfBillingsAPI, SearchBillingsApi } from '../../api/axios';
+import SearchBar from '../AngAtingSeachBarWIthDropDown/index'
+import styles from './Billing.module.css';
+import BillingFormModal from './BillingFormModal';
+import AddBillingModal from './AddBillingModal';
 const Billing = () => {
   // State for services and billings
   const [services, setServices] = useState([]);
   const [listOfBillings, setListOfBillings] = useState([]);
   const [loading, setLoading] = useState(true); // To manage loading state
   const [error, setError] = useState(null); // To handle errors gracefully
-
-  useEffect(() => {
-    // Function to fetch API data
-    const fetchData = async () => {
-      try {
-        const response = await listOfBillingsAPI();
-
-        // Update states with the API response data
-        setServices(response.data.services); // Assuming the API response includes "services"
-        setListOfBillings(response.data.listOfBillings); // Assuming the API response includes "listOfBillings"
-        setLoading(false); // Stop loading once the data is fetched
-      } catch (error) {
-        // Handle errors and set an error message
-        setError("Unable to load data. Please try again later.");
-        setLoading(false);
-      }
-    };
-
-    fetchData(); // Call the fetch function
-  }, []); // Empty dependency array ensures this runs once on component mount
+  const [selectedItem, setSelectedItem] = useState()
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAddBillingModalOpen, setIsAddBillingModalOpen] = useState(false);
 
 
-  return(
+  const dummyBillingData = [
+    {
+      patient_id: "John Doe",
+      patient_services: [],
+      date_created: "2025-03-10T08:45:30Z",
+      status: "Unpaid",
+      total_due: "150.00"
+    },
+    {
+      patient_id: "Jane Smith",
+      patient_services: [],
+      date_created: "2025-03-12T10:20:15Z",
+      status: "Paid",
+      total_due: "200.00"
+    },
+    {
+      patient_id: "Alex Johnson",
+      patient_services: [],
+      date_created: "2025-03-15T14:05:30Z",
+      status: "Partial",
+      total_due: "75.00"
+    }
+  ];
 
-    <h1>BILLING</h1>
+
+  const handleSelectedItem = async (filteredId) => {
+    console.log(filteredId.code)
+
+    //call the api thru id here
+    try {
+      setLoading(true)
+      const response = await getBillingByID(filteredId.code);
+
+      setSelectedItem(response.data);
+      setLoading(false);
+
+
+    } catch (error) {
+      console.error(error)
+    } finally {
+      setLoading(false)
+    }
+    // after await callAPi, setSelectedItem on that including its list of BillingItem billings/id/<int:pk> (Django)
+
+    //set selectedItem... then if item is selected here we can submit this down to other Billing/* components including CRUD ones and showing the selectedItem in the box statement
+  }
+
+
+
+
+const handleConfirm = () => {
+  setIsModalOpen(true);
+};
+
+const handleCloseModal = () => {
+  setIsModalOpen(false);
+};
+
+const handleCloseAddBillingModal = () => {
+  setIsAddBillingModalOpen(false);
+};
+
+
+const handleAddBilling = () => {
+  //add edit of BILLING CLASS is completely different to each other
+  setIsAddBillingModalOpen(true)
+
+
+
+}
+
+const handleAddBillingItem = () => {
+  //url ** ADD ** different URL same COMPONENT... if data? edit mode else ADD Mode
+
+
+}
+
+
+const handleEditBilling = (selectedBillings) => {
+  //url ** EDIT ** different URL same COMPONENT... if data? edit mode else ADD Mode
+
+  //if edit, submit the specific billing id here
+  //send to backend
+  //prefill the forms with the info from backend (EXCEPT PATIENT INFO)
+}
+
+
+
+
+
+  return (
+
+    <>
+
+        <div className={styles.billingContainer}>
+
+          <div className={styles.leftPanel}>
+            <button onClick={handleAddBilling}>
+              Add+
+            </button>
+            <div className={styles.searchBarContainer}>
+              <SearchBar
+                data={dummyBillingData}
+                placeholder={"IDKss"}
+                searchApi={SearchBillingsApi}
+                // accept the argument passed by the SearchBar component (item) when onSelectSuggestion is invoked
+                //to accept *-*
+                onSelectSuggestion={(filtered) => handleSelectedItem(filtered)}
+                suggestedOutput={['code', 'patient']}
+
+              />
+            </div>
+          </div>
+
+          {/*BOX COMPONENT TO CHECK IF THIS IS CORRECT USER 
+            Then if clicked show the modal of CRUD process*/}
+          <div className={styles.rightPanel}>
+            <h2>Patient and Billing Information</h2>
+            {selectedItem ? (
+              <div className={styles.patientBox}>
+                <h3>Patient Details</h3>
+                <p><strong>Name:</strong> {selectedItem.patient.name}</p>
+                <p><strong>Status:</strong> {selectedItem.patient.status}</p>
+                <p><strong>Admission Date:</strong> {selectedItem.patient.admission_date}</p>
+                <p><strong>Phone:</strong> {selectedItem.patient.phone}</p>
+                <p><strong>Email:</strong> {selectedItem.patient.email}</p>
+
+                <h3>Billing Details</h3>
+                <p><strong>Billing ID:</strong> {selectedItem.id}</p>
+                <p><strong>Status:</strong> {selectedItem.status}</p>
+                <p><strong>Total Due:</strong> ${selectedItem.total_due}</p>
+                <p><strong>Created On:</strong> {new Date(selectedItem.date_created).toLocaleDateString()}</p>
+
+                <h3>Billing Items</h3>
+                <ul>
+                  {selectedItem.billing_items.map(item => (
+                    <li key={item.id}>
+                      Service Availed: {item.service_availed} | Quantity: {item.quantity} | Subtotal: ${item.subtotal}
+                    </li>
+                  ))}
+                </ul>
+
+                <button className={styles.confirmButton} onClick={handleConfirm}>
+                Confirm Billing
+                </button>
+
+                {/* Modal for CRUD actions could go here */}
+              </div>
+            ) : (
+              <p className={styles.noSelection}>Select a billing item to view details</p>
+            )}
+          </div>
+
+
+
+
+
+          {/*ROUTES LOGIC : refer to patient module... send the selectedBillings in here or maybe we willl use modal. */}
+      <BillingFormModal show={isModalOpen} onClose={handleCloseModal}/>
+      <AddBillingModal show={isAddBillingModalOpen} onClose={handleCloseAddBillingModal} setModalOpen={setIsAddBillingModalOpen} />
+      
+
+        </div>
+
+
+
+    </>
+
   )
 };
 export default Billing; 

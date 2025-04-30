@@ -1,0 +1,78 @@
+
+.billingContainer {
+    display: flex;
+    flex-wrap: wrap; 
+    justify-content: center;
+    gap: 2rem;
+    padding: 2rem;
+    min-height: 95vh;
+    background-color: #f4f6fa;
+    box-sizing: border-box;
+  }
+  
+  .leftPanel {
+    flex: 1 1 300px;
+    max-width: 400px;
+    background: #ffffff;
+    padding: 1.5rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  .searchBarContainer {
+    height: 100%;
+    overflow-y: scroll; /* Prevents excessive expansion */
+    display: flex;
+    align-items: center; /* Centers the input vertically */
+    border: 2px solid #f80000  ;
+    padding: 10px;
+  }
+  /* Right Panel - Patient and Billing Information */
+  .rightPanel {
+    flex: 2 1 300px;
+    max-width: 700px;
+    background: #ffffff;
+    padding: 1.5rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Patient Information Box */
+  .patientBox {
+    padding: 1.5rem;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    background: #f9f9f9;
+  }
+  
+  .patientBox h3 {
+    margin-bottom: 1rem;
+    color: #333;
+  }
+  
+  .patientBox p {
+    font-size: 1rem;
+    color: #555;
+    margin-bottom: 0.5rem;
+    line-height: 1.4;
+  }
+  
+  /* Message when no billing item is selected */
+  .noSelection {
+    font-size: 1.1rem;
+    color: #999;
+    font-style: italic;
+    text-align: center;
+  }
+  
+  /* Responsive Design for Mobile */
+  @media (max-width: 768px) {
+    .billingContainer {
+      flex-direction: column;
+      align-items: stretch;
+    }
+  
+    .leftPanel,
+    .rightPanel {
+      max-width: 100%;
+    }
+  }
