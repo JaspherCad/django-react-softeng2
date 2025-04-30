@@ -1,9 +1,13 @@
 from rest_framework import generics
 from rest_framework import status
 from django.db import transaction
-from .serializers import UserSerializer, PatientSerializer, UserLogSerializer, BillingCreateSerializer, PatientServiceSerializer, BillingItemSerializer, BillingSerializer
+from django.db.models import Q
+
+from .serializers import UserSerializer, PatientSerializer, UserLogSerializer, BillingCreateSerializer, PatientServiceSerializer, BillingItemSerializer, BillingSerializer, BillingSerializerNoList, Billing_PatientInfo_Serializer
+
+
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from .models import User, Patient, UserLog, Billing, BillingItem
+from .models import User, Patient, UserLog, Billing, BillingItem, BillingOperatorLog
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -309,83 +313,98 @@ def get_user_logs(request):
 
 @api_view(['POST'])
 @permission_classes([IsAdmin | IsTeller])
+ # {
+    #   "patient": 1,
+    #   "status": "Unpaid"
+    # }
+
 def create_billing(request):
-    if request.method == "POST":
+    patient_id = request.data.get('patient')
+    if patient_id is None:
+        return Response(
+            {"patient": ["This field is required."]},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    try:
+        patient_id = int(patient_id)
+    except (TypeError, ValueError):
+        return Response(
+            {"patient": ["A valid integer is required."]},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    if not Patient.objects.filter(pk=patient_id).exists():
+        print("HERE?")
+        return Response(
+            {"patient": f"Patient with id {patient_id} does not exist."},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
+    
+
+    try:
         with transaction.atomic():
-            try:
-
-                # fields = ['patient', 'status']
-                serializer = BillingCreateSerializer(data=request.data)
-                if serializer.is_valid():
-                    billing = serializer.save()
-                    log_action(
-                    user=request.user,
-                    action="CREATE",
-                    details={
-                        "message": "Created a new billing: " + str(billing.id)
-                    }
-                    )   
-                    return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-            
-            except Exception as e:
+            serializer = BillingCreateSerializer(data=request.data)
+            if not serializer.is_valid():
                 return Response(
-                    {"error": "Something went wrong while fetching patients", "details": str(e)},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                    serializer.errors,
+                    status=status.HTTP_400_BAD_REQUEST
                 )
-            
 
-#HYPOTHESIS TODO
-# from django.shortcuts import get_object_or_404
+            billing = serializer.save(created_by=request.user)
 
-# def create_bill_item(request, pk):
-#     """
-#     Create PatientService first, then link it to a BillingItem.
-#     """
-#     # Retrieve the existing Billing object
-#     billing = get_object_or_404(Billing, id=pk)
+            #add creator to operator
+            billing.operator.add(request.user)
+            log_action(
+                user=request.user,
+                action="CREATE",
+                details={"message": f"Created a new billing: {billing.id}"}
+            )
 
-#     # Extract required data from the request
-#     service = request.data.get('service')
-#     price_at_moment = request.data.get('priceAtMoment')
-#     quantity = request.data.get('quantity', 1)  # Default quantity is 1
+            #billing log the action for security purposes
+            BillingOperatorLog.objects.create(
+                billing=billing,
+                user=request.user,
+                action="Bill Created"
+            )
 
-#     # Create PatientService and BillingItem using helper function
-#     billing_item = helper_function(billing, service, price_at_moment, quantity)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-#     return billing_item
-
-
-# def helper_function(billing, service, price_at_moment, quantity=1):
-#     """
-#     Helper function to create PatientService and link it to a BillingItem.
-#     """
-#     # Create the PatientService instance
-#     patient_service = PatientService.objects.create(
-#         patient=billing.patient,
-#         service=service,
-#         quantity=quantity,
-#         cost_at_time=price_at_moment
-#     )
-
-#     # Create the BillingItem instance linked to the PatientService
-#     billing_item = BillingItem.objects.create(
-#         billing=billing,
-#         service_availed=patient_service  # Use the created PatientService directly
-#     )
-
-#     return billing_item
+    except Exception as exc:
+        # Catch everything else
+        return Response(
+            {"error": "Something went wrong", "details": str(exc)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 
 
-            
+@api_view(['PATCH'])
+@permission_classes([IsAdmin | IsTeller])
+def update_billing(request, pk):
+    billing = get_object_or_404(Billing, id=pk)
+
+    serializer = BillingCreateSerializer(billing, data=request.data, partial=True)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=400)
+
+    serializer.save()
+
+    if not billing.operator.filter(id=request.user.id).exists():
+        billing.operator.add(request.user)
+
+    BillingOperatorLog.objects.create(
+        billing=billing,
+        user=request.user,
+        action="Bill Updated"
+    )
+
+    return Response(serializer.data)
 
 
 
-#TODO with serializers
-# from rest_framework.response import Response
-# from rest_framework import status
-# from django.shortcuts import get_object_or_404
+
 
 
 @api_view(['POST'])
@@ -393,14 +412,9 @@ def create_billing(request):
 def create_bill_item(request, pk):
     #get billing thru link
     billing = get_object_or_404(Billing, id=pk)
-
-    # Validate PatientService data using the serializer
-    #fields = [
-        #     'id', 'patient', 'service', 'date_availed', 
-        #     'quantity', 'cost_at_time', 'subtotal'
-        # ]
-        #so only service-ID: quantity: cost_at_time:
+    #create billing item's patient_service data
     patient_service_data = {
+        #get the patient id thru URL bcoz url say add billing item to BILL #pk
         'patient': billing.patient.id,
         'service': request.data.get('service'),
         'quantity': request.data.get('quantity', 1),
@@ -408,6 +422,7 @@ def create_bill_item(request, pk):
     }
     patient_service_serializer = PatientServiceSerializer(data=patient_service_data)
 
+    #if valid => save then continue the creation of billing item... then service availed === patient_service_serializer
     if patient_service_serializer.is_valid():
         patient_service = patient_service_serializer.save()
 
@@ -425,14 +440,66 @@ def create_bill_item(request, pk):
 
 
 
+
+
+
+
+
+
+
+
 @api_view(['GET'])
 @permission_classes([IsAdmin | IsTeller])
-def get_bill_items(request):
+def search_billings(request):
+    """
+    Search billings using a query parameter 'q'. Returns up to 20 matched results.
+    
+    Example request: GET /api/billings/search?q=john
+    """
+    query = request.query_params.get('q', '').strip()
+    if not query:
+        # If no search query is provided, you can return an empty list or all records.
+        # Here we choose to return an empty array.
+        return Response([], status=status.HTTP_200_OK)
+    
+    try:
+        # Use Q objects to search multiple fields.
+        # Adjust the fields and lookups as necessary:
+        
+        bills = Billing.objects.filter(
+            Q(patient__name__icontains=query) |
+            Q(patient__code__icontains=query) |
+
+            Q(code__icontains=query) |
+
+            Q(status__icontains=query)
+            
+            # You can add more fields here, e.g.:
+            # | Q(total_due__icontains=query)
+        )[:20]  # Limit to 20 results
+        serializer = BillingSerializerNoList(bills, many=True)
+        print(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+
+        return Response(
+            {"error": "Something went wrong while searching bills", "details": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+
+
+@api_view(['GET'])
+@permission_classes([IsAdmin | IsTeller])
+def get_bills(request):
     #get billing thru link
 
     try:
-        list_of_bills = Billing.objects.prefetch_related('billing_items').all()
-        serialized_list_of_bills = BillingSerializer(list_of_bills, many=True)
+        list_of_bills = Billing.objects.all()
+
+        serialized_list_of_bills = BillingSerializerNoList(list_of_bills, many=True)
 
         return Response(serialized_list_of_bills.data, status=status.HTTP_200_OK)
         
@@ -442,6 +509,72 @@ def get_bill_items(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
+
+@api_view(['GET'])
+@permission_classes([IsAdmin | IsTeller])
+def get_bills_with_bill_items(request):
+    try:
+        bills = Billing.objects.prefetch_related('billing_items').all()
+        serializer = BillingSerializer(bills, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"error": "Something went wrong while fetching bills", "details": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+    
+
+@api_view(['GET'])
+@permission_classes([IsAdmin | IsTeller])
+def get_bills_by_id_with_bill_items(request, pk):
+    try:
+        # Fetch the specific billing record by ID
+        # bill = Billing.objects.prefetch_related('billing_items').filter(id=pk).first()
+        bill = Billing.objects.filter(code=pk).first()
+
+
+        if not bill:
+            return Response(
+                {"error": f"Billing record with ID {pk} not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        serializer = Billing_PatientInfo_Serializer(bill)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+    except Exception as e:
+        return Response(
+            {"error": "Something went wrong while fetching bills", "details": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+    
+
+    
+@api_view(['POST'])
+@permission_classes([IsAdmin | IsTeller])
+def create_bills(request):
+   
+
+    try:
+        #send the request.data in serializer data = request.data
+        serializer = BillingSerializer(data = request.data) #if failed, try BillingSerializerNoList
+        #if valid save
+        if serializer.is_valid():
+            billing = serializer.save()
+            return Response(BillingSerializerNoList(billing).data, status=status.HTTP_201_CREATED)
+        #outside if return FALSE statements
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        
+    except Exception as e:
+        return Response(
+            {"error": "Something went wrong while creating the billing record", "details": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+
 @api_view(['GET'])
 @permission_classes([IsAdmin | IsTeller])
 def get_bill_items_intuition_never_mind_this(request):
@@ -450,27 +583,39 @@ def get_bill_items_intuition_never_mind_this(request):
         bills = Billing.objects.prefetch_related('billing_items').all()
         
         # Serialize the data
+
+        #create a list of data
+        data = []
+
+        #use for loop to loop the LIST OF BILLS FROM MODEL
+        for bill in bills:
+                    #create a object key-value pair billData = { id:bills.id etc }
+
+            billData = {
+                "id":bill.id,
+                "patient":str(bill.patientName),
+                "next" : "... etc"
+            }
+
+            for item in bill.item.all():
+                itemData = {
+                    "id":item.id
+                }
+                billData['billing_item'].append(itemData)
+
+        data.append(billData)
+
+
+        
+        #now for the list_of_bills attribute we have loop the LIST OF BILLS.BILLITEMS so..
+
+        #for items in LIST OF BILLS.BILLITEMS
+        #key value pair itemData ={id: item.id}
+
+        #inside loop get the billdata then append the itemData in billdata['items'] : itemData (list ito)
         billing_data = []
         for bill in bills:
-            # Access prefetched items (no additional query!)
-            items = bill.billing_items.all()
-            
-            billing_data.append({
-                "id": bill.id,
-                "patient": bill.patient.id,
-                "date_created": bill.date_created,
-                "status": bill.status,
-                "total_due": bill.total_due,
-                "billing_items": [
-                    {
-                        "id": item.id,
-                        "service_availed": item.service_availed_id,
-                        "quantity": item.quantity,
-                        "subtotal": item.subtotal
-                    }
-                    for item in items
-                ]
-            })
+           return 1
         
         return Response(billing_data, status=status.HTTP_200_OK)
     

@@ -2,6 +2,29 @@ from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin, Group
 from django.core.validators import MinValueValidator
 
+import shortuuid
+from shortuuid.django_fields import ShortUUIDField
+
+
+def generate_billing_code():
+    #8-character random, URL-safe, no confusing chars I 1 0 0
+    return shortuuid.ShortUUID(
+        alphabet="ABCDEFGHJKMNPQRSTUVWXYZ23456789"
+    ).random(length=8)
+
+def generate_patient_code():
+    return shortuuid.ShortUUID(
+        alphabet="ABCDEFGHJKMNPQRSTUVWXYZ23456789"  # Avoids ambiguous chars like 0, O, I, 1, etc.
+    ).random(length=5)
+
+
+def generate_laboratoryresult_code():
+    #8-character random, URL-safe, no confusing chars I 1 0 0
+    return shortuuid.ShortUUID(
+        alphabet="ABCDEFGHJKMNPQRSTUVWXYZ23456789"
+    ).random(length=6)
+
+
 # Custom User Manager
 class CustomUserManager(BaseUserManager):
     #wait. this is boiler plate ng django no need to overThink
@@ -82,6 +105,16 @@ class Patient(models.Model):
         ('Inactive', 'Inactive'),
         ('Deleted', 'Deleted'),
     ]
+
+    code = ShortUUIDField(
+    length=5,
+    alphabet="ABCDEFGHJKMNPQRSTUVWXYZ23456789",
+    unique=True,
+    editable=False,
+    null=False,
+    default=generate_patient_code,
+    # help_text="Unique 5-character patient code"
+    )
 
     #Essential Fields for Emergency Admission
     name = models.CharField(max_length=255)
@@ -202,7 +235,7 @@ class PatientService(models.Model):
         return self.quantity * self.cost_at_time
 
     def __str__(self):
-        return f"{self.patient.name} - {self.service.name}"
+        return f"{self.patient.name} - {self.service.name} ({self.cost_at_time})"
 #safe safe
 # Billing Model with calculated total
 #PATIENT SERVICE MUST BE NULL AT FIRST
@@ -216,10 +249,24 @@ class Billing(models.Model):
         ('Paid', 'Fully Paid'),
         ('Cancelled', 'Cancelled'),
     ]
+
+
+
+    code = ShortUUIDField(
+        length=8,
+        alphabet="ABCDEFGHJKMNPQRSTUVWXYZ23456789",
+        unique=True,
+        editable=False,
+        null=False,              
+        default=generate_billing_code
+    )
     #Many Billing to One patient
     #Who OWNS the BILL.... so one to MANY (no need models.oneToMany)
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='bills')
     #To connect Patient and Service
+    
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='bills_created')
+    operator = models.ManyToManyField(User, related_name='bills_operated', blank=True)
     
 
     #NONSENSE ITOOO NEVERMIND THIS SHIT BUT DONT REMOVE
@@ -251,6 +298,20 @@ class Billing(models.Model):
 
     def __str__(self):
         return f"Bill # {self.id}  -  {self.patient.name} ({self.status})"
+
+
+
+
+
+class BillingOperatorLog(models.Model):
+    billing = models.ForeignKey(Billing, on_delete=models.CASCADE, related_name='operator_logs')
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+    action = models.CharField(max_length=50, blank=True, null=True)  # e.g., "Bill Updated", "Payment Processed"
+
+
+
+
 
 class BillingItem(models.Model):
     #Many BillingItem to One billing
@@ -309,6 +370,15 @@ class LaboratoryResult(models.Model):
     result_summary = models.TextField()
     date_performed = models.DateTimeField(auto_now_add=True)
     performed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+
+    code = ShortUUIDField(
+        length=8,
+        alphabet="ABCDEFGHJKMNPQRSTUVWXYZ23456789",
+        unique=True,
+        editable=False,
+        null=False,              
+        default=generate_laboratoryresult_code
+    )
 
     def __str__(self):
         return f"{self.patient.name} - {self.test_type}"

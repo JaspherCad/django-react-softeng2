@@ -47,7 +47,10 @@ class HasRole(permissions.BasePermission):
             print("TRUE")
             return True
 
-        raise PermissionDenied(f"FAILED: Your roles are {roles}. Only {self.role_name}s can access this resource.")
+        # raise PermissionDenied(f"FAILED: Your roles are {roles}. Only {self.role_name}s can access this resource.")
+
+        #instead of raising an error immediately, simply return False FOR TESTINGS
+        return False
 
 
 
