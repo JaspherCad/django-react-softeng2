@@ -442,6 +442,35 @@ def create_bill_item(request, pk):
 
 
 
+@api_view(['GET'])
+@permission_classes([IsAdmin | IsAuthenticated])
+def search_patients(request):
+
+    query = request.query_params.get('q', '').strip()
+    if not query:
+        
+        return Response([], status=status.HTTP_200_OK)
+    
+    try:
+        
+        
+        bills = Patient.objects.filter(
+            Q(code__icontains=query) |
+            Q(name__icontains=query) 
+        )[:5] 
+        serializer = PatientSerializer(bills, many=True)
+        print(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+
+        return Response(
+            {"error": "Something went wrong while searching patients", "details": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+
 
 
 
@@ -522,7 +551,7 @@ def get_bills_with_bill_items(request):
             {"error": "Something went wrong while fetching bills", "details": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
-    
+    #develop
 
 @api_view(['GET'])
 @permission_classes([IsAdmin | IsTeller])

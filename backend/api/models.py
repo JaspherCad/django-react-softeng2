@@ -107,13 +107,13 @@ class Patient(models.Model):
     ]
 
     code = ShortUUIDField(
-    length=5,
-    alphabet="ABCDEFGHJKMNPQRSTUVWXYZ23456789",
-    unique=True,
-    editable=False,
-    null=False,
-    default=generate_patient_code,
-    # help_text="Unique 5-character patient code"
+        length=5,
+        alphabet="ABCDEFGHJKMNPQRSTUVWXYZ23456789",
+        unique=True,
+        editable=False,
+        null=False,
+        default=generate_patient_code,
+        # help_text="Unique 5-character patient code"
     )
 
     #Essential Fields for Emergency Admission

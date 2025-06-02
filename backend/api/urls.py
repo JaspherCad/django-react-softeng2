@@ -23,6 +23,8 @@ urlpatterns = [
     path('patients/<int:pk>', views.patient_details, name='patient_get_specific'),
     path('patients/update/<int:pk>', views.patient_update, name='patient_update'),
     path('patients/deactivate/<int:pk>', views.patient_deactivate, name='patient_deactivate'),
+    # sEarch function for patient
+    path('patients/search', views.search_patients, name='search_billings'),
 
 
 
