@@ -365,6 +365,7 @@ def lab_result_upload_path(instance, filename):
 
 
 class LaboratoryResult(models.Model):
+    #many to one
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='lab_results')
     test_type = models.CharField(max_length=50)
     result_summary = models.TextField()

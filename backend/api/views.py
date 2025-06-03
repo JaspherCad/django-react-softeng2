@@ -406,7 +406,8 @@ def update_billing(request, pk):
 
 
 
-
+    #                             #id of that PATIENT
+    # path('billings/add-billing-item/<int:pk>', views.create_bill_item, name='create_billing_item'),
 @api_view(['POST'])
 @permission_classes([IsAdmin | IsTeller])
 def create_bill_item(request, pk):
@@ -557,24 +558,38 @@ def get_bills_with_bill_items(request):
 @permission_classes([IsAdmin | IsTeller])
 def get_bills_by_id_with_bill_items(request, pk):
     try:
-        # Fetch the specific billing record by ID
-        # bill = Billing.objects.prefetch_related('billing_items').filter(id=pk).first()
+                #get specific billing record by ID
+        # bill = Billing.objects.prefetch_related('billing_items').filter(id=pk).first() //not sure if keep or remove this line
+
         bill = Billing.objects.filter(code=pk).first()
 
 
         if not bill:
+            #get all existing Billing codes as return coz its confusing me.. id!=billing_code
+            available_codes = list(
+                Billing.objects
+                       .order_by('code')
+                       .values_list('code', flat=True)
+            )
+
             return Response(
-                {"error": f"Billing record with ID {pk} not found."},
+                {
+                    "error": f"Billing record with code '{pk}' not found.",
+                    "available_codes": available_codes
+                },
                 status=status.HTTP_404_NOT_FOUND
             )
 
+        # If found, serialize and return.
         serializer = Billing_PatientInfo_Serializer(bill)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-
     except Exception as e:
         return Response(
-            {"error": "Something went wrong while fetching bills", "details": str(e)},
+            {
+                "error": "Something went wrong while fetching bills.",
+                "details": str(e)
+            },
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
     
