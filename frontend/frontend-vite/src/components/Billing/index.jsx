@@ -5,7 +5,10 @@ import { getBillingByID, listOfBillingsAPI, SearchBillingsApi } from '../../api/
 import SearchBar from '../AngAtingSeachBarWIthDropDown/index'
 import styles from './Billing.module.css';
 import BillingFormModal from './BillingFormModal';
-import AddBillingModal from './AddBillingModal';
+// import AddBillingModal from './AddBillingModal';
+import AddBillingModalV2 from './AddBillingModalV2.jsx';
+import BillingItems from './BillingItems.jsx';
+import BillingItemsOfThatBill from './BillingItems.jsx';
 const Billing = () => {
   // State for services and billings
   const [services, setServices] = useState([]);
@@ -15,6 +18,8 @@ const Billing = () => {
   const [selectedItem, setSelectedItem] = useState()
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAddBillingModalOpen, setIsAddBillingModalOpen] = useState(false);
+  const navigate = useNavigate();
+
 
 
   const dummyBillingData = [
@@ -67,124 +72,161 @@ const Billing = () => {
 
 
 
-const handleConfirm = () => {
-  setIsModalOpen(true);
-};
-
-const handleCloseModal = () => {
-  setIsModalOpen(false);
-};
-
-const handleCloseAddBillingModal = () => {
-  setIsAddBillingModalOpen(false);
-};
+  const handleConfirm = (billingItemId) => {
+    // setIsModalOpen(true);
+    //redirect to new link nalang
+    navigate(`/billing/billing_items_of_billing/${selectedItem?.id}`);
 
 
-const handleAddBilling = () => {
-  //add edit of BILLING CLASS is completely different to each other
-  setIsAddBillingModalOpen(true)
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+  };
+
+  const handleCloseAddBillingModal = () => {
+    setIsAddBillingModalOpen(false);
+  };
 
 
-
-}
-
-const handleAddBillingItem = () => {
-  //url ** ADD ** different URL same COMPONENT... if data? edit mode else ADD Mode
-
-
-}
-
-
-const handleEditBilling = (selectedBillings) => {
-  //url ** EDIT ** different URL same COMPONENT... if data? edit mode else ADD Mode
-
-  //if edit, submit the specific billing id here
-  //send to backend
-  //prefill the forms with the info from backend (EXCEPT PATIENT INFO)
-}
+  const handleAddBilling = () => {
+    //add edit of BILLING CLASS is completely different to each other
+    setIsAddBillingModalOpen(true)
 
 
 
+  }
+
+  const handleAddBillingItem = () => {
+    //url ** ADD ** different URL same COMPONENT... if data? edit mode else ADD Mode
 
 
-  return (
+  }
 
+
+  const handleEditBilling = (selectedBillings) => {
+    //url ** EDIT ** different URL same COMPONENT... if has Id in parameter? edit mode else ADD Mode
+
+    //if edit, submit the specific billing id here
+    //send to backend
+    //prefill the forms with the info from backend (EXCEPT PATIENT INFO)
+  }
+
+  const MainContent = () => (
     <>
 
-        <div className={styles.billingContainer}>
+      <div className={styles.billingContainer}>
 
-          <div className={styles.leftPanel}>
-            <button onClick={handleAddBilling}>
-              Add+
-            </button>
-            <div className={styles.searchBarContainer}>
-              <SearchBar
-                data={dummyBillingData}
-                placeholder={"IDKss"}
-                searchApi={SearchBillingsApi}
-                // accept the argument passed by the SearchBar component (item) when onSelectSuggestion is invoked
-                //to accept *-*
-                onSelectSuggestion={(filtered) => handleSelectedItem(filtered)}
-                suggestedOutput={['code', 'patient']}
+        <div className={styles.leftPanel}>
+          <button onClick={handleAddBilling}>
+            Add+
+          </button>
+          <div className={styles.searchBarContainer}>
+            <SearchBar
+              data={dummyBillingData}
+              placeholder={"IDKss"}
+              searchApi={SearchBillingsApi}
+              // accept the argument passed by the SearchBar component (item) when onSelectSuggestion is invoked
+              //to accept *-*
+              onSelectSuggestion={(filtered) => handleSelectedItem(filtered)}
+              suggestedOutput={['code', 'patient']}
 
-              />
-            </div>
+            />
           </div>
+        </div>
 
-          {/*BOX COMPONENT TO CHECK IF THIS IS CORRECT USER 
+        {/*BOX COMPONENT TO CHECK IF THIS IS CORRECT USER 
             Then if clicked show the modal of CRUD process*/}
-          <div className={styles.rightPanel}>
-            <h2>Patient and Billing Information</h2>
-            {selectedItem ? (
-              <div className={styles.patientBox}>
-                <h3>Patient Details</h3>
-                <p><strong>Name:</strong> {selectedItem.patient.name}</p>
-                <p><strong>Status:</strong> {selectedItem.patient.status}</p>
-                <p><strong>Admission Date:</strong> {selectedItem.patient.admission_date}</p>
-                <p><strong>Phone:</strong> {selectedItem.patient.phone}</p>
-                <p><strong>Email:</strong> {selectedItem.patient.email}</p>
+        <div className={styles.rightPanel}>
+          <h2>Patient and Billing Information</h2>
+          {selectedItem ? (
+            <div className={styles.patientBox}>
+              <h3>Patient Details</h3>
+              <p><strong>Name:</strong> {selectedItem.patient.name}</p>
+              <p><strong>Status:</strong> {selectedItem.patient.status}</p>
+              <p><strong>Admission Date:</strong> {selectedItem.patient.admission_date}</p>
+              <p><strong>Phone:</strong> {selectedItem.patient.phone}</p>
+              <p><strong>Email:</strong> {selectedItem.patient.email}</p>
 
-                <h3>Billing Details</h3>
-                <p><strong>Billing ID:</strong> {selectedItem.id}</p>
-                <p><strong>Status:</strong> {selectedItem.status}</p>
-                <p><strong>Total Due:</strong> ${selectedItem.total_due}</p>
-                <p><strong>Created On:</strong> {new Date(selectedItem.date_created).toLocaleDateString()}</p>
+              <h3>Billing Details</h3>
+              <p><strong>Billing ID:</strong> {selectedItem.id}</p>
+              <p><strong>Status:</strong> {selectedItem.status}</p>
+              <p><strong>Total Due:</strong> ${selectedItem.total_due}</p>
+              <p><strong>Created On:</strong> {new Date(selectedItem.date_created).toLocaleDateString()}</p>
 
-                <h3>Billing Items</h3>
-                <ul>
-                  {selectedItem.billing_items.map(item => (
-                    <li key={item.id}>
-                      Service Availed: {item.service_availed} | Quantity: {item.quantity} | Subtotal: ${item.subtotal}
-                    </li>
-                  ))}
-                </ul>
+              <h3>Billing Items</h3>
+              <ul>
+                {selectedItem.billing_items.map(item => (
+                  <li key={item.id}>
+                    Service Availed: {item.service_availed} | Quantity: {item.quantity} | Subtotal: ${item.subtotal}
+                  </li>
+                ))}
+              </ul>
 
-                <button className={styles.confirmButton} onClick={handleConfirm}>
+              <button className={styles.confirmButton} onClick={() => handleConfirm()}>
                 Confirm Billing
-                </button>
+              </button>
 
-                {/* Modal for CRUD actions could go here */}
-              </div>
-            ) : (
-              <p className={styles.noSelection}>Select a billing item to view details</p>
-            )}
-          </div>
-
-
-
-
-
-          {/*ROUTES LOGIC : refer to patient module... send the selectedBillings in here or maybe we willl use modal. */}
-      <BillingFormModal show={isModalOpen} onClose={handleCloseModal}/>
-      <AddBillingModal show={isAddBillingModalOpen} onClose={handleCloseAddBillingModal} setModalOpen={setIsAddBillingModalOpen} />
-      
-
+              {/* Modal for CRUD actions could go here */}
+            </div>
+          ) : (
+            <p className={styles.noSelection}>Select a billing item to view details</p>
+          )}
         </div>
 
 
 
+
+
+
+
+
+
+
+
+      </div>
+
+      <BillingFormModal show={isModalOpen} onClose={handleCloseModal} />
+      <AddBillingModalV2 show={isAddBillingModalOpen} onClose={handleCloseAddBillingModal} setModalOpen={setIsAddBillingModalOpen} />
+
     </>
+  )
+
+
+
+  return (
+    <>
+
+
+
+
+
+
+
+
+
+      <Routes>
+        <Route index element={<MainContent />} />
+        {/* <Route path="add" element={<AddBillingModalV2 />} /> */}
+        {/* <Route path="edit/:id" element={<EditBillingForm />} /> */}
+        <Route path="billing_items_of_billing/:billId" element={<BillingItemsOfThatBill />} />
+      </Routes>
+    </>
+
 
   )
 };
-export default Billing; 
+export default Billing;
+
+
+{/* <Routes>
+          <Route path="billing_items_of_billing/:id" element={<BillingItems/>} />
+          {/* <Route path="edit/:id" element={<PatientForm onSubmit={handleEditPatient} loading={loading} errorMsg={errorMsg} />} /> 
+          
+          </Routes>
+          */}
+
+
+{/*ROUTES LOGIC : refer to patient module... send the selectedBillings in here or maybe we willl use modal. */ }
+
+

@@ -18,10 +18,11 @@
     position: relative;
     min-width: 300px;
     max-width: 90%;
-    max-height: 90%;
+    max-height: 80vh; 
+    height: auto; 
     overflow-y: auto;
-  }
-  
+    transition: height 0.3s ease; 
+  }  
   .closeButton {
     position: absolute;
     top: 10px;

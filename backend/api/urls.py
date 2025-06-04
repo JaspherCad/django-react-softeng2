@@ -42,7 +42,7 @@ urlpatterns = [
     path('billings/list/v2', views.get_bills_with_bill_items, name='billing_list'),
     path('billings/id/<str:pk>', views.get_bills_by_id_with_bill_items, name='billing_by_id'),
 
-                                #id of that PATIENT
+                                #id of that BILLING
     path('billings/add-billing-item/<int:pk>', views.create_bill_item, name='create_billing_item'),
     #GET /api/billings/search?q=john
     path('billings/search', views.search_billings, name='search_billings'),

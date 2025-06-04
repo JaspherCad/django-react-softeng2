@@ -3,6 +3,22 @@ import styles from './BillingFormModal.module.css';
 import { useState } from 'react';
 import ConfirmationModal from './ConfirmationModal';
 import { addBillingsApi } from '../../api/axios';
+import SearchBar from '../AngAtingSeachBarWIthDropDown/index'
+//DEPRECATED!!!!!!!!! goto AddBillingModalV2
+//DEPRECATED!!!!!!!!! goto AddBillingModalV2
+//DEPRECATED!!!!!!!!! goto AddBillingModalV2
+//DEPRECATED!!!!!!!!! goto AddBillingModalV2
+//DEPRECATED!!!!!!!!! goto AddBillingModalV2
+//DEPRECATED!!!!!!!!! goto AddBillingModalV2
+//DEPRECATED!!!!!!!!! goto AddBillingModalV2
+//DEPRECATED!!!!!!!!! goto AddBillingModalV2
+//DEPRECATED!!!!!!!!! goto AddBillingModalV2
+//DEPRECATED!!!!!!!!! goto AddBillingModalV2
+//DEPRECATED!!!!!!!!! goto AddBillingModalV2
+//DEPRECATED!!!!!!!!! goto AddBillingModalV2
+//DEPRECATED!!!!!!!!! goto AddBillingModalV2
+//DEPRECATED!!!!!!!!! goto AddBillingModalV2
+
 
 const AddBillingModal = ({ show, onClose, setModalOpen }) => { //these are props remember
 

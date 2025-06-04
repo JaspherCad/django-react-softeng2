@@ -12,7 +12,7 @@ import { filter } from 'lodash';
 
 //onSelectSuggestion(filtered) =>???
 
-const SearchBar = ({ placeholder, onSelectSuggestion, suggestedOutput=[], searchApi }) => {
+const SearchBar = ({ placeholder, onSelectSuggestion, suggestedOutput = [], searchApi, isIDIncludedInResultSuggestion }) => {
   //suggestedOutput is list of string
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -21,36 +21,41 @@ const SearchBar = ({ placeholder, onSelectSuggestion, suggestedOutput=[], search
   const [loading, setLoading] = useState(false);
 
   //use debounce to delay user input into backend search
-                      //inside we have useEffect ok?
-  const debouncedSearchTerm = customDebounceHook(searchTerm, 500); 
+  //inside we have useEffect ok?
+  const debouncedSearchTerm = customDebounceHook(searchTerm, 500);
 
   const renderOnlySuggestedOutput = () => {
     // Ensure results and suggestedOutput are valid arrays
     const filtered = Array.isArray(suggestedOutput)
       ? results.map((item) => {
-          //create a filtered object based on suggestedOutput keys
-          const filteredItem = {};
-          Object.keys(item).forEach((key) => {
-            if (suggestedOutput.includes(key)) {
-              filteredItem[key] = item[key];
-              //hashmap entry this 
-            }
-          });
-          return filteredItem;
-        })
+        //create a filtered object based on suggestedOutput keys
+        const filteredItem = {};
+        Object.keys(item).forEach((key) => {
+          if (suggestedOutput.includes(key)) {
+            filteredItem[key] = item[key];
+            //hashmap entry this 
+          }
+          //include id no matter what, required for api kasi
+          if (item.hasOwnProperty('id')) {
+            filteredItem['id'] = item['id'];
+          }
+
+        });
+        return filteredItem;
+      })
       : results;
 
     //filtered 2 => we are going to iterate each object in here since the .filter will return {} into obj we do this
     //filted item = {}
     //results.map(item =>{
-     //  Object.keys(item).forEach(key => {
-      //  if (suggestedOupiut.includes(key){
-      //         filtetedItem[key] = item[key]})
-      //})
-     //})
-    
-  
-     return filtered.map((item, index) => (
+    //  Object.keys(item).forEach(key => {
+    //  if (suggestedOupiut.includes(key){
+    //         filtetedItem[key] = item[key]})
+    //})
+    //})
+
+
+    return filtered.map((item, index) => (
       <li
         key={index}
         onClick={() => onSelectSuggestion(item)}
@@ -60,51 +65,62 @@ const SearchBar = ({ placeholder, onSelectSuggestion, suggestedOutput=[], search
           cursor: 'pointer'
         }}
       >
-        {Object.entries(item).map(([key, value]) => (
-          <div key={key} style={{ marginBottom: '8px' }}>
-            {/* Parent key */}
-            <div
-              style={{
-                fontWeight: 'bold',
-                color: '#333',
-                display: 'block',
-                marginBottom: '4px'
-              }}
-            >
-              {key}:
-            </div>
-    
-            {/* Check if value is an object */}
-            {typeof value === 'object' && value !== null ? (
+
+        {/* IF isIDIncludedInResultSuggestion === TRUE then include key=id else skip id key-value in results */}
+
+        {/* filter here item here I guess DEPENDING on isIDIncludedInResultSuggestion */}
+        {Object.entries(item).filter(([key]) => {
+          if (key === 'id' && !isIDIncludedInResultSuggestion) {
+            return false;
+          }
+          return true;
+        })
+          
+          .map(([key, value]) => (
+            <div key={key} style={{ marginBottom: '8px' }}>
+              {/* Parent key */}
               <div
                 style={{
-                  paddingLeft: '20px',
-                  backgroundColor: '#f9f9f9',
-                  borderLeft: '2px solid #ccc'
+                  fontWeight: 'bold',
+                  color: '#333',
+                  display: 'block',
+                  marginBottom: '4px'
                 }}
               >
-                {Object.entries(value).map(([subKey, subValue]) => (
-                  <div key={subKey} style={{ color: '#555', marginBottom: '2px' }}>
-                    {subKey}: {subValue}
-                  </div>
-                ))}
+                {key}:
               </div>
-            ) : (
-              // Otherwise, render the value directly.
-              <div style={{ color: '#666' }}>{value}</div>
-            )}
-          </div>
-        ))}
+
+              {/*check if value is an object [MEANING THERE ARE SUB VALUES] then subvalue*/}
+              {typeof value === 'object' && value !== null ? (
+                <div
+                  style={{
+                    paddingLeft: '20px',
+                    backgroundColor: '#f9f9f9',
+                    borderLeft: '2px solid #ccc'
+                  }}
+                >
+                  {Object.entries(value).map(([subKey, subValue]) => (
+                    <div key={subKey} style={{ color: '#555', marginBottom: '2px' }}>
+                      {subKey}: {subValue}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                //otherwise, render the value directly.
+                <div style={{ color: '#666' }}>{value}</div>
+              )}
+            </div>
+          ))}
       </li>
     ));
   };
 
 
   useEffect(() => {
-    if (debouncedSearchTerm && debouncedSearchTerm.trim() !== ''){
+    if (debouncedSearchTerm && debouncedSearchTerm.trim() !== '') {
       const searchAPICall = async () => {
         setLoading(true)
-        try{
+        try {
           //call the api
           const response = await searchApi(debouncedSearchTerm) //q = debouncedSearchTerm
           console.log(response)
@@ -135,7 +151,7 @@ const SearchBar = ({ placeholder, onSelectSuggestion, suggestedOutput=[], search
     setSearchTerm(e.target.value);
   };
 
-  
+
 
 
   return (
@@ -162,7 +178,7 @@ const SearchBar = ({ placeholder, onSelectSuggestion, suggestedOutput=[], search
             height: 'auto',
             overflowY: 'auto',
             backgroundColor: '#fff',
-            position: 'absolute',
+            position: 'relative',
             width: '100%',
             zIndex: 1000
           }}

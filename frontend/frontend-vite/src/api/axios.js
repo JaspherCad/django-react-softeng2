@@ -268,6 +268,19 @@ export const SearchBillingsApi = async (searchTerm) => {
 };
 
 
+export const SearchPatientsApi = async (searchTerm) => {
+  try {
+    const response = await axiosInstance.get('/patients/search',{
+      params: {q : searchTerm}
+    }
+
+    );
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
 
 export const listOfBillingsAPI = async () => {
   try {

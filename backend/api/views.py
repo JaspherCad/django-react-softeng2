@@ -7,7 +7,7 @@ from .serializers import UserSerializer, PatientSerializer, UserLogSerializer, B
 
 
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from .models import User, Patient, UserLog, Billing, BillingItem, BillingOperatorLog
+from .models import User, Patient, UserLog, Billing, BillingItem, BillingOperatorLog, PatientService
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -423,14 +423,38 @@ def create_bill_item(request, pk):
     }
     patient_service_serializer = PatientServiceSerializer(data=patient_service_data)
 
+
+    #SAVING THE PATIENTSERVICE HERE>.... dont turn into function, i want to see step by step
+
     #if valid => save then continue the creation of billing item... then service availed === patient_service_serializer
+
+    existing_patient_service = PatientService.objects.filter(
+            patient=billing.patient,
+            service=request.data.get('service'),
+            quantity=request.data.get('quantity', 1),
+            cost_at_time=request.data.get('cost_at_time')
+        ).first()
+        
+
+
+    
     if patient_service_serializer.is_valid():
-        patient_service = patient_service_serializer.save()
+        
+        if existing_patient_service:
+            patient_service = existing_patient_service
+        else:
+            patient_service = patient_service_serializer.save()
+        
+  
+            #get that patient_service 's id then save as patient_service
+            #BY findByPatient, findByService, findBy... if those matches get that patient_service data... then use it rather creating new again
+
+
 
         # Create BillingItem using the validated PatientService
         billing_item_serializer = BillingItemSerializer(data={
             'billing': billing.id,
-            'service_availed': patient_service.id,
+            'service_availed': patient_service.id, #this.id ==> can be newly created or the existing ones (review ^)
             'quantity': request.data.get('quantity', 1),
         })
         if billing_item_serializer.is_valid():
