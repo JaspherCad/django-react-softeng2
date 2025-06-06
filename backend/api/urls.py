@@ -36,6 +36,7 @@ urlpatterns = [
     path('billings/add', views.create_billing, name='create_billing'),
     path('billings/update/<int:pk>', views.update_billing, name='update_billing'),
     
+    path('service/search', views.search_service, name='search_service'),
 
 
     path('billings/list', views.get_bills, name='billing_list'),
@@ -44,8 +45,22 @@ urlpatterns = [
 
                                 #id of that BILLING
     path('billings/add-billing-item/<int:pk>', views.create_bill_item, name='create_billing_item'),
+
+                          #code not id..  
+    path('billings/<str:billing_pk>/items/<str:item_pk>/edit', views.edit_bill_item, name='edit_bill_item'),
+
+    path('billings/<str:billing_pk>/items/<str:item_pk>/get', views.get_bill_item, name='get_bill_item'),
+
+
+
     #GET /api/billings/search?q=john
     path('billings/search', views.search_billings, name='search_billings'),
+    
+
+
+    
+    #Billing_Items
+    path('billing_item/id/<str:pk>', views.get_billing_item, name='get_billing_item'),
 
 
 ]   

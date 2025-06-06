@@ -8,7 +8,7 @@ import SearchBar from '../AngAtingSeachBarWIthDropDown/index'
 //this creates BILLING class of that user (NOT the billing_item)
 
 //not just confirmation modal but the one who selects "WHO'S THE PATIENT"???
-  //to recieve new billing?
+//to recieve new billing?
 
 
 
@@ -16,9 +16,9 @@ import SearchBar from '../AngAtingSeachBarWIthDropDown/index'
 const AddBillingModalV2 = ({ show, onClose, setModalOpen }) => { //these are props remember
 
   const [patient, setPatient] = useState('');
-
+  const [searchTerm, setSearchTerm] = useState(''); //required for SearchBar
   const [error, setError] = useState()
-
+  const [isDropdownVisible, setIsDropdownVisible] = useState(false)  //required for SearchBar
   //confirmaton modal section
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   //confirmaton modal section
@@ -28,8 +28,8 @@ const AddBillingModalV2 = ({ show, onClose, setModalOpen }) => { //these are pro
 
 
   const handleSubmit = (filtered) => {
-    
-    setPatient(filtered || ''); 
+
+    setPatient(filtered || '');
     console.log(filtered?.code)
 
     setShowConfirmModal(true);
@@ -88,7 +88,10 @@ const AddBillingModalV2 = ({ show, onClose, setModalOpen }) => { //these are pro
           onSelectSuggestion={(filtered) => handleSubmit(filtered)}
           isIDIncludedInResultSuggestion={false}
           suggestedOutput={['code', 'name']}
-
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          isDropdownVisible={isDropdownVisible}
+          setIsDropdownVisible={setIsDropdownVisible}
         />
 
 

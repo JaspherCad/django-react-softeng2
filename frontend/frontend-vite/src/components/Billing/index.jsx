@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 
-import { getBillingByID, listOfBillingsAPI, SearchBillingsApi } from '../../api/axios';
+import { getBillingByID, listOfBillingsAPI, listOfPatientAPI, SearchBillingsApi } from '../../api/axios';
 import SearchBar from '../AngAtingSeachBarWIthDropDown/index'
 import styles from './Billing.module.css';
 import BillingFormModal from './BillingFormModal';
@@ -10,16 +10,53 @@ import AddBillingModalV2 from './AddBillingModalV2.jsx';
 import BillingItems from './BillingItems.jsx';
 import BillingItemsOfThatBill from './BillingItems.jsx';
 const Billing = () => {
-  // State for services and billings
   const [services, setServices] = useState([]);
-  const [listOfBillings, setListOfBillings] = useState([]);
   const [loading, setLoading] = useState(true); // To manage loading state
   const [error, setError] = useState(null); // To handle errors gracefully
   const [selectedItem, setSelectedItem] = useState()
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAddBillingModalOpen, setIsAddBillingModalOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState(''); //required for SearchBar
+  const [isDropdownVisible, setIsDropdownVisible] = useState(false)  //required for SearchBar
+
+
+  //for patients fetch
+  const [patients, setPatients] = useState([]); 
+  const [billings, setBillings] = useState([]);//billings of patient
+  const [listOfBillings, setListOfBillings] = useState([]); // billing lists inside billing class
+
   const navigate = useNavigate();
 
+
+      //pseudo
+  //call api
+  //copy the item name from dummy data to actual data for example
+    //in backend we have 'name' instead of 'patient_id' so patient_id:data.name ????
+    // { SAMPLE BACKEND DATA
+    //     "id": 1,
+    //     "code": "R9PKN",
+    //     "name": "Filmor Sarmiento",
+    //     "status": "Admitted",
+    //     "admission_date": "2025-04-29",
+    //     "current_condition": "FUCKED UP",
+    //     "date_of_birth": "1977-04-29",
+    //     "address": "block 1 lot 38, Hinapao Street",
+    //     "discharge_date": "2025-04-30",
+    //     "phone": "09357773518",
+    //     "email": "cadelinafilmor1971@gmail.com",
+    //     "emergency_contact_name": "Filmor Sarmiento",
+    //     "emergency_contact_phone": "09357773518",
+    //     "is_active": "Active"
+    // },
+
+    //api function is listOfPatientAPI
+
+
+    
+
+
+
+  
 
 
   const dummyBillingData = [
@@ -45,6 +82,7 @@ const Billing = () => {
       total_due: "75.00"
     }
   ];
+
 
 
   const handleSelectedItem = async (filteredId) => {
@@ -75,7 +113,7 @@ const Billing = () => {
   const handleConfirm = (billingItemId) => {
     // setIsModalOpen(true);
     //redirect to new link nalang
-    navigate(`/billing/billing_items_of_billing/${selectedItem?.id}`);
+    navigate(`/billing/billing_items_of_billing/${selectedItem?.code}`);
 
 
   };
@@ -130,7 +168,10 @@ const Billing = () => {
               //to accept *-*
               onSelectSuggestion={(filtered) => handleSelectedItem(filtered)}
               suggestedOutput={['code', 'patient']}
-
+              searchTerm={searchTerm}
+              setSearchTerm={setSearchTerm}
+              isDropdownVisible={isDropdownVisible}
+              setIsDropdownVisible={setIsDropdownVisible}
             />
           </div>
         </div>

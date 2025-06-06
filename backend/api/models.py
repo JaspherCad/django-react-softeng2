@@ -208,7 +208,9 @@ class Service(models.Model):
     current_cost = models.DecimalField(max_digits=10, decimal_places=2)
 
     def __str__(self):
-        return self.name
+        return f"{self.name}: ID - {self.id}"
+    
+    
 
 # Patient Services Availed with historical pricing
 #DELETE? no Keep PatientService to maintain historical pricing, decoupled service tracking, and accurate billing. It is a core part of your system’s design.
@@ -235,7 +237,7 @@ class PatientService(models.Model):
         return self.quantity * self.cost_at_time
 
     def __str__(self):
-        return f"{self.patient.name} - {self.service.name} ({self.cost_at_time})"
+        return f"{self.patient.name} - {self.service.name} ({self.cost_at_time}) ({self.id})"
 #safe safe
 # Billing Model with calculated total
 #PATIENT SERVICE MUST BE NULL AT FIRST

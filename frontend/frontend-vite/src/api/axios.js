@@ -253,6 +253,39 @@ export const addBillingsApi = async (patientData) => {
   }
 };
 
+export const addBillingItemApi = async (billingData, billingId) => {
+  try {
+    const response = await axiosInstance.post(`/billings/add-billing-item/${billingId}`, 
+      billingData);
+//       {
+//     "service": 1,
+//     "quantity": 1,
+//     "cost_at_time": 2000
+// }
+
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const editBillingItemApi = async (billingCode, billingItemId, billingData) => {
+  try {
+    const response = await axiosInstance.put(`/billings/${billingCode}/items/${billingItemId}/edit`, 
+      billingData);
+    console.log(billingData)
+//       {
+//     "service": 1,
+//     "quantity": 1,
+//     "cost_at_time": 2000
+// }
+
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
 
 export const SearchBillingsApi = async (searchTerm) => {
   try {
@@ -282,6 +315,20 @@ export const SearchPatientsApi = async (searchTerm) => {
 };
 
 
+export const SearchServicesApi = async (searchTerm) => {
+  try {
+    const response = await axiosInstance.get('/service/search',{
+      params: {q : searchTerm}
+    }
+
+    );
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+
 export const listOfBillingsAPI = async () => {
   try {
     const response = await axiosInstance.get('/billings/list');
@@ -290,6 +337,18 @@ export const listOfBillingsAPI = async () => {
     throw error;
   }
 };
+
+
+
+export const getBillingItemByIdAPI = async (billingId) => {
+  try {
+    const response = await axiosInstance.get(`/billing_item/id/${billingId}`);
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
 
 
 export const getBillingByID = async (id) => {

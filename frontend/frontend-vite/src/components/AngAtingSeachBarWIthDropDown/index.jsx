@@ -3,6 +3,7 @@ import axios from 'axios';
 import { customDebounceHook } from '../hooks/customDebounceHook';
 import { SearchBillingsApi } from '../../api/axios';
 import { filter } from 'lodash';
+import PropTypes from 'prop-types'
 
 
 
@@ -12,17 +13,25 @@ import { filter } from 'lodash';
 
 //onSelectSuggestion(filtered) =>???
 
-const SearchBar = ({ placeholder, onSelectSuggestion, suggestedOutput = [], searchApi, isIDIncludedInResultSuggestion }) => {
+const SearchBar = ({ searchTerm, setSearchTerm, placeholder, onSelectSuggestion, suggestedOutput = [], searchApi, isIDIncludedInResultSuggestion, isDropdownVisible, setIsDropdownVisible }) => {
   //suggestedOutput is list of string
-
-  const [searchTerm, setSearchTerm] = useState('');
+  //searchTerm, setSearchTerm =>  has been moved to parent
   const [results, setResults] = useState([]); // backend data
-  const [isDropdownVisible, setIsDropdownVisible] = useState(false);
+  // const [isDropdownVisible, setIsDropdownVisible] = useState(false); // => has been moved to parent
   const [loading, setLoading] = useState(false);
+
+
+  //early errors if searchTerm and setSearhTerm is missing
+  if (typeof searchTerm === 'undefined' || typeof setSearchTerm !== 'function') {
+    throw new Error('BOI! searchbar requires searchTerm (string) and setSearchTerm (function) props. insert here the useStates of seatchTerm and setSearchTerm');
+  }
+
+
+
 
   //use debounce to delay user input into backend search
   //inside we have useEffect ok?
-  const debouncedSearchTerm = customDebounceHook(searchTerm, 500);
+  const debouncedSearchTerm = customDebounceHook(searchTerm, 1000);
 
   const renderOnlySuggestedOutput = () => {
     // Ensure results and suggestedOutput are valid arrays
@@ -75,7 +84,7 @@ const SearchBar = ({ placeholder, onSelectSuggestion, suggestedOutput = [], sear
           }
           return true;
         })
-          
+
           .map(([key, value]) => (
             <div key={key} style={{ marginBottom: '8px' }}>
               {/* Parent key */}
@@ -116,6 +125,8 @@ const SearchBar = ({ placeholder, onSelectSuggestion, suggestedOutput = [], sear
   };
 
 
+
+  //SEARCH API CALLS
   useEffect(() => {
     if (debouncedSearchTerm && debouncedSearchTerm.trim() !== '') {
       const searchAPICall = async () => {
@@ -192,3 +203,17 @@ const SearchBar = ({ placeholder, onSelectSuggestion, suggestedOutput = [], sear
 };
 
 export default SearchBar;
+
+
+SearchBar.propTypes = {
+  searchTerm: PropTypes.string.isRequired,
+  setSearchTerm: PropTypes.func.isRequired,
+  placeholder: PropTypes.string,
+  onSelectSuggestion: PropTypes.func,
+  suggestedOutput: PropTypes.array,
+  searchApi: PropTypes.func,
+  isIDIncludedInResultSuggestion: PropTypes.bool,
+  isDropdownVisible: PropTypes.bool.isRequired,
+  setIsDropdownVisible: PropTypes.func.isRequired,
+};
+

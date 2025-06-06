@@ -18,7 +18,6 @@
   color: white;
 }
 
-/* Red background for Unpaid, Green for Paid */
 .unpaid {
   background-color: #e74c3c;
 }
@@ -27,7 +26,6 @@
   background-color: #2ecc71;
 }
 
-/* Open Modal Button */
 .openModalButton {
   background-color: #8e44ad;
   color: white;
@@ -44,7 +42,6 @@
   background-color: #732d91;
 }
 
-/* Modal Overlay & Content */
 .modalOverlay {
   position: fixed;
   top: 0;
@@ -82,14 +79,12 @@
   color: red;
 }
 
-/* List wrapper */
 .billingItemsList {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-/* Each “card” is a bordered rectangle that can expand */
 .billingCard {
   border: 1px solid #ccc;
   border-radius: 6px;
@@ -106,7 +101,6 @@
   background-color: #fbfbfb;
 }
 
-/* Header row inside each card */
 .billingCardHeader {
   display: flex;
   justify-content: space-between;
@@ -114,7 +108,6 @@
   padding: 12px 16px;
 }
 
-/* Summary text (service + subtotal) inside header */
 .cardSummary {
   display: flex;
   gap: 16px;
@@ -129,7 +122,6 @@
   font-weight: 600;
 }
 
-/* EDIT button on the right */
 .editButton {
   background-color: #3498db;
   border: none;
@@ -145,7 +137,6 @@
   background-color: #2980b9;
 }
 
-/* Expanded details shown when card is “open” */
 .billingCardDetails {
   padding: 0 16px 12px 16px;
   border-top: 1px solid #eee;
@@ -155,4 +146,231 @@
 
 .billingCardDetails div {
   margin-top: 6px;
+}
+
+.inputGroup {
+  margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+}
+
+.buttonContainer {
+  margin-top: 20px;
+  text-align: right; 
+}
+
+.createBillingButton {
+  background-color: #0078d4;
+  color: #fff;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.2s ease;
+}
+
+.createBillingButton:hover {
+  background-color: #005a9e;
+}
+
+
+.patientBox {
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.billingMeta {
+  background-color: #f2f2f2;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.noItems {
+  font-style: italic;
+  color: #666;
+  margin-left: 16px;
+}
+
+.loadingText,
+.errorText {
+  text-align: center;
+  margin-top: 40px;
+  font-size: 1rem;
+}
+
+
+
+
+
+
+/* UPDATES */
+/* src/components/Billing/BillingItemsOfThatBill.module.css */
+
+.billingContainer {
+  padding: 24px;
+  max-width: 800px;
+  margin: 0 auto;
+  font-family: Arial, sans-serif;
+}
+
+.billingHeader {
+  font-size: 1.5rem;
+  margin-bottom: 16px;
+}
+
+.statusBadge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  color: white;
+}
+
+.unpaid {
+  background-color: #e74c3c;
+}
+
+.paid {
+  background-color: #2ecc71;
+}
+
+/* Patient toggle button */
+.patientToggleContainer {
+  margin-bottom: 12px;
+}
+
+.patientToggleButton {
+  background-color: #3498db;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  font-size: 0.95rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.patientToggleButton:hover {
+  background-color: #2980b9;
+}
+
+/* Patient info box (hidden by default, shown when expanded) */
+.patientBox {
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.billingMeta {
+  background-color: #f2f2f2;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.openModalButton {
+  background-color: #8e44ad;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  margin-bottom: 16px;
+  font-size: 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.openModalButton:hover {
+  background-color: #732d91;
+}
+
+.billingItemsList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.billingCard {
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: box-shadow 0.2s ease, background-color 0.3s ease;
+  background-color: #fff;
+}
+
+.billingCard:hover {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.expanded {
+  background-color: #fbfbfb;
+}
+
+.billingCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+}
+
+.cardSummary {
+  display: flex;
+  gap: 16px;
+  font-size: 1rem;
+}
+
+.serviceText {
+  font-weight: 500;
+}
+
+.quantityText {
+  font-weight: 600;
+}
+
+.editButton {
+  background-color: #3498db;
+  border: none;
+  color: white;
+  padding: 6px 12px;
+  font-size: 0.9rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.editButton:hover {
+  background-color: #2980b9;
+}
+
+.billingCardDetails {
+  padding: 0 16px 12px 16px;
+  border-top: 1px solid #eee;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.billingCardDetails div {
+  margin-top: 6px;
+}
+
+.noItems {
+  font-style: italic;
+  color: #666;
+  margin-left: 16px;
+}
+
+.loadingText,
+.errorText {
+  text-align: center;
+  margin-top: 40px;
+  font-size: 1rem;
 }

@@ -3,11 +3,11 @@ from rest_framework import status
 from django.db import transaction
 from django.db.models import Q
 
-from .serializers import UserSerializer, PatientSerializer, UserLogSerializer, BillingCreateSerializer, PatientServiceSerializer, BillingItemSerializer, BillingSerializer, BillingSerializerNoList, Billing_PatientInfo_Serializer
+from .serializers import UserSerializer, PatientSerializer, UserLogSerializer, BillingCreateSerializer, ServiceSerializer, PatientServiceSerializer, BillingItemSerializer, BillingSerializer, BillingSerializerNoList, Billing_PatientInfo_Serializer
 
 
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from .models import User, Patient, UserLog, Billing, BillingItem, BillingOperatorLog, PatientService
+from .models import User, Patient, UserLog, Billing, BillingItem, BillingOperatorLog, PatientService, Service
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -408,6 +408,103 @@ def update_billing(request, pk):
 
     #                             #id of that PATIENT
     # path('billings/add-billing-item/<int:pk>', views.create_bill_item, name='create_billing_item'),
+
+@api_view(['PUT'])
+@permission_classes([IsAdmin | IsTeller])
+def edit_bill_item(request, billing_pk, item_pk):
+
+    #get the parent Billing
+    billing = get_object_or_404(Billing, code=billing_pk)
+
+    #STRICT! only BillingItem that belongs to that Billing
+    billing_item = get_object_or_404(BillingItem, id=item_pk, billing=billing)
+
+    #build or reuse patientService record
+    service_id = request.data.get('service')
+    quantity = request.data.get('quantity', 1)
+    cost_at_time = request.data.get('cost_at_time')
+
+    if service_id is None or cost_at_time is None:
+        return Response(
+            {"detail": "Both 'service' and 'cost_at_time' are required."},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    existing_patient_service = PatientService.objects.filter(
+        patient=billing.patient,
+        service__id=service_id,
+        quantity=quantity,
+        cost_at_time=cost_at_time
+        ).first()
+    
+
+
+    #use existing or build new one... save data baka i deploy aws
+    
+    if existing_patient_service:
+        patient_service = existing_patient_service
+    else:
+                # SAMPLE DATA INPUT
+                #  "service": 1,
+                #  "quantity": 1,
+                #  "cost_at_time": 2000
+
+
+        # iff theres a PatientService for (patient, service) but different qty/cost
+        conflict = PatientService.objects.filter(
+            patient=billing.patient,
+            service__id=service_id
+        ).first()
+
+        if conflict:
+            # update the existing conflict record to the new qty & cost
+            conflict.quantity = quantity
+            conflict.cost_at_time = cost_at_time
+            conflict.save()
+            patient_service = conflict
+        else:
+            #Else, create a new PatientService
+            patient_Service_data = {
+                'patient': billing.patient.id,
+                'service': service_id,
+                'quantity': quantity,
+                'cost_at_time': cost_at_time
+            }
+            patient_service_serializer = PatientServiceSerializer(data=patient_Service_data)
+            if not patient_service_serializer.is_valid():
+                return Response(patient_service_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
+            patient_service = patient_service_serializer.save()
+
+
+    #update the BillingItem to point to this PatientService
+    billing_item.service_availed = patient_service
+    # PS: quantity and subtotal on BillingItem are recalculated in BillingItem.save()
+    billing_item.save()
+
+    serializer = BillingItemSerializer(billing_item)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+    
+
+
+@api_view(['GET'])
+@permission_classes([IsAdmin | IsTeller])
+def get_bill_item(request, billing_pk, item_pk):
+    """
+    Retrieve a single BillingItem that belongs to a specific Billing.
+    URL: GET /api/billings/{billing_pk}/items/{item_pk}/edit
+    """
+    # 1) Fetch the parent Billing by its ID (billing_pk)
+    billing = get_object_or_404(Billing, code=billing_pk)
+
+    # 2) Fetch the BillingItem only if it belongs to that Billing
+    billing_item = get_object_or_404(BillingItem, id=item_pk, billing=billing)
+
+    # 3) Serialize and return
+    serializer = BillingItemSerializer(billing_item)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
 @api_view(['POST'])
 @permission_classes([IsAdmin | IsTeller])
 def create_bill_item(request, pk):
@@ -464,6 +561,33 @@ def create_bill_item(request, pk):
     return Response(patient_service_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+@api_view(['GET'])
+@permission_classes([IsAdmin | IsAuthenticated])
+def search_service(request):
+    query = request.query_params.get('q', '').strip()
+    if not query:
+        
+        return Response([], status=status.HTTP_200_OK)
+    
+    try:
+        services = Service.objects.filter(
+            Q(name__icontains=query)
+        )[:10] 
+
+        serializer = ServiceSerializer(services, many=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    except Exception as e:
+        print(e)
+
+        return Response(
+            {"error": "Something went wrong while searching patients", "details": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+     
 
 
 
@@ -541,6 +665,32 @@ def search_billings(request):
             {"error": "Something went wrong while searching bills", "details": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+
+
+
+
+@api_view(['GET'])
+@permission_classes([IsAdmin | IsTeller]) 
+def get_billing_item(request, pk):
+    
+    
+    try:
+        billing_item = BillingItem.objects.filter(id=pk).first()
+
+        serialized_billing_item = BillingItemSerializer(billing_item)
+
+        return Response(serialized_billing_item.data, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        return Response(
+            {"error": "Something went wrong while fetching billing_item", "details": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+    
+
+
+
+
 
 
 

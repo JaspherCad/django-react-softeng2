@@ -113,13 +113,40 @@ class PatientServiceSerializer(serializers.ModelSerializer):
 
 
 class BillingItemSerializer(serializers.ModelSerializer):
+    service_name = serializers.SerializerMethodField(read_only=True)
+    service_id = serializers.ReadOnlyField(source='service_availed.service.id')
+
+
 
     class Meta:
         model = BillingItem
-        fields = ['id', 'billing', 'service_availed', 'quantity', 'subtotal']
+        fields = ['id', 'billing', 'service_availed', "service_id", 'service_name', 'quantity', 'subtotal']
         extra_kwargs = {
-            'subtotal': {'read_only': True},  # Ensure subtotal is read-only
+            'subtotal': {'read_only': True},  
         }
+
+    def get_service_name(self, obj):
+        
+        if obj.service_availed and obj.service_availed.service:
+            return obj.service_availed.service.name
+        return None
+     
+class BillingItemCreateSerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        model = BillingItem
+        fields = ['billing', 'service_availed', 'quantity', 'subtotal']  
+        extra_kwargs = {
+            'status': {'default': 'Unpaid'},
+            'created_by': {'read_only': True},
+            'operator': {'read_only': True},
+        }
+
+    #OVERRIDING CREATE to replace it by BillingItem.save()
+    def create(self, validated_data):
+        item = BillingItem.objects.create(**validated_data)
+        return item
+
 
 
 from rest_framework import serializers
