@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 
-import { getBillingByID, listOfBillingsAPI, listOfPatientAPI, SearchBillingsApi } from '../../api/axios';
+import { getBillingByID, SearchBillingsApi } from '../../api/axios';
 import SearchBar from '../AngAtingSeachBarWIthDropDown/index'
 import styles from './Billing.module.css';
 import BillingFormModal from './BillingFormModal';
@@ -9,6 +9,7 @@ import BillingFormModal from './BillingFormModal';
 import AddBillingModalV2 from './AddBillingModalV2.jsx';
 import BillingItems from './BillingItems.jsx';
 import BillingItemsOfThatBill from './BillingItems.jsx';
+import TransactionsList from './TransactionsList.jsx';
 const Billing = () => {
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true); // To manage loading state
@@ -21,42 +22,42 @@ const Billing = () => {
 
 
   //for patients fetch
-  const [patients, setPatients] = useState([]); 
+  const [patients, setPatients] = useState([]);
   const [billings, setBillings] = useState([]);//billings of patient
   const [listOfBillings, setListOfBillings] = useState([]); // billing lists inside billing class
 
   const navigate = useNavigate();
 
 
-      //pseudo
+  //pseudo
   //call api
   //copy the item name from dummy data to actual data for example
-    //in backend we have 'name' instead of 'patient_id' so patient_id:data.name ????
-    // { SAMPLE BACKEND DATA
-    //     "id": 1,
-    //     "code": "R9PKN",
-    //     "name": "Filmor Sarmiento",
-    //     "status": "Admitted",
-    //     "admission_date": "2025-04-29",
-    //     "current_condition": "FUCKED UP",
-    //     "date_of_birth": "1977-04-29",
-    //     "address": "block 1 lot 38, Hinapao Street",
-    //     "discharge_date": "2025-04-30",
-    //     "phone": "09357773518",
-    //     "email": "cadelinafilmor1971@gmail.com",
-    //     "emergency_contact_name": "Filmor Sarmiento",
-    //     "emergency_contact_phone": "09357773518",
-    //     "is_active": "Active"
-    // },
+  //in backend we have 'name' instead of 'patient_id' so patient_id:data.name ????
+  // { SAMPLE BACKEND DATA
+  //     "id": 1,
+  //     "code": "R9PKN",
+  //     "name": "Filmor Sarmiento",
+  //     "status": "Admitted",
+  //     "admission_date": "2025-04-29",
+  //     "current_condition": "FUCKED UP",
+  //     "date_of_birth": "1977-04-29",
+  //     "address": "block 1 lot 38, Hinapao Street",
+  //     "discharge_date": "2025-04-30",
+  //     "phone": "09357773518",
+  //     "email": "cadelinafilmor1971@gmail.com",
+  //     "emergency_contact_name": "Filmor Sarmiento",
+  //     "emergency_contact_phone": "09357773518",
+  //     "is_active": "Active"
+  // },
 
-    //api function is listOfPatientAPI
-
-
-    
+  //api function is 
 
 
 
-  
+
+
+
+
 
 
   const dummyBillingData = [
@@ -172,6 +173,8 @@ const Billing = () => {
               setSearchTerm={setSearchTerm}
               isDropdownVisible={isDropdownVisible}
               setIsDropdownVisible={setIsDropdownVisible}
+              maxDropdownHeight="500px"
+
             />
           </div>
         </div>
@@ -251,6 +254,7 @@ const Billing = () => {
         {/* <Route path="add" element={<AddBillingModalV2 />} /> */}
         {/* <Route path="edit/:id" element={<EditBillingForm />} /> */}
         <Route path="billing_items_of_billing/:billId" element={<BillingItemsOfThatBill />} />
+        <Route path="lists_transactions" element={<TransactionsList />} />
       </Routes>
     </>
 

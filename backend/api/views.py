@@ -14,6 +14,7 @@ from rest_framework.permissions import IsAuthenticated
 from .permissions import HasRole  # Example custom permission
 from django.shortcuts import get_object_or_404
 from .permissions import IsTeller, IsAdmin, IsDoctor, IsNurse, IsReceptionist  # Use the subclass
+from rest_framework.pagination import PageNumberPagination
 
 from rest_framework.exceptions import (
     APIException,
@@ -92,18 +93,36 @@ def patient_list(request):
         try:
             
             #1: go to DATABASE (orm) then FETCH all the object (IN OUR CASE PATIENT)
-            list_of_patient = Patient.objects.filter(is_active='Active')
+            list_of_patient_query = Patient.objects.filter(is_active='Active').order_by('-admission_date')
+
+            #Initialize paginator
+            paginator = PageNumberPagination()
+            paginator.page_size = 2
+
+
+            #paginate queryset
+            page = paginator.paginate_queryset(list_of_patient_query, request)
 
             #2: ok na dito... so we have to SERIALIZE the list_of_patient (PYTHON OBJECT)
             #   into javascript object... how?? look below
-            serialized_list_of_patient = PatientSerializer(list_of_patient, many=True)
+
+
+            #serialize paginated data
+            if page is not None:
+                serialized_list_of_patient = PatientSerializer(page, many=True)
+                return paginator.get_paginated_response(serialized_list_of_patient.data)
+
 
             
-            # Log the action
+
+            
+            # Log the action (automatic sa triggers)
             
 
-            #3: return the SERIALIZED DATA to frontend as API... or just plain text.
-            return Response(serialized_list_of_patient.data, status=status.HTTP_200_OK)
+            
+            #basecase// if pagination fails ()=> return normal querySet
+            serializer = BillingSerializerNoList(list_of_patient_query, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
         
         except Exception as e:
             return Response(
@@ -694,22 +713,36 @@ def get_billing_item(request, pk):
 
 
 
-
+#PAGINATION FORMAT SAMPLE
 @api_view(['GET'])
 @permission_classes([IsAdmin | IsTeller])
 def get_bills(request):
-    #get billing thru link
-
+#   /api/billings/list
+#   /api/billings/list?page=2
     try:
-        list_of_bills = Billing.objects.all()
-
-        serialized_list_of_bills = BillingSerializerNoList(list_of_bills, many=True)
-
-        return Response(serialized_list_of_bills.data, status=status.HTTP_200_OK)
+        #get base queryset
+        queryset = Billing.objects.all().order_by('-date_created')
         
+        #Initialize paginator
+        paginator = PageNumberPagination()
+        paginator.page_size = 3
+        
+        #paginate queryset
+        page = paginator.paginate_queryset(queryset, request)
+        
+        #serialize paginated data
+        if page is not None:
+            serializer = BillingSerializerNoList(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
+            
+        #basecase// if pagination fails ()=> return normal querySet
+        serializer = BillingSerializerNoList(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+                            #   /api/billings/list
+                            #   /api/billings/list?page=2   
     except Exception as e:
         return Response(
-            {"error": "Something went wrong while fetching patients", "details": str(e)},
+            {"error": "Something went wrong while fetching bills", "details": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
@@ -718,8 +751,41 @@ def get_bills(request):
 @permission_classes([IsAdmin | IsTeller])
 def get_bills_with_bill_items(request):
     try:
-        bills = Billing.objects.prefetch_related('billing_items').all()
-        serializer = BillingSerializer(bills, many=True)
+        bills_queryset = Billing.objects.prefetch_related('billing_items').all().order_by('-date_created')
+
+        #Initialize paginator
+        paginator = PageNumberPagination()
+        default_page_size = 3
+        page_size_param = request.query_params.get('pageSize')
+
+
+        if page_size_param:
+            try:
+                #pageSize to an integer then lower bound check
+                parsed_page_size = int(page_size_param)
+                if parsed_page_size > 0:
+                    paginator.page_size = parsed_page_size
+                else:
+                    paginator.page_size = default_page_size
+            except ValueError:
+                paginator.page_size = default_page_size
+        else:
+            paginator.page_size = default_page_size
+
+        
+        #paginate queryset
+        page = paginator.paginate_queryset(bills_queryset, request)
+
+
+        #serialize paginated data
+        if page is not None:
+            serializer = BillingSerializer(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
+
+
+        #basecase// if pagination fails ()=> return normal querySet
+
+        serializer = BillingSerializer(bills_queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     except Exception as e:
         return Response(

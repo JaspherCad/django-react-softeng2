@@ -105,7 +105,7 @@ class Patient(models.Model):
         ('Inactive', 'Inactive'),
         ('Deleted', 'Deleted'),
     ]
-
+#save state save state save state save state!   #   $   % anti cntrl z
     code = ShortUUIDField(
         length=5,
         alphabet="ABCDEFGHJKMNPQRSTUVWXYZ23456789",

@@ -34,14 +34,16 @@
 }
 
 :global(.react-calendar__tile--now) {
-  background: #ffefc2; /* e.g., a light yellow background */
-  border: 2px solid #ffa500; /* highlight border in orange */
+  background: #ffefc2;
+  /* e.g., a light yellow background */
+  border: 2px solid #ffa500;
+  /* highlight border in orange */
   font-weight: bold;
 }
 
 
 
-.dashboardContainer{
+.dashboardContainer {
   border: 5px solid gold;
 
   height: 100%;
@@ -54,14 +56,16 @@
   overflow-y: auto;
 
 }
-.metricsContainer{
+
+.metricsContainer {
   display: grid;
   /* height: 20%; */
   /* grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); */
-  grid-template-columns: repeat(3, 1fr); /* Three columns */
-  gap: 10px;  
+  grid-template-columns: repeat(3, 1fr);
+  /* Three columns */
+  gap: 10px;
   border: 2px solid blue;
-  
+
 }
 
 .card {
@@ -70,11 +74,15 @@
   padding: 15px;
   text-align: center;
   display: flex;
-  justify-content: space-between; /* Space between the content */
-  align-items: center; /* Center vertically */
+  justify-content: space-between;
+  /* Space between the content */
+  align-items: center;
+  /* Center vertically */
 
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow for design */
-  background-color: #f9f9f9; /* Light background for the card */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  /* Subtle shadow for design */
+  background-color: #f9f9f9;
+  /* Light background for the card */
 }
 
 .cardNumber {
@@ -91,39 +99,101 @@
 
 .cardContent {
   display: flex;
-  flex-direction: column; /* Stack number and text vertically */
-  align-items: flex-start; /* Align content to the left */
+  flex-direction: column;
+  /* Stack number and text vertically */
+  align-items: flex-start;
+  /* Align content to the left */
 }
 
 
 .cardIcon {
   width: 30px;
   height: 30px;
-  background-color: #e0e0e0; /* Placeholder background for the icon */
+  background-color: #e0e0e0;
+  /* Placeholder background for the icon */
   border-radius: 50%;
   display: inline-block;
 }
 
 
-.doctorDashboardContainer{
-  flex: 1;  /* Take remaining space */
+.doctorDashboardContainer {
+  flex: 1;
+  /* Take remaining space */
   display: grid;
   grid-template-columns: 1fr 3fr 2fr;
-  gap: 10px;  
+  gap: 10px;
   border: 2px solid green;
-  overflow-y: auto; /* Enable scroll if content overflows */
+  overflow-y: auto;
+  /* Enable scroll if content overflows */
 }
 
 
 .patientTableContainer {
   padding: 10px;
   border: 2px solid purple;
+  max-height: 200px;
+  overflow-y: auto;
 }
 
-.historyContainer{
+.patientTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.patientTable th,
+.patientTable td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  font-size: 0.9rem;
+}
+
+.patientTable th {
+  background-color: #f4f4f4;
+  text-align: left;
+}
+
+.patientTable tr:nth-child(even) {
+  background-color: #fafafa;
+}
+
+.patientTable tr:hover {
+  background-color: #f1f1f1;
+}
+
+.btnEdit,
+.btnTrash {
+  padding: 4px 8px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btnEdit {
+  background-color: #3498db;
+  color: #fff;
+}
+
+.btnTrash {
+  background-color: #e74c3c;
+  color: #fff;
+}
+
+.btnEdit:hover {
+  background-color: #2980b9;
+}
+
+.btnTrash:hover {
+  background-color: #c0392b;
+}
+
+.errorText {
+  color: #e74c3c;
+  margin-bottom: 8px;
+}
+.historyContainer {
   border: 2px solid red;
- 
-  
+
+
 }
 
 
@@ -144,33 +214,44 @@
 
 
 .doctorHistoryContainer {
-  border: 2px solid #007ACC; /* a distinct border to highlight the section */
+  border: 2px solid #007ACC;
+  /* a distinct border to highlight the section */
   padding: 15px;
   max-height: 100%;
-  overflow-y: auto; /* enables scrolling if too many events */
+  overflow-y: auto;
+  /* enables scrolling if too many events */
   background-color: #fff;
   border-radius: 8px;
 
-  flex: 1;        /* Allow this container to take available space */
-  min-width: 0;   /* Prevent overflow of long text strings */
-/* Firefox scrollbar styling */
-scrollbar-width: thin; /* Makes scrollbar thin */
-scrollbar-color: #bbb transparent; /* Thumb and track colors for Firefox */
+  flex: 1;
+  /* Allow this container to take available space */
+  min-width: 0;
+  /* Prevent overflow of long text strings */
+  /* Firefox scrollbar styling */
+  scrollbar-width: thin;
+  /* Makes scrollbar thin */
+  scrollbar-color: #bbb transparent;
+  /* Thumb and track colors for Firefox */
 }
 
 /* WebKit-based browsers scrollbar styling */
 .doctorHistoryContainer::-webkit-scrollbar {
-width: 5px; /* Adjust width to be thin */
+  width: 5px;
+  /* Adjust width to be thin */
 }
 
 .doctorHistoryContainer::-webkit-scrollbar-track {
-background: transparent; /* Transparent track or you can choose a light color */
+  background: transparent;
+  /* Transparent track or you can choose a light color */
 }
 
 .doctorHistoryContainer::-webkit-scrollbar-thumb {
-background-color: #bbb; /* Color for the scrollbar thumb */
-border-radius: 10px;    /* Rounded corners */
-border: 1px solid transparent; /* Optional: adds spacing around the thumb */
+  background-color: #bbb;
+  /* Color for the scrollbar thumb */
+  border-radius: 10px;
+  /* Rounded corners */
+  border: 1px solid transparent;
+  /* Optional: adds spacing around the thumb */
 }
 
 
@@ -204,7 +285,8 @@ border: 1px solid transparent; /* Optional: adds spacing around the thumb */
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background-color: #e0e0e0; /* placeholder color */
+  background-color: #e0e0e0;
+  /* placeholder color */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -238,7 +320,7 @@ border: 1px solid transparent; /* Optional: adds spacing around the thumb */
 
 
 
-.graphContainer{
+.graphContainer {
   border: 2px solid red;
   height: 100%;
 }
@@ -263,7 +345,8 @@ border: 1px solid transparent; /* Optional: adds spacing around the thumb */
   overflow: hidden;
   padding: 10px;
   /* You can position it within its parent accordingly */
-  margin-left: auto;         /* For a right-aligned look if the parent uses flex or grid */
+  margin-left: auto;
+  /* For a right-aligned look if the parent uses flex or grid */
 }
 
 /* Override default react-calendar styles for a cleaner look */
@@ -271,7 +354,7 @@ border: 1px solid transparent; /* Optional: adds spacing around the thumb */
   width: 100%;
   border: none;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  
+
 }
 
 /* Calendar navigation (header with month and year title & arrows) */
@@ -328,13 +411,18 @@ border: 1px solid transparent; /* Optional: adds spacing around the thumb */
 
 .selectedDate {
   position: absolute;
-  top: 10%; /* Moves marker to the vertical center */
-  left: 50%; /* Moves marker to the horizontal center */
-  transform: translate(-50%, -90%); /* Ensures the marker is perfectly centered */
+  top: 10%;
+  /* Moves marker to the vertical center */
+  left: 50%;
+  /* Moves marker to the horizontal center */
+  transform: translate(-50%, -90%);
+  /* Ensures the marker is perfectly centered */
   width: 8px;
   height: 8px;
-  background-color: blue; /* Red dot */
-  border-radius: 50%; /* Makes it a circle */
+  background-color: blue;
+  /* Red dot */
+  border-radius: 50%;
+  /* Makes it a circle */
 }
 
 
@@ -390,25 +478,31 @@ border: 1px solid transparent; /* Optional: adds spacing around the thumb */
 
 
 .tileParent {
-  position: relative; /* Required for positioning child elements */
+  position: relative;
+  /* Required for positioning child elements */
 }
 
 
 .tileParentSelectedDate {
-  position: relative; 
+  position: relative;
   background-color: red;
 }
 
 
 .eventMarker {
   position: absolute;
-  top: 10%; /* Moves marker to the vertical center */
-  left: 50%; /* Moves marker to the horizontal center */
-  transform: translate(-50%, -90%); /* Ensures the marker is perfectly centered */
-  width: 8px;
-  height: 8px;
-  background-color: #dc3545; /* Red dot */
-  border-radius: 50%; /* Makes it a circle */
+  top: 10%;
+  /* Moves marker to the vertical center */
+  left: 50%;
+  /* Moves marker to the horizontal center */
+  transform: translate(-50%, -90%);
+  /* Ensures the marker is perfectly centered */
+  width: 15px;
+  height: 15px;
+  background-color: #dc3545;
+  /* Red dot */
+  border-radius: 50%;
+  /* Makes it a circle */
 }
 
 
@@ -420,25 +514,30 @@ border: 1px solid transparent; /* Optional: adds spacing around the thumb */
     grid-template-rows: auto auto auto;
     gap: 10px;
   }
-  
-  .graphContainer, .doctorHistoryContainer, .calendarContainer {
+
+  .graphContainer,
+  .doctorHistoryContainer,
+  .calendarContainer {
     /* Ensure each container expands to fit its content */
     width: 100%;
     overflow-x: hidden;
     overflow-y: auto;
   }
-  .calendarContainer{
+
+  .calendarContainer {
     display: flex;
     gap: 5px;
   }
 
-  .graphContainer{
+  .graphContainer {
     order: 1;
   }
-  .calendarContainer{
+
+  .calendarContainer {
     order: 2;
   }
-  .doctorHistoryContainer{
+
+  .doctorHistoryContainer {
     order: 3;
     display: none;
   }
@@ -454,9 +553,9 @@ border: 1px solid transparent; /* Optional: adds spacing around the thumb */
     border-top: 1px solid #ddd;
     padding: 10px;
     border: 2px solid black;
-  
+
   }
-  
+
   .eventItem {
     display: flex;
     gap: 1px;
@@ -470,34 +569,54 @@ border: 1px solid transparent; /* Optional: adds spacing around the thumb */
     color: #28a745;
     min-width: 25px;
   }
-  
+
   .eventContent {
     flex: 1;
     padding: 0;
     margin: 0;
   }
-  
+
   .eventName {
     font-size: 14px;
     color: #333;
-    
+
   }
-  
+
   .eventPatient {
     font-size: 12px;
     color: #666;
   }
-  
+
   .noEvents {
     text-align: center;
     color: #999;
     padding: 20px;
     font-style: italic;
   }
-  
-  
+
+
 }
 
-@media screen and (max-width: 768px) {
-  /*  */
+@media screen and (max-width: 1000px) {
+  .eventMarker {
+    position: absolute;
+    top: 50%;
+    /*vertical center */
+    left: 50%;
+    /*horizontal center */
+    transform: translate(-50%, -90%);
+    /*perfectly centered */
+    width: 8px;
+    height: 8px;
+    background-color: #dc3545;
+    border-radius: 50%;
+    z-index: 100000;
+  }
+
+  .patientTableContainer {
+  padding: 10px;
+  border: 2px solid purple;
+  max-height: 150px;
+  overflow-y: auto;
+}
 }

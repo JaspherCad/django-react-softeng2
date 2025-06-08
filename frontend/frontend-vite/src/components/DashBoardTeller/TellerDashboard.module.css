@@ -1,0 +1,184 @@
+.container {
+  padding: 20px;
+  font-family: Arial, sans-serif;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.userInfo span {
+  margin-right: 12px;
+}
+
+.logout {
+  background: transparent;
+  border: none;
+  color: #e74c3c;
+  cursor: pointer;
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin: 20px 0;
+}
+
+.card {
+  background: #fff;
+  border-radius: 6px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  padding: 16px;
+  text-align: center;
+}
+
+.number {
+  font-size: 2rem;
+  color: #007acc;
+}
+
+.label {
+  margin-top: 6px;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.searchbars {
+  display: flex;
+  flex: 2;
+  align-items: flex-start;
+  justify-content: flex-start;
+  max-height: 350px;
+  height: 350px;
+  gap: 8px;
+ 
+}
+
+.toolbar {
+  align-self: flex-start;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 12px;
+  margin-bottom: 20px;
+  background-color: #2ecc71;
+  padding: 12px;
+  border-radius: 6px;
+
+}
+
+.primaryBtn {
+  background-color: #3498db;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  .primaryBtn {
+  flex: 0 0 auto;      /* no grow, no shrink */
+}
+}
+
+.calendar {
+  border: none;
+  box-shadow: none;
+  flex: 1;             
+}
+
+.recentTransactions {
+  margin-bottom: 24px;
+}
+
+.tableWrapper {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  font-size: 0.9rem;
+}
+
+.table th {
+  background-color: #f4f4f4;
+}
+
+.linkBtn {
+  margin-top: 8px;
+  background: none;
+  border: none;
+  color: #007acc;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.bottom {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+}
+
+.chartContainer,
+.quickActions {
+  background: #fff;
+  border-radius: 6px;
+  padding: 16px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.quickActions button {
+  display: block;
+  width: 100%;
+  margin-bottom: 8px;
+  background: #2ecc71;
+  border: none;
+  color: white;
+  padding: 8px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.quickActions button:last-child {
+  margin-bottom: 0;
+}
+
+.smallBtn {
+  background: #007acc;
+  border: none;
+  color: #fff;
+  padding: 4px 8px;
+  margin-right: 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+/* …existing styles above… */
+
+
+
+.searchInput {
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  flex: 1;
+  /* allow it to grow */
+  max-width: 200px;
+}
+
+.calendar {
+  border: none;
+  box-shadow: none;
+}
+
+/* …rest of your styles… */

@@ -185,6 +185,7 @@ class BillingSerializer(serializers.ModelSerializer):
 # }
 
     # Exactly. The related_name attribute in a model’s foreign key is used to create a reverse relationship. This reverse relationship lets you access all instances of the related model—even though you didn’t explicitly declare a field in the first model to store that data.
+    patient = Billing_User_Serializer(read_only=True)
     billing_items = BillingItemSerializer(many=True, read_only=True)
     created_by = UserSerializer(read_only=True)
     operator = UserSerializer(many=True, read_only=True)

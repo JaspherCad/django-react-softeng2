@@ -17,7 +17,7 @@ urlpatterns = [
     path('auth/check', views.auth_check, name='test-doctor-view'),
 
 
-    # CRUD FOR PATIENTS
+    # CRUD FOR PATIENTS 
     path('patients/list', views.patient_list, name='patient_list'),
     path('patients/create', views.patient_create, name='patient_create'),
     path('patients/<int:pk>', views.patient_details, name='patient_get_specific'),

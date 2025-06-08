@@ -13,7 +13,7 @@ import PropTypes from 'prop-types'
 
 //onSelectSuggestion(filtered) =>???
 
-const SearchBar = ({ searchTerm, setSearchTerm, placeholder, onSelectSuggestion, suggestedOutput = [], searchApi, isIDIncludedInResultSuggestion, isDropdownVisible, setIsDropdownVisible }) => {
+const SearchBar = ({ searchTerm, setSearchTerm, placeholder, onSelectSuggestion, suggestedOutput = [], searchApi, isIDIncludedInResultSuggestion, isDropdownVisible, setIsDropdownVisible, maxDropdownHeight = '300px', }) => {
   //suggestedOutput is list of string
   //searchTerm, setSearchTerm =>  has been moved to parent
   const [results, setResults] = useState([]); // backend data
@@ -71,7 +71,8 @@ const SearchBar = ({ searchTerm, setSearchTerm, placeholder, onSelectSuggestion,
         style={{
           padding: '10px',
           borderBottom: '1px solid #ddd',
-          cursor: 'pointer'
+          cursor: 'pointer',
+          backgroundColor: 'green'
         }}
       >
 
@@ -166,7 +167,7 @@ const SearchBar = ({ searchTerm, setSearchTerm, placeholder, onSelectSuggestion,
 
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+    <div style={{ position: 'relative', width: '100%' }}>
       <input
         type="text"
         placeholder={placeholder || "Search..."}
@@ -181,17 +182,21 @@ const SearchBar = ({ searchTerm, setSearchTerm, placeholder, onSelectSuggestion,
       {isDropdownVisible && results.length > 0 && (
         <ul
           style={{
-            listStyle: 'none',
-            padding: 0,
-            margin: 0,
-            border: '1px solid #ddd',
-            borderTop: 'none',
-            height: 'auto',
-            overflowY: 'auto',
-            backgroundColor: '#fff',
-            position: 'relative',
+            position: 'absolute',
+            top: 'calc(100% + 2px)',
+            left: 0,
             width: '100%',
-            zIndex: 1000
+            
+            maxHeight: maxDropdownHeight,
+
+            overflowY: 'auto',
+            margin: 0,
+            padding: 0,
+            listStyle: 'none',
+            border: '1px solid #ddd',
+            backgroundColor: '#fff',
+            zIndex: 1000,
+            boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
           }}
         >
           {renderOnlySuggestedOutput()}
@@ -215,5 +220,7 @@ SearchBar.propTypes = {
   isIDIncludedInResultSuggestion: PropTypes.bool,
   isDropdownVisible: PropTypes.bool.isRequired,
   setIsDropdownVisible: PropTypes.func.isRequired,
+  maxDropdownHeight: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+
 };
 

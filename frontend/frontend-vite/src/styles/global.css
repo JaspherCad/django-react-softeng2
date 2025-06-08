@@ -64,7 +64,7 @@ body {
 @media (max-width: 1024px) {
   .container-main {
     margin-left: 0;
-    padding: 60px 15px 15px; /* Added top padding for menu button */
+    /* padding: 60px 15px 15px; Added top padding for menu button */
   }
 
   .app-layout {

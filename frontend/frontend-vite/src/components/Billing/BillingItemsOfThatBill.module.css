@@ -9,7 +9,11 @@
   font-size: 1.5rem;
   margin-bottom: 16px;
 }
-
+.billingButtons{
+  /* background-color: red; */
+  display: flex;
+  justify-content: space-between;
+}
 .statusBadge {
   display: inline-block;
   padding: 2px 8px;
@@ -64,7 +68,6 @@
   max-width: 90%;
   max-height: 80vh;
   height: auto;
-  overflow-y: auto;
   transition: height 0.3s ease;
 }
 

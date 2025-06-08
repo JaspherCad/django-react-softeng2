@@ -6,8 +6,11 @@ import styles from './BillingItemsOfThatBill.module.css';
 import BillingItemsModal from './BillingItemsModal';
 import { getBillingByID, getBillingItemByIdAPI } from '../../api/axios';
 
-const BillingItemsOfThatBill = () => {
-  const { billId } = useParams();
+const BillingItemsOfThatBill = ({ modalBillId, isModal = false }) => {
+
+  // IF we're in modal mode use the prop... ELSE use URL param:
+  const { billId: routeBillId } = useParams();
+  const billId = isModal ? modalBillId : routeBillId;
 
   const [billData, setBillData] = useState(null);    // fetched billing object
   const [error, setError] = useState(null);
@@ -21,7 +24,7 @@ const BillingItemsOfThatBill = () => {
   const [selectedBillingItem, setSelectedBillingItem] = useState(null);
 
 
-   // This “reloadCount” is our simple trigger. parent(this) refetches... triggered on MODAL
+  // This “reloadCount” is our simple trigger. parent(this) refetches... triggered on MODAL
   const [reloadCount, setReloadCount] = useState(0);
 
 
@@ -97,15 +100,15 @@ const BillingItemsOfThatBill = () => {
     alert(`http://127.0.0.1:8000/api/billings/${billId}/items/${billingItemId}/edit`)
 
     await getBillingItemById(billingItemId, service_id);
-      //billingItemsModal handleCreateOrUpdate for continuation
+    //billingItemsModal handleCreateOrUpdate for continuation
   }
 
   const handleAddBillingItem = () => {
     setSelectedBillingItem(null)
     setIsModalOpen(true);
 
-    
-    
+
+
   }
 
 
@@ -281,10 +284,16 @@ const BillingItemsOfThatBill = () => {
 
 
 
+      <div className={styles.billingButtons}>
 
-      <button className={styles.openModalButton} onClick={handleAddBillingItem}>
-        Add New Billing
-      </button>
+        <button className={styles.openModalButton} onClick={handleAddBillingItem}>
+          Add New Billing
+        </button>
+        <button className={styles.openModalButton} onClick={() => console.log(billData)}>
+          Generate Bill
+        </button>
+      </div>
+
 
       {isModalOpen && <BillingItemsModal
         closeModal={closeModal}
@@ -293,8 +302,8 @@ const BillingItemsOfThatBill = () => {
         error={error}
         billId={billData.id}
         billCode={billId}
-        setReloadCount={setReloadCount}  
-        
+        setReloadCount={setReloadCount}
+
       />}
 
 

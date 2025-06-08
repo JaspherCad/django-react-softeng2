@@ -20,7 +20,6 @@
     max-width: 90%;
     max-height: 80vh; 
     height: auto; 
-    overflow-y: auto;
     transition: height 0.3s ease; 
   }  
   .closeButton {
