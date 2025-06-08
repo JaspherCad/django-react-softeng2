@@ -3,17 +3,18 @@ from rest_framework import status
 from django.db import transaction
 from django.db.models import Q
 
-from .serializers import UserSerializer, PatientSerializer, UserLogSerializer, BillingCreateSerializer, PatientServiceSerializer, BillingItemSerializer, BillingSerializer, BillingSerializerNoList, Billing_PatientInfo_Serializer
+from .serializers import UserSerializer, PatientSerializer, UserLogSerializer, BillingCreateSerializer, ServiceSerializer, PatientServiceSerializer, BillingItemSerializer, BillingSerializer, BillingSerializerNoList, Billing_PatientInfo_Serializer
 
 
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from .models import User, Patient, UserLog, Billing, BillingItem, BillingOperatorLog
+from .models import User, Patient, UserLog, Billing, BillingItem, BillingOperatorLog, PatientService, Service
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from .permissions import HasRole  # Example custom permission
 from django.shortcuts import get_object_or_404
 from .permissions import IsTeller, IsAdmin, IsDoctor, IsNurse, IsReceptionist  # Use the subclass
+from rest_framework.pagination import PageNumberPagination
 
 from rest_framework.exceptions import (
     APIException,
@@ -92,18 +93,36 @@ def patient_list(request):
         try:
             
             #1: go to DATABASE (orm) then FETCH all the object (IN OUR CASE PATIENT)
-            list_of_patient = Patient.objects.filter(is_active='Active')
+            list_of_patient_query = Patient.objects.filter(is_active='Active').order_by('-admission_date')
+
+            #Initialize paginator
+            paginator = PageNumberPagination()
+            paginator.page_size = 2
+
+
+            #paginate queryset
+            page = paginator.paginate_queryset(list_of_patient_query, request)
 
             #2: ok na dito... so we have to SERIALIZE the list_of_patient (PYTHON OBJECT)
             #   into javascript object... how?? look below
-            serialized_list_of_patient = PatientSerializer(list_of_patient, many=True)
+
+
+            #serialize paginated data
+            if page is not None:
+                serialized_list_of_patient = PatientSerializer(page, many=True)
+                return paginator.get_paginated_response(serialized_list_of_patient.data)
+
 
             
-            # Log the action
+
+            
+            # Log the action (automatic sa triggers)
             
 
-            #3: return the SERIALIZED DATA to frontend as API... or just plain text.
-            return Response(serialized_list_of_patient.data, status=status.HTTP_200_OK)
+            
+            #basecase// if pagination fails ()=> return normal querySet
+            serializer = BillingSerializerNoList(list_of_patient_query, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
         
         except Exception as e:
             return Response(
@@ -406,6 +425,104 @@ def update_billing(request, pk):
 
 
 
+    #                             #id of that PATIENT
+    # path('billings/add-billing-item/<int:pk>', views.create_bill_item, name='create_billing_item'),
+
+@api_view(['PUT'])
+@permission_classes([IsAdmin | IsTeller])
+def edit_bill_item(request, billing_pk, item_pk):
+
+    #get the parent Billing
+    billing = get_object_or_404(Billing, code=billing_pk)
+
+    #STRICT! only BillingItem that belongs to that Billing
+    billing_item = get_object_or_404(BillingItem, id=item_pk, billing=billing)
+
+    #build or reuse patientService record
+    service_id = request.data.get('service')
+    quantity = request.data.get('quantity', 1)
+    cost_at_time = request.data.get('cost_at_time')
+
+    if service_id is None or cost_at_time is None:
+        return Response(
+            {"detail": "Both 'service' and 'cost_at_time' are required."},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    existing_patient_service = PatientService.objects.filter(
+        patient=billing.patient,
+        service__id=service_id,
+        quantity=quantity,
+        cost_at_time=cost_at_time
+        ).first()
+    
+
+
+    #use existing or build new one... save data baka i deploy aws
+    
+    if existing_patient_service:
+        patient_service = existing_patient_service
+    else:
+                # SAMPLE DATA INPUT
+                #  "service": 1,
+                #  "quantity": 1,
+                #  "cost_at_time": 2000
+
+
+        # iff theres a PatientService for (patient, service) but different qty/cost
+        conflict = PatientService.objects.filter(
+            patient=billing.patient,
+            service__id=service_id
+        ).first()
+
+        if conflict:
+            # update the existing conflict record to the new qty & cost
+            conflict.quantity = quantity
+            conflict.cost_at_time = cost_at_time
+            conflict.save()
+            patient_service = conflict
+        else:
+            #Else, create a new PatientService
+            patient_Service_data = {
+                'patient': billing.patient.id,
+                'service': service_id,
+                'quantity': quantity,
+                'cost_at_time': cost_at_time
+            }
+            patient_service_serializer = PatientServiceSerializer(data=patient_Service_data)
+            if not patient_service_serializer.is_valid():
+                return Response(patient_service_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
+            patient_service = patient_service_serializer.save()
+
+
+    #update the BillingItem to point to this PatientService
+    billing_item.service_availed = patient_service
+    # PS: quantity and subtotal on BillingItem are recalculated in BillingItem.save()
+    billing_item.save()
+
+    serializer = BillingItemSerializer(billing_item)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+    
+
+
+@api_view(['GET'])
+@permission_classes([IsAdmin | IsTeller])
+def get_bill_item(request, billing_pk, item_pk):
+    """
+    Retrieve a single BillingItem that belongs to a specific Billing.
+    URL: GET /api/billings/{billing_pk}/items/{item_pk}/edit
+    """
+    # 1) Fetch the parent Billing by its ID (billing_pk)
+    billing = get_object_or_404(Billing, code=billing_pk)
+
+    # 2) Fetch the BillingItem only if it belongs to that Billing
+    billing_item = get_object_or_404(BillingItem, id=item_pk, billing=billing)
+
+    # 3) Serialize and return
+    serializer = BillingItemSerializer(billing_item)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 @api_view(['POST'])
 @permission_classes([IsAdmin | IsTeller])
@@ -422,14 +539,38 @@ def create_bill_item(request, pk):
     }
     patient_service_serializer = PatientServiceSerializer(data=patient_service_data)
 
+
+    #SAVING THE PATIENTSERVICE HERE>.... dont turn into function, i want to see step by step
+
     #if valid => save then continue the creation of billing item... then service availed === patient_service_serializer
+
+    existing_patient_service = PatientService.objects.filter(
+            patient=billing.patient,
+            service=request.data.get('service'),
+            quantity=request.data.get('quantity', 1),
+            cost_at_time=request.data.get('cost_at_time')
+        ).first()
+        
+
+
+    
     if patient_service_serializer.is_valid():
-        patient_service = patient_service_serializer.save()
+        
+        if existing_patient_service:
+            patient_service = existing_patient_service
+        else:
+            patient_service = patient_service_serializer.save()
+        
+  
+            #get that patient_service 's id then save as patient_service
+            #BY findByPatient, findByService, findBy... if those matches get that patient_service data... then use it rather creating new again
+
+
 
         # Create BillingItem using the validated PatientService
         billing_item_serializer = BillingItemSerializer(data={
             'billing': billing.id,
-            'service_availed': patient_service.id,
+            'service_availed': patient_service.id, #this.id ==> can be newly created or the existing ones (review ^)
             'quantity': request.data.get('quantity', 1),
         })
         if billing_item_serializer.is_valid():
@@ -439,6 +580,62 @@ def create_bill_item(request, pk):
     return Response(patient_service_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+@api_view(['GET'])
+@permission_classes([IsAdmin | IsAuthenticated])
+def search_service(request):
+    query = request.query_params.get('q', '').strip()
+    if not query:
+        
+        return Response([], status=status.HTTP_200_OK)
+    
+    try:
+        services = Service.objects.filter(
+            Q(name__icontains=query)
+        )[:10] 
+
+        serializer = ServiceSerializer(services, many=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    except Exception as e:
+        print(e)
+
+        return Response(
+            {"error": "Something went wrong while searching patients", "details": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+     
+
+
+
+@api_view(['GET'])
+@permission_classes([IsAdmin | IsAuthenticated])
+def search_patients(request):
+
+    query = request.query_params.get('q', '').strip()
+    if not query:
+        
+        return Response([], status=status.HTTP_200_OK)
+    
+    try:
+        
+        
+        bills = Patient.objects.filter(
+            Q(code__icontains=query) |
+            Q(name__icontains=query) 
+        )[:5] 
+        serializer = PatientSerializer(bills, many=True)
+        print(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+
+        return Response(
+            {"error": "Something went wrong while searching patients", "details": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 
 
@@ -492,20 +689,60 @@ def search_billings(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAdmin | IsTeller])
-def get_bills(request):
-    #get billing thru link
-
+@permission_classes([IsAdmin | IsTeller]) 
+def get_billing_item(request, pk):
+    
+    
     try:
-        list_of_bills = Billing.objects.all()
+        billing_item = BillingItem.objects.filter(id=pk).first()
 
-        serialized_list_of_bills = BillingSerializerNoList(list_of_bills, many=True)
+        serialized_billing_item = BillingItemSerializer(billing_item)
 
-        return Response(serialized_list_of_bills.data, status=status.HTTP_200_OK)
+        return Response(serialized_billing_item.data, status=status.HTTP_200_OK)
         
     except Exception as e:
         return Response(
-            {"error": "Something went wrong while fetching patients", "details": str(e)},
+            {"error": "Something went wrong while fetching billing_item", "details": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+    
+
+
+
+
+
+
+
+#PAGINATION FORMAT SAMPLE
+@api_view(['GET'])
+@permission_classes([IsAdmin | IsTeller])
+def get_bills(request):
+#   /api/billings/list
+#   /api/billings/list?page=2
+    try:
+        #get base queryset
+        queryset = Billing.objects.all().order_by('-date_created')
+        
+        #Initialize paginator
+        paginator = PageNumberPagination()
+        paginator.page_size = 3
+        
+        #paginate queryset
+        page = paginator.paginate_queryset(queryset, request)
+        
+        #serialize paginated data
+        if page is not None:
+            serializer = BillingSerializerNoList(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
+            
+        #basecase// if pagination fails ()=> return normal querySet
+        serializer = BillingSerializerNoList(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+                            #   /api/billings/list
+                            #   /api/billings/list?page=2   
+    except Exception as e:
+        return Response(
+            {"error": "Something went wrong while fetching bills", "details": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
@@ -514,38 +751,85 @@ def get_bills(request):
 @permission_classes([IsAdmin | IsTeller])
 def get_bills_with_bill_items(request):
     try:
-        bills = Billing.objects.prefetch_related('billing_items').all()
-        serializer = BillingSerializer(bills, many=True)
+        bills_queryset = Billing.objects.prefetch_related('billing_items').all().order_by('-date_created')
+
+        #Initialize paginator
+        paginator = PageNumberPagination()
+        default_page_size = 3
+        page_size_param = request.query_params.get('pageSize')
+
+
+        if page_size_param:
+            try:
+                #pageSize to an integer then lower bound check
+                parsed_page_size = int(page_size_param)
+                if parsed_page_size > 0:
+                    paginator.page_size = parsed_page_size
+                else:
+                    paginator.page_size = default_page_size
+            except ValueError:
+                paginator.page_size = default_page_size
+        else:
+            paginator.page_size = default_page_size
+
+        
+        #paginate queryset
+        page = paginator.paginate_queryset(bills_queryset, request)
+
+
+        #serialize paginated data
+        if page is not None:
+            serializer = BillingSerializer(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
+
+
+        #basecase// if pagination fails ()=> return normal querySet
+
+        serializer = BillingSerializer(bills_queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     except Exception as e:
         return Response(
             {"error": "Something went wrong while fetching bills", "details": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
-    
+    #develop
 
 @api_view(['GET'])
 @permission_classes([IsAdmin | IsTeller])
 def get_bills_by_id_with_bill_items(request, pk):
     try:
-        # Fetch the specific billing record by ID
-        # bill = Billing.objects.prefetch_related('billing_items').filter(id=pk).first()
+                #get specific billing record by ID
+        # bill = Billing.objects.prefetch_related('billing_items').filter(id=pk).first() //not sure if keep or remove this line
+
         bill = Billing.objects.filter(code=pk).first()
 
 
         if not bill:
+            #get all existing Billing codes as return coz its confusing me.. id!=billing_code
+            available_codes = list(
+                Billing.objects
+                       .order_by('code')
+                       .values_list('code', flat=True)
+            )
+
             return Response(
-                {"error": f"Billing record with ID {pk} not found."},
+                {
+                    "error": f"Billing record with code '{pk}' not found.",
+                    "available_codes": available_codes
+                },
                 status=status.HTTP_404_NOT_FOUND
             )
 
+        # If found, serialize and return.
         serializer = Billing_PatientInfo_Serializer(bill)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-
     except Exception as e:
         return Response(
-            {"error": "Something went wrong while fetching bills", "details": str(e)},
+            {
+                "error": "Something went wrong while fetching bills.",
+                "details": str(e)
+            },
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
     

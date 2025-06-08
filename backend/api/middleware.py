@@ -43,13 +43,20 @@ class ThreadLocalUserMiddleware:
                 validated_token = jwt_auth.get_validated_token(raw_token)
                 user = jwt_auth.get_user(validated_token)
                 return user
-            except Exception:
-                pass  # Invalid token
-        return AnonymousUser()
+            except Exception as e:
+                # Log invalid token error if needed
+                pass
+        return None  # Return None if no token or invalid
 
     def __call__(self, request):
-        # Try to authenticate the user from JWT
-        request.user = SimpleLazyObject(lambda: self.get_user_from_jwt(request))
+        # Only attempt JWT auth if no user is authenticated yet
+        if not request.user.is_authenticated:
+            jwt_user = self.get_user_from_jwt(request)
+            if jwt_user and jwt_user.is_authenticated:
+                # Override request.user only if JWT auth succeeds
+                request.user = SimpleLazyObject(lambda: jwt_user)
+        
+        # Store the final user (session/JWT/anonymous) in thread-local storage
         _thread_locals.user = request.user
         response = self.get_response(request)
         _thread_locals.user = None

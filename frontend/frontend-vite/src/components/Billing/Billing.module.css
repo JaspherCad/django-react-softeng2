@@ -22,7 +22,7 @@
     height: 100%;
     overflow-y: scroll; /* Prevents excessive expansion */
     display: flex;
-    align-items: center; /* Centers the input vertically */
+    align-items: flex-start; /* Centers the input vertically */
     border: 2px solid #f80000  ;
     padding: 10px;
   }

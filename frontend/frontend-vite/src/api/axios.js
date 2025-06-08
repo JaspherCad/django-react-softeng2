@@ -29,6 +29,9 @@ const axiosInstance = axios.create({
 const AUTH_ENDPOINTS = ['/user/login', '/token/refresh'];
 const REFRESH_COOKIE_NAME = 'refresh_token';
 
+
+// allows us to modify or inspect a request before it is sent to the backend
+
 axiosInstance.interceptors.request.use(config => {
   // Skip auth header for auth endpoints and cookie-based auth
   if (AUTH_ENDPOINTS.some(path => config.url.includes(path)) || USE_HTTP_ONLY) {
@@ -46,8 +49,7 @@ axiosInstance.interceptors.request.use(config => {
 
 
 
-
-
+// allows us to modify or inspect a request before it is sent to the backend
 axiosInstance.interceptors.response.use(
   response => response,
   async error => {
@@ -233,10 +235,10 @@ export const testApi = async () => {
 
 
 
-export const listOfPatientAPI = async () => {
+export const listOfPatientAPI = async (page = 1) => {
   try {
-    const response = await axiosInstance.get('/patients/list');
-    return response;
+    const response = await axiosInstance.get(`/patients/list?page=${page}`);
+    return response; 
   } catch (error) {
     throw error;
   }
@@ -247,6 +249,39 @@ export const addBillingsApi = async (patientData) => {
   try {
     const response = await axiosInstance.post('/billings/add', 
       patientData);
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const addBillingItemApi = async (billingData, billingId) => {
+  try {
+    const response = await axiosInstance.post(`/billings/add-billing-item/${billingId}`, 
+      billingData);
+//       {
+//     "service": 1,
+//     "quantity": 1,
+//     "cost_at_time": 2000
+// }
+
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const editBillingItemApi = async (billingCode, billingItemId, billingData) => {
+  try {
+    const response = await axiosInstance.put(`/billings/${billingCode}/items/${billingItemId}/edit`, 
+      billingData);
+    console.log(billingData)
+//       {
+//     "service": 1,
+//     "quantity": 1,
+//     "cost_at_time": 2000
+// }
+
     return response;
   } catch (error) {
     throw error;
@@ -268,15 +303,57 @@ export const SearchBillingsApi = async (searchTerm) => {
 };
 
 
-
-export const listOfBillingsAPI = async () => {
+export const SearchPatientsApi = async (searchTerm) => {
   try {
-    const response = await axiosInstance.get('/billings/list');
+    const response = await axiosInstance.get('/patients/search',{
+      params: {q : searchTerm}
+    }
+
+    );
     return response;
   } catch (error) {
     throw error;
   }
 };
+
+
+export const SearchServicesApi = async (searchTerm) => {
+  try {
+    const response = await axiosInstance.get('/service/search',{
+      params: {q : searchTerm}
+    }
+
+    );
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+
+export const listOfBillingsAPI = async (page = 1, pageSize=10) => {
+  try {
+    const response = await axiosInstance.get('billings/list/v2', {
+      params: { page, pageSize }
+    });
+
+    
+    return response
+  } catch (error) {
+    throw error;
+  }
+};
+
+
+export const getBillingItemByIdAPI = async (billingId) => {
+  try {
+    const response = await axiosInstance.get(`/billing_item/id/${billingId}`);
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
 
 
 export const getBillingByID = async (id) => {

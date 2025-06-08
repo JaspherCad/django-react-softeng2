@@ -9,6 +9,8 @@ import Login from './components/Login';
 import { AuthContext } from './context/AuthContext';
 import Patients from './components/Patients';
 import Billing from './components/Billing'
+import Laboratory from './components/Laboratory';
+import TellerDashboard from './components/DashBoardTeller';
 
 // Protected Route Component
 const ProtectedRoute = () => {
@@ -80,9 +82,13 @@ const MainApp = () => {
 
                       {/* Outlet represents these elements */}
           <Route path="/" element={<Home />} />
-          <Route path="/dashboard" element={<DashBoardDoctor />} />
+          <Route path="/doctor/dashboard" element={<DashBoardDoctor />} />
+          <Route path="/teller/dashboard" element={<TellerDashboard />} />
+
           <Route path="/patients/*" element={<Patients />} />
           <Route path="/billing/*" element={<Billing />} />
+          <Route path="/laboratory/*" element={<Laboratory />} />
+
 
 
         </Route>

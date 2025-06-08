@@ -16,9 +16,20 @@ import { useNavigate, useParams } from 'react-router-dom'
 //     is_active: 'Active'
 
 
-const PatientList = ({ patients, selectedPatient, setSelectedPatient }) => {
-   
-  const navigate = useNavigate() 
+const PatientList = ({
+  patients,
+  selectedPatient,
+  setSelectedPatient,
+  loading,
+  errorMsg,
+  //pagination props
+  currentPage,
+  totalPages,
+  totalItems,
+  onPageChange,
+  PAGE_SIZE }) => {
+
+  const navigate = useNavigate()
   // const [selectedPatient, setSelectedPatient] = useState(null); //move to upper state so we can reuse for edit, specific views, etc
   const [showModal, setShowModal] = useState(false);
   console.log(patients)
@@ -27,7 +38,27 @@ const PatientList = ({ patients, selectedPatient, setSelectedPatient }) => {
     setShowModal(true);
   };
 
-  
+
+  const goToNextPage = () => {
+    if (currentPage < totalPages) {
+      onPageChange(currentPage + 1);
+    }
+  };
+
+  const goToPrevPage = () => {
+    if (currentPage > 1) {
+      onPageChange(currentPage - 1);
+    }
+  };
+
+  if (loading) {
+    return <div className={styles.loading}>Loading patients...</div>;
+  }
+
+  if (errorMsg) {
+    return <div className={styles.error}>{errorMsg}</div>;
+  }
+
   const closeModal = () => {
     setShowModal(false);
     setSelectedPatient(null);
@@ -58,28 +89,28 @@ const PatientList = ({ patients, selectedPatient, setSelectedPatient }) => {
             <tbody>
               {patients && patients.length > 0 ? (
                 patients.map((patient, index) => (
-                  <tr 
-                    key={index} 
+                  <tr
+                    key={index}
                     onClick={() => handleRowClick(patient)}
                     className={styles.tableRow}
                   >
-                    <td data-label="Patient Id">{index + 1}</td>
+                    <td data-label="Patient Id">{patient.code}</td>
                     <td data-label="Name">{patient.name}</td>
                     <td data-label="Admission_Date">{patient.admission_date}</td>
                     <td data-label="Status">{patient.status}</td>
                     <td data-label="Phone">{patient.phone}</td>
                     <td data-label="Edit">
-                      <button 
+                      <button
                         className={styles.btnEdit}
-                        onClick={(e) => handleEditClick(patient, e)} // Prevent row click when clicking button
+                        onClick={(e) => handleEditClick(patient, e)} //STOPS row click when clicking button
                       >
                         <i className="fa fa-pencil"></i>Edit
                       </button>
                     </td>
                     <td data-label="Delete">
-                      <button 
+                      <button
                         className={styles.btnTrash}
-                        onClick={(e) => e.stopPropagation()} // Prevent row click when clicking button
+                        onClick={(e) => e.stopPropagation()} // STOPS row click when clicking button
                       >
                         <i className="fa fa-trash"></i>Delete
                       </button>
@@ -97,6 +128,42 @@ const PatientList = ({ patients, selectedPatient, setSelectedPatient }) => {
           </table>
         </div>
       </div>
+
+
+
+
+
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className={styles.pagination}>
+          <div className={styles.paginationInfo}>
+            Showing {(currentPage - 1) * PAGE_SIZE + 1}-{Math.min(currentPage * PAGE_SIZE, totalItems)} of {totalItems} patients
+          </div>
+
+          <div className={styles.paginationControls}>
+            <button
+              onClick={goToPrevPage}
+              disabled={currentPage === 1}
+              className={styles.paginationButton}
+            >
+              Previous
+            </button>
+
+            <span className={styles.pageInfo}>
+              Page {currentPage} of {totalPages}
+            </span>
+
+            <button
+              onClick={goToNextPage}
+              disabled={currentPage === totalPages}
+              className={styles.paginationButton}
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Patient Details Modal */}
       {/* WHERE SELECTED PATIENT FROM?????? the PARENT.. CRUD AND ALL UTILITY IS OVER THER>>> */}
