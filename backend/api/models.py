@@ -1,7 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin, Group
 from django.core.validators import MinValueValidator
-
+from django.core.exceptions import ValidationError
+from django.utils import timezone
 import shortuuid
 from shortuuid.django_fields import ShortUUIDField
 
@@ -17,7 +18,13 @@ def generate_patient_code():
         alphabet="ABCDEFGHJKMNPQRSTUVWXYZ23456789"  # Avoids ambiguous chars like 0, O, I, 1, etc.
     ).random(length=5)
 
-
+def validate_file_extension(value):
+    import os
+    ext = os.path.splitext(value.name)[1]
+    valid_extensions = ['.pdf', '.jpg', '.jpeg', '.png', '.dcm'] 
+    if not ext.lower() in valid_extensions:
+        raise ValidationError('Unsupported file extension.')
+    
 def generate_laboratoryresult_code():
     #8-character random, URL-safe, no confusing chars I 1 0 0
     return shortuuid.ShortUUID(
@@ -389,8 +396,14 @@ class LaboratoryResult(models.Model):
 class LabResultFile(models.Model):
     #MANY LabResultFile TO ONE
     result = models.ForeignKey(LaboratoryResult, on_delete=models.CASCADE, related_name='attachments')
-    file = models.FileField(upload_to=lab_result_upload_path)
+    file = models.FileField(
+        upload_to=lab_result_upload_path,
+        validators=[validate_file_extension]
+        
+        )
     description = models.CharField(max_length=255, blank=True)
+    uploaded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
 
 # Unified Clinical Notes
 class ClinicalNote(models.Model):
@@ -409,6 +422,9 @@ class ClinicalNote(models.Model):
 
     def __str__(self):
         return f"{self.patient.name} - {self.note_type}"
+    
+
+
 
 # Improved User Logs
 class UserLog(models.Model):

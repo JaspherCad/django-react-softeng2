@@ -3,11 +3,11 @@ from rest_framework import status
 from django.db import transaction
 from django.db.models import Q
 
-from .serializers import UserSerializer, PatientSerializer, UserLogSerializer, BillingCreateSerializer, ServiceSerializer, PatientServiceSerializer, BillingItemSerializer, BillingSerializer, BillingSerializerNoList, Billing_PatientInfo_Serializer
+from .serializers import UserSerializer, PatientSerializer, UserLogSerializer, BillingCreateSerializer, ServiceSerializer, PatientServiceSerializer, LaboratoryResultSerializer, LabResultFileSerializer, BillingItemSerializer, BillingSerializer, BillingSerializerNoList, Billing_PatientInfo_Serializer
 
 
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from .models import User, Patient, UserLog, Billing, BillingItem, BillingOperatorLog, PatientService, Service
+from .models import User, Patient, UserLog, Billing, BillingItem, BillingOperatorLog, PatientService, Service, LaboratoryResult
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -859,6 +859,13 @@ def create_bills(request):
 
 
 
+
+
+
+
+
+
+
 @api_view(['GET'])
 @permission_classes([IsAdmin | IsTeller])
 def get_bill_items_intuition_never_mind_this(request):
@@ -927,12 +934,113 @@ def get_bill_items_intuition_never_mind_this(request):
 
 
 
+#--------------Laboratory Views----------
+#--------------Laboratory Views----------
+#--------------Laboratory Views----------
+#--------------Laboratory Views----------
+#--------------Laboratory Views----------
+
+#-Laboratory has lists of lab results (can be pdf, note, img)
+
+#-MANY lab to ONE patient
+#-MANY lab(result file) to ONE LAB
+
+
+
+#Laboratory Views
+@api_view(['POST'])
+@permission_classes([IsAdmin | IsDoctor])
+def create_laboratory_result_for_patient(request, pk):
+   
+
+    try:
+        patient = get_object_or_404(Patient, id=pk)
+        
+
+        lab_data = {
+            'patient': patient.id,
+            'test_type': request.data.get('test_type'),
+            'result_summary': request.data.get('result_summary')
+            
+        }
 
 
 
 
+        serializer = LaboratoryResultSerializer(data = lab_data) 
 
 
+
+
+        if serializer.is_valid():
+            lab_result = serializer.save(performed_by=request.user)
+            return Response(LaboratoryResultSerializer(lab_result).data, status=status.HTTP_201_CREATED)
+        #outside if return FALSE statements
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        
+    except Exception as e:
+        return Response(
+            {"error": "Something went wrong while creating the LAB record", "details": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+
+#Laboratory Views
+@api_view(['POST'])
+@permission_classes([IsAdmin | IsDoctor])
+def create_laboratory_file_result_for_laboratory_class(request, pk):
+    # - file: <binary file>
+    # - description: optional text
+    # update: MultipleFile upload
+
+    try:
+        lab_result = get_object_or_404(LaboratoryResult, id=pk)
+        upload_list = request.FILES.getlist('file')
+
+        if not upload_list:
+            return Response(
+                {"detail": "No files were provided under key 'file'."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        #return this at end
+        results = []
+        errors = []
+        
+        descriptions = request.data.getlist('description', [])
+
+        for i, upload in enumerate(upload_list):
+            
+            description = descriptions[i] if i < len(descriptions) else request.data.get('description', '')
+            
+            data = {
+                'file': upload,
+                'description': description
+            }
+
+            #validate the nsav
+            serializer = LabResultFileSerializer(data=data, context={'request': request})
+            if serializer.is_valid():
+                serializer.save(result=lab_result, uploaded_by=request.user)
+                results.append(serializer.data)
+            else:
+                errors.append(serializer.errors)
+
+            if errors:
+                return Response({
+                    "success": results,
+                    "errors": errors
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+        return Response(results, status=status.HTTP_201_CREATED)
+    
+    except Exception as e:
+        return Response(
+            {"error": "Something went wrong while creating the LAB record", "details": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 
 

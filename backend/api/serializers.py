@@ -56,9 +56,10 @@ class PatientServieSerializer(serializers.ModelSerializer):
 
 
 class LabResultFileSerializer(serializers.ModelSerializer):
+    uploaded_by = UserSerializer(read_only=True)
     class Meta:
         model = LabResultFile
-        fields = ['id', 'file', 'description']
+        fields = ['id', 'file', 'description', 'uploaded_by', 'uploaded_at']
 
 class LaboratoryResultSerializer(serializers.ModelSerializer):
     #result.. this is the result LaboratoryResult

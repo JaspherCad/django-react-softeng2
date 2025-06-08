@@ -63,4 +63,15 @@ urlpatterns = [
     path('billing_item/id/<str:pk>', views.get_billing_item, name='get_billing_item'),
 
 
+
+    #LAB RESULTS
+    path('laboratory/add-patient-laboratory/patient-id/<str:pk>', views.create_laboratory_result_for_patient, name='create_laboratory_result_for_patient'),
+
+    path('laboratory/search-patient-laboratory/patient-id/<str:pk>', views.create_laboratory_result_for_patient, name='create_laboratory_result_for_patient'),
+
+    path('laboratory/upload-file-laboratory/laboratory-id/<str:pk>', views.create_laboratory_file_result_for_laboratory_class, name='create_laboratory_file_result_for_laboratory_class'),
+
+
+
+
 ]   
