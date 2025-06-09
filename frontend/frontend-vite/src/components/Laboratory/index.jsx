@@ -1,29 +1,22 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import SearchBar from '../AngAtingSeachBarWIthDropDown';
+import { addLabFilesToLaboratory, addLabRecordsToPatient, SearchPatientsApi } from '../../api/axios';
+import { Route, Routes } from 'react-router-dom';
 
 const Laboratory = () => {
-  // --- Dummy data (replace with axios calls later) ---
-  const dummyPatients = [
-    { id: 1, name: 'Juan Dela Cruz' },
-    { id: 2, name: 'Maria Clara' },
-    { id: 3, name: 'Jose Rizal' },
-  ];
-
-  const dummyUsers = [
-    { id: 10, username: 'dr_santos' },
-    { id: 11, username: 'nurse_luna' },
-    { id: 12, username: 'labtech_rios' },
-  ];
-
-  // --- Form state ---
   const [patientId, setPatientId] = useState('');
   const [testType, setTestType] = useState('');
   const [resultSummary, setResultSummary] = useState('');
   const [performedBy, setPerformedBy] = useState('');
 
-  // attachments: array of { file: File | null, description: string }
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isDropdownVisible, setIsDropdownVisible] = useState(false)  //required for SearchBar
+
+
+
+  //array of { file: File | null, description: string }
   const [attachments, setAttachments] = useState([{ file: null, description: '' }]);
 
-  // --- Handlers for attachments array ---
   const handleAttachmentChange = (index, field, value) => {
     setAttachments((prev) => {
       const updated = [...prev];
@@ -31,6 +24,18 @@ const Laboratory = () => {
       return updated;
     });
   };
+
+  const handleSelection = (selectedTerm) => {
+    console.log(selectedTerm)
+    setSearchTerm(selectedTerm.name)
+    setPatientId(selectedTerm.id)
+    setIsDropdownVisible(false)
+  }
+
+
+  useEffect(() => {
+    console.log(attachments)
+  }, [attachments])
 
   const addAttachmentRow = () => {
     setAttachments((prev) => [...prev, { file: null, description: '' }]);
@@ -40,63 +45,107 @@ const Laboratory = () => {
     setAttachments((prev) => prev.filter((_, idx) => idx !== index));
   };
 
-  // --- Form submit (for now, just log everything) ---
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Basic validation
-    if (!patientId || !testType || !resultSummary || !performedBy) {
+    if (!testType || !resultSummary) {
       alert('Please fill in all required fields.');
       return;
     }
 
-    // Construct a “dummy” payload to inspect in console
     const formPayload = {
       patient: patientId,
       test_type: testType,
       result_summary: resultSummary,
-      performed_by: performedBy,
       attachments: attachments.map((att, idx) => ({
-        fileName: att.file ? att.file.name : null,
+        file: att.file ? att.file : "HAS NO FILES",
         description: att.description,
       })),
     };
 
-    console.log('Form payload (dummy):', formPayload);
-    alert('Check console for form payload (dummy data).');
+    const labDataPayLoad = {
+      test_type: testType,
+      result_summary: resultSummary,
+    };
 
-    // Reset form
-    setPatientId('');
-    setTestType('');
-    setResultSummary('');
-    setPerformedBy('');
-    setAttachments([{ file: null, description: '' }]);
+    console.log('PAYLOAD LABORATORY:', formPayload);
+    alert('CHECK GOOD.');
+
+    // try{
+    //   //call this api 
+    //   // laboratory = await addLabRecordsToPatient(patientId, labDataPayLoad)
+
+    //   //if attachments is filled too, then call another api addLabFilesToLaboratory(laboratory.id, attachments) since backend allows multiple upload like this 
+    //   // formData() (file: 3 files && description: 1 for those 3 files)
+            //use loop then append att.file to formdata('file')
+    // }catch(error){
+
+    // }
+
+    try {
+      const { data: laboratory } = await addLabRecordsToPatient(patientId, labDataPayLoad);
+      console.log('lab record:', laboratory);
+
+      const hasFiles = attachments.some(att => att.file && att.file.length > 0);
+      if (hasFiles) {
+        const formData = new FormData();
+        
+        attachments.forEach((att, idx) => {
+
+
+          if (att.file && att.file.length > 0) {
+
+            Array.from(att.file).forEach(file => {
+                //ERROR uploading all files to 'file' need isa isa
+              formData.append('file', file);
+              formData.append('description', att.description);
+            });
+          }
+        });
+
+        await addLabFilesToLaboratory(laboratory.id, formData);
+        console.log('Uploaded attachments');
+      }
+
+      alert('Laboratory record and attachments successfully submitted!');
+    } catch (error) {
+      console.error('Error saving lab data:', error);
+      alert('There was a problem submitting. Please try again.');
+    }//finally clear states
+
   };
 
-  return (
+
+
+
+
+  const MainContent = () => (
     <div className="max-w-lg mx-auto p-4 bg-white rounded shadow">
       <h2 className="text-xl font-semibold mb-4">New Laboratory Result (Dummy Data)</h2>
 
       <form onSubmit={handleSubmit} encType="multipart/form-data">
+
+
+
         {/* Patient Select */}
         <div className="mb-4">
           <label htmlFor="patient" className="block text-sm font-medium mb-1">
             Patient
           </label>
-          <select
-            id="patient"
-            value={patientId}
-            onChange={(e) => setPatientId(e.target.value)}
-            className="w-full border px-3 py-2 rounded"
-            required
-          >
-            <option value="">-- Select a patient --</option>
-            {dummyPatients.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
+          <SearchBar
+            placeholder={"Search Patient"}
+            searchApi={SearchPatientsApi}
+            // accept the argument passed by the SearchBar component (item) when onSelectSuggestion is trigered
+            //to accept throw temp function 
+            onSelectSuggestion={(filtered) => handleSelection(filtered)}
+            isIDIncludedInResultSuggestion={false}
+            suggestedOutput={['code', 'name']}
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            isDropdownVisible={isDropdownVisible}
+            setIsDropdownVisible={setIsDropdownVisible}
+          />
+
         </div>
 
         {/* Test Type */}
@@ -115,6 +164,12 @@ const Laboratory = () => {
           />
         </div>
 
+
+
+
+
+        
+
         {/* Result Summary */}
         <div className="mb-4">
           <label htmlFor="resultSummary" className="block text-sm font-medium mb-1">
@@ -131,26 +186,20 @@ const Laboratory = () => {
           />
         </div>
 
-        {/* Performed By */}
-        <div className="mb-4">
-          <label htmlFor="performedBy" className="block text-sm font-medium mb-1">
-            Performed By
-          </label>
-          <select
-            id="performedBy"
-            value={performedBy}
-            onChange={(e) => setPerformedBy(e.target.value)}
-            className="w-full border px-3 py-2 rounded"
-            required
-          >
-            <option value="">-- Select a user --</option>
-            {dummyUsers.map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.username}
-              </option>
-            ))}
-          </select>
-        </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         {/* Attachments Section */}
         <div className="mb-4">
@@ -175,8 +224,9 @@ const Laboratory = () => {
 
               <input
                 type="file"
+                multiple
                 onChange={(e) =>
-                  handleAttachmentChange(idx, 'file', e.target.files[0])
+                  handleAttachmentChange(idx, 'file', e.target.files)
                 }
                 className="w-full"
               />
@@ -214,6 +264,32 @@ const Laboratory = () => {
       </form>
     </div>
   );
+
+
+
+  return (
+    <>
+
+
+
+
+
+
+
+
+
+      <Routes>
+        <Route index element={<MainContent />} /> 
+        {/* <Route path="add" element={<AddBillingModalV2 />} /> */}
+        {/* <Route path="edit/:id" element={<EditBillingForm />} /> */}
+
+
+        {/* <Route path="/:laboratoryId" element={<BillingItemsOfThatBill />} /> */}
+      </Routes>
+    </>
+
+
+  )
 };
 
 export default Laboratory;

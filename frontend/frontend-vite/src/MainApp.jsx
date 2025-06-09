@@ -70,9 +70,19 @@ const MainApp = () => {
   return ( 
     //IMAGINARY <ROUTER>
     <Routes>
+
+
+
       {/* UNPROTECTED ROUTE */}
       <Route path="/login" element={<Login />} />
       {/* UNPROTECTED ROUTE */}
+
+
+
+
+
+
+
 
       {/* AUTHENTICATED ROUTE */}
       <Route element={<ProtectedRoute />}>

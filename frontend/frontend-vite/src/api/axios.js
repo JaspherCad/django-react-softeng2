@@ -421,6 +421,33 @@ export const checkAuthApi = async () => {
 };
 
 
+export const addLabRecordsToPatient = async (patientId, labData) => {
+  try {
+    const response = await axiosInstance.post(`/laboratory/add-patient-laboratory/patient-id/${patientId}`, 
+      labData
+    );
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const addLabFilesToLaboratory = async (labId, labFiles) => {
+  try {
+    const response = await axiosInstance.post(`/laboratory/upload-file-laboratory/laboratory-id/${labId}`, 
+      labFiles,
+      {
+        headers: {
+          
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
 
 export const currentUserLogs = async () => {
   try {

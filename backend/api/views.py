@@ -1006,10 +1006,12 @@ def create_laboratory_file_result_for_laboratory_class(request, pk):
             )
 
         #return this at end
-        results = []
+        
         errors = []
         
         descriptions = request.data.getlist('description', [])
+
+        valid_serializers = []
 
         for i, upload in enumerate(upload_list):
             
@@ -1021,20 +1023,49 @@ def create_laboratory_file_result_for_laboratory_class(request, pk):
             }
 
             #validate the nsav
-            serializer = LabResultFileSerializer(data=data, context={'request': request})
-            if serializer.is_valid():
-                serializer.save(result=lab_result, uploaded_by=request.user)
-                results.append(serializer.data)
-            else:
-                errors.append(serializer.errors)
 
-            if errors:
-                return Response({
-                    "success": results,
-                    "errors": errors
-                }, status=status.HTTP_400_BAD_REQUEST)
+
+            serializer = LabResultFileSerializer(data=data, context={'request': request})
+
+            #PRE VALIDATION before saving.. stop process if something not valid
+            if not serializer.is_valid():
+                # Immediately stop processing and return error response
+                return Response(
+                    {"errors": {f"file_{i+1}": serializer.errors}},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+
+
+
+            if serializer.is_valid():
+                valid_serializers.append(serializer)
+                #SAVE ON ANOTHER LOOP LATER
+                #serializer.save(result=lab_result, uploaded_by=request.user)
+            #     results.append(serializer.data)
+            # else:
+            #     errors.append(serializer.errors)
+
+            # if errors:
+            #     return Response({
+            #         "success": results,
+            #         "errors": errors
+            #     }, status=status.HTTP_400_BAD_REQUEST)
             
+        results = []
+
+
+
+        # @atomic transaction if something fails during saving,
+        #no files are committed
+
+        with transaction.atomic():
+            for serializer in valid_serializers:
+                instance = serializer.save(result=lab_result, uploaded_by=request.user)
+                results.append(LabResultFileSerializer(instance, context={'request': request}).data)
+        
         return Response(results, status=status.HTTP_201_CREATED)
+
     
     except Exception as e:
         return Response(
@@ -1045,7 +1076,7 @@ def create_laboratory_file_result_for_laboratory_class(request, pk):
 
 
 
-
+    
 
 
 

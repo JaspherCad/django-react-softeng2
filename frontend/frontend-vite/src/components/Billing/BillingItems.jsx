@@ -5,6 +5,8 @@ import { useParams } from 'react-router-dom';
 import styles from './BillingItemsOfThatBill.module.css';
 import BillingItemsModal from './BillingItemsModal';
 import { getBillingByID, getBillingItemByIdAPI } from '../../api/axios';
+import { PDFViewer, PDFDownloadLink } from '@react-pdf/renderer';
+import BillingPDF from '../PdfGenerator/BillingPDF';
 
 const BillingItemsOfThatBill = ({ modalBillId, isModal = false }) => {
 
@@ -28,6 +30,8 @@ const BillingItemsOfThatBill = ({ modalBillId, isModal = false }) => {
   const [reloadCount, setReloadCount] = useState(0);
 
 
+  //PDF EXPORT Modal
+  const [showPDF, setShowPDF] = useState(false);
 
   const fetchBillingsById = async (id) => {
     setLoading(true);
@@ -289,7 +293,7 @@ const BillingItemsOfThatBill = ({ modalBillId, isModal = false }) => {
         <button className={styles.openModalButton} onClick={handleAddBillingItem}>
           Add New Billing
         </button>
-        <button className={styles.openModalButton} onClick={() => console.log(billData)}>
+        <button className={styles.openModalButton} onClick={() => setShowPDF(true)}>
           Generate Bill
         </button>
       </div>
@@ -305,6 +309,23 @@ const BillingItemsOfThatBill = ({ modalBillId, isModal = false }) => {
         setReloadCount={setReloadCount}
 
       />}
+
+
+      {showPDF && (
+        <div className={styles.pdfModal}>
+          <div className={styles.pdfViewerContainer}>
+            <button
+              className={styles.closeButton}
+              onClick={() => setShowPDF(false)}
+            >
+              ×
+            </button>
+            <PDFViewer style={{ width: '100%', height: '100%' }}>
+              <BillingPDF billingData={billData} />
+            </PDFViewer>
+          </div>
+        </div>
+      )}
 
 
 
