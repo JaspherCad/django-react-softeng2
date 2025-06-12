@@ -316,6 +316,19 @@ export const SearchPatientsApi = async (searchTerm) => {
   }
 };
 
+export const SearchLaboratoryApi = async (searchTerm) => {
+  try {
+    const response = await axiosInstance.get('/laboratory/search-laboratory',{
+      params: {q : searchTerm}
+    }
+
+    );
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
 
 export const SearchServicesApi = async (searchTerm) => {
   try {
@@ -434,7 +447,7 @@ export const addLabRecordsToPatient = async (patientId, labData) => {
 
 export const addLabFilesToLaboratory = async (labId, labFiles) => {
   try {
-    const response = await axiosInstance.post(`/laboratory/upload-file-laboratory/laboratory-id/${labId}`, 
+    const response = await axiosInstance.post(`/laboratory/files/group/${labId}`, 
       labFiles,
       {
         headers: {
@@ -444,6 +457,16 @@ export const addLabFilesToLaboratory = async (labId, labFiles) => {
       }
     );
     return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+
+export const fetchLab = async (labId) => {
+  try {
+    const response = await axiosInstance.get(`/laboratory/get-laboratory/${labId}`);
+    return response.data;
   } catch (error) {
     throw error;
   }

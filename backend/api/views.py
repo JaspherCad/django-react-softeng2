@@ -1,13 +1,14 @@
+import json
 from rest_framework import generics
 from rest_framework import status
 from django.db import transaction
 from django.db.models import Q
 
-from .serializers import UserSerializer, PatientSerializer, UserLogSerializer, BillingCreateSerializer, ServiceSerializer, PatientServiceSerializer, LaboratoryResultSerializer, LabResultFileSerializer, BillingItemSerializer, BillingSerializer, BillingSerializerNoList, Billing_PatientInfo_Serializer
+from .serializers import UserSerializer, PatientSerializer, UserLogSerializer, BillingCreateSerializer, ServiceSerializer, PatientServiceSerializer, LaboratoryResultSerializer, LabResultFileSerializer, BillingItemSerializer, BillingSerializer, BillingSerializerNoList, Billing_PatientInfo_Serializer, LabResultFileGroupSerializer, LabResultFileInGroup, LabResultFileInGroupSerializer
 
 
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from .models import User, Patient, UserLog, Billing, BillingItem, BillingOperatorLog, PatientService, Service, LaboratoryResult
+from .models import User, LabResultFileGroup, LabResultFileInGroup ,Patient, UserLog, Billing, BillingItem, BillingOperatorLog, PatientService, Service, LaboratoryResult, LabResultFile
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -948,6 +949,8 @@ def get_bill_items_intuition_never_mind_this(request):
 
 
 #Laboratory Views
+
+
 @api_view(['POST'])
 @permission_classes([IsAdmin | IsDoctor])
 def create_laboratory_result_for_patient(request, pk):
@@ -1077,6 +1080,183 @@ def create_laboratory_file_result_for_laboratory_class(request, pk):
 
 
     
+
+
+
+
+
+#Laboratory Views
+
+
+
+
+@api_view(['GET'])
+@permission_classes([IsAdmin | IsAuthenticated])
+def search_labId(request):
+    query = request.query_params.get('q', '').strip()
+    if not query:
+        
+        return Response([], status=status.HTTP_200_OK)
+    
+    try:
+        laboratory = LaboratoryResult.objects.filter(
+            Q(id__icontains=query) | 
+            Q(code__icontains=query) | 
+            Q(patient__name__icontains=query) | 
+            Q(patient__code__icontains=query) |
+            Q(result_summary__icontains=query)
+        )[:10] 
+
+        serializer = LaboratoryResultSerializer(laboratory, many=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    except Exception as e:
+        print(e)
+
+        return Response(
+            {"error": "Something went wrong while searching patients", "details": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+
+
+
+@api_view(['GET'])
+@permission_classes([IsAdmin | IsDoctor])
+def get_laboratory_by_id(request, pk):
+    try:
+        # Get the laboratory result with related files in a single query
+        lab_result = LaboratoryResult.objects.prefetch_related('attachments', 'file_groups__files').get(id=pk)
+        
+        # Serialize main laboratory result
+        lab_serializer = LaboratoryResultSerializer(lab_result)
+        
+        # files = LabResultFile.objects.filter(result=lab_result)
+        # file_serializer = LabResultFileSerializer(files, many=True, context={'request': request})
+        
+        # response_data = {
+        #     'laboratory_result': lab_serializer.data,
+        #     'associated_files': file_serializer.data,
+        #     'files_count': files.count(),
+        #     'performed_by': str(lab_result.performed_by),
+        #     'status': 'success'
+        # }
+        
+        return Response(lab_serializer.data, status=status.HTTP_200_OK)
+        
+    except LaboratoryResult.DoesNotExist:
+        return Response(
+            {"error": "Laboratory result not found"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except Exception as e:
+        return Response(
+            {"error": "Failed to retrieve laboratory details", "details": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+
+
+
+#GROUP UPLAOD FILES to an EXISTING LABORATORY   
+# views.py
+@api_view(['POST'])
+@permission_classes([IsAdmin | IsDoctor])
+def create_laboratory_file_group(request, labId):
+    try:
+        
+        lab_result = get_object_or_404(LaboratoryResult, id=labId)
+        description = request.data.get('description', '')
+        file_count = int(request.data.get('file_count', 0))
+        files = request.FILES.getlist('files')
+
+       
+        if not files:
+            return Response(
+                {"error": "No files were provided under key 'files'."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        if file_count <= 0:
+            return Response(
+                {"error": "'file_count' must be a positive integer"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        if len(files) != file_count:
+            return Response(
+                {
+                    "error": f"Mismatch between file count: expected {file_count}, got {len(files)}"
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        #reate one group
+        with transaction.atomic():
+            group = LabResultFileGroup.objects.create(
+                result=lab_result,
+                description=description,
+                uploaded_by=request.user
+            )
+        #add file_count to model to loop thru it... idk required di ko magawa by size of inputs
+
+            group_files = []
+            for i in range(file_count):
+                file = files[i]
+                #LabResultFileInGroup == <what group | the file itself>
+                lab_file = LabResultFileInGroup.objects.create(
+                    group=group,
+                    file=file
+                )
+                group_files.append(lab_file)
+
+        return Response({
+            "group": LabResultFileGroupSerializer(group).data,
+            "files": LabResultFileInGroupSerializer(group_files, many=True).data
+        }, status=status.HTTP_201_CREATED)
+
+    except Exception as e:
+        return Response(
+            {"error": "Something went wrong while uploading files", "details": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+
+@api_view(['GET'])
+@permission_classes([IsAdmin | IsDoctor])
+def get_laboratory_file_group(request, group_id):
+    """
+    Retrieve a specific LabResultFileGroup by ID, including its files.
+    """
+    try:
+        # Fetch the group or return 404
+        group = get_object_or_404(LabResultFileGroup, id=group_id)
+
+        # Serialize the group with its files
+        serializer = LabResultFileGroupSerializer(group)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response(
+            {"error": "Failed to retrieve file group", "details": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+
+#on EDIT lab
+#we can edit the TEST TYPE && RESULT SUMMARY
+
+#on EDIT lab files (group new update)
+#we cant edit files, only DELETE and ADD more
+
+@api_view(['POST'])
+@permission_classes([IsAdmin | IsDoctor])
+def add_laboratory_file_group_to_existing_lab(request, labId):
+    return None
 
 
 

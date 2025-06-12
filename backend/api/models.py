@@ -391,7 +391,7 @@ class LaboratoryResult(models.Model):
     )
 
     def __str__(self):
-        return f"{self.patient.name} - {self.test_type}"
+        return f"  {self.code} = {self.patient.name} - {self.test_type} - {self.id}"
 
 class LabResultFile(models.Model):
     #MANY LabResultFile TO ONE
@@ -404,6 +404,84 @@ class LabResultFile(models.Model):
     description = models.CharField(max_length=255, blank=True)
     uploaded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     uploaded_at = models.DateTimeField(auto_now_add=True)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+############GROUP UPLOAD
+def grouped_lab_result_upload_path(instance, filename):
+    return f'lab_results/patient_{instance.group.result.patient.id}/{instance.group.result.test_type}/{filename}'
+
+class LabResultFileGroup(models.Model):
+    result = models.ForeignKey(
+        LaboratoryResult, 
+        on_delete=models.CASCADE,
+        related_name='file_groups'  
+    )
+    description = models.TextField(blank=True)  #single description per group
+    uploaded_by = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True
+    )
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        # shows “Patient Name – Test Type – Group ID”
+        return f"LAB:{self.result.id} – Album ID: {self.id} – Description = ''{self.description}'' "
+
+#represents individual files within a group
+class LabResultFileInGroup(models.Model):  
+    group = models.ForeignKey(
+        LabResultFileGroup,  #refers to the group.. MANY to ONE
+        on_delete=models.CASCADE,
+        related_name='files' 
+    )
+    file = models.FileField(
+        upload_to=grouped_lab_result_upload_path,  # fix this too
+        validators=[validate_file_extension]
+    )
+
+    def __str__(self):
+        return f"Album Id {self.group.id} – {self.file.name.split('/')[-1]}"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # Unified Clinical Notes
 class ClinicalNote(models.Model):
