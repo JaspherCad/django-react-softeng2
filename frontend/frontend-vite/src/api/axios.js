@@ -316,6 +316,19 @@ export const SearchPatientsApi = async (searchTerm) => {
   }
 };
 
+export const SearchLaboratoryApi = async (searchTerm) => {
+  try {
+    const response = await axiosInstance.get('/laboratory/search-laboratory',{
+      params: {q : searchTerm}
+    }
+
+    );
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
 
 export const SearchServicesApi = async (searchTerm) => {
   try {
@@ -421,6 +434,43 @@ export const checkAuthApi = async () => {
 };
 
 
+export const addLabRecordsToPatient = async (patientId, labData) => {
+  try {
+    const response = await axiosInstance.post(`/laboratory/add-patient-laboratory/patient-id/${patientId}`, 
+      labData
+    );
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const addLabFilesToLaboratory = async (labId, labFiles) => {
+  try {
+    const response = await axiosInstance.post(`/laboratory/files/group/${labId}`, 
+      labFiles,
+      {
+        headers: {
+          
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+
+export const fetchLab = async (labId) => {
+  try {
+    const response = await axiosInstance.get(`/laboratory/get-laboratory/${labId}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
 
 export const currentUserLogs = async () => {
   try {

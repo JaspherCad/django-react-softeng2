@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, Patient, LaboratoryResult, LabResultFile, UserLog, Service, PatientService, Billing, BillingItem # Import your custom User model
+from .models import User, Patient, LaboratoryResult, LabResultFile, UserLog, Service, PatientService, Billing, BillingItem, LabResultFileInGroup, LabResultFileGroup
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -55,18 +55,75 @@ class PatientServieSerializer(serializers.ModelSerializer):
 
 
 
+
+
+
+
+
+
+
+#MULTIPLE UPLOAD SERIALIZER
+class LabResultFileInGroupSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LabResultFileInGroup
+        fields = ['id', 'file']
+
+class LabResultFileGroupSerializer(serializers.ModelSerializer):
+    uploaded_by = UserSerializer(read_only=True)
+    files = LabResultFileInGroupSerializer(many=True, read_only=True)
+    
+    class Meta:
+        model = LabResultFileGroup
+        fields = [
+            'id',
+            'description',
+            'uploaded_by',
+            'uploaded_at',
+            'files'
+
+        ]
+
+
+
+
+
+
+
+
+
+
+
+#ORIGINAL SINGLE FILE UPLOAD
+
+
 class LabResultFileSerializer(serializers.ModelSerializer):
+    uploaded_by = UserSerializer(read_only=True)
     class Meta:
         model = LabResultFile
-        fields = ['id', 'file', 'description']
+        fields = ['id', 'file', 'description', 'uploaded_by', 'uploaded_at']
+
+class PatientInfoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Patient
+        fields = ['id', 'name', 'code']
 
 class LaboratoryResultSerializer(serializers.ModelSerializer):
     #result.. this is the result LaboratoryResult
     attachments = LabResultFileSerializer(many=True, read_only=True)  # For displaying uploaded files
-    
+
+
+    # #PS: TODO delte attachments above if this works
+    file_groups = LabResultFileGroupSerializer(many=True, read_only=True)
+    patientInfo = PatientInfoSerializer(source='patient', read_only=True)
     class Meta:
         model = LaboratoryResult
-        fields = ['id', 'patient', 'test_type', 'result_summary', 'date_performed', 'performed_by', 'attachments']
+        fields = ['id', 'code', 'patient', 'patientInfo','test_type', 'result_summary', 'date_performed', 'performed_by', 'attachments', 'file_groups']
+
+
+
+
+
+
 
 #save state save stat eito hahaha 123 
 
