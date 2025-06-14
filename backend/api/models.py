@@ -1,8 +1,14 @@
+from decimal import Decimal
+import math
+from django.db import transaction
+
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin, Group
 from django.core.validators import MinValueValidator
 from django.core.exceptions import ValidationError
 from django.utils import timezone
+from django.db.models import F
+from django.db import models
 import shortuuid
 from shortuuid.django_fields import ShortUUIDField
 
@@ -103,7 +109,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 #NOTE!! DO NOT DELETE PATIENTS!
 class Patient(models.Model):
     STATUS_CHOICES = [
-        ('Admitted', 'Admitted'),
+        ('Admitted', 'Admitted'), #Inpatient dapat!
         ('Discharged', 'Discharged'),
         ('Outpatient', 'Outpatient')
     ]
@@ -146,7 +152,7 @@ class Patient(models.Model):
         self.save()
 
     def __str__(self):
-        return self.name
+        return f" ID {self.id} - {self.name}"
 
 # Medical History (Separate model for better structure)
 class MedicalHistory(models.Model):
@@ -295,8 +301,8 @@ class Billing(models.Model):
 
     def update_total(self):
         """Recalculate the total amount based on services availed."""
-        self.total_due = sum(item.subtotal for item in self.billing_items.all())
-
+        self.total_due = sum(item.subtotal for item in self.billing_items.all()) or Decimal('0.00')
+        
     def save(self, *args, **kwargs):
         """Override save method to prevent recursion and save related objects"""
         # Save the instance first to generate the primary key
@@ -306,7 +312,7 @@ class Billing(models.Model):
 
 
     def __str__(self):
-        return f"Bill # {self.id}  -  {self.patient.name} ({self.status})"
+        return f"Bill # {self.id}  ({self.code}) -  {self.patient.name} ({self.status})"
 
 
 
@@ -317,39 +323,6 @@ class BillingOperatorLog(models.Model):
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     timestamp = models.DateTimeField(auto_now_add=True)
     action = models.CharField(max_length=50, blank=True, null=True)  # e.g., "Bill Updated", "Payment Processed"
-
-
-
-
-
-class BillingItem(models.Model):
-    #Many BillingItem to One billing
-
-
-
-    # Exactly. The related_name attribute in a model’s foreign key is used to create a reverse relationship. This reverse relationship lets you access all instances of the related model—even though you didn’t explicitly declare a field in the first model to store that data.
-    billing = models.ForeignKey(Billing, on_delete=models.CASCADE, related_name='billing_items')
-    #Many BillingItem to One service_availed
-    service_availed = models.ForeignKey(PatientService, on_delete=models.CASCADE)
-    quantity = models.PositiveIntegerField(default=1)
-    subtotal = models.DecimalField(max_digits=10, decimal_places=2)
-
-    def save(self, *args, **kwargs):
-        """Calculate subtotal before saving."""
-        self.quantity = self.service_availed.quantity
-        self.subtotal = self.service_availed.subtotal
-        super().save(*args, **kwargs)
-        #IF SAVED, we have signal listener to update the billing.totalDue
-
-    def __str__(self):
-        return f"{self.service_availed.service.name} - {self.service_availed.quantity} x {self.service_availed.service.current_cost}"
-    
-
-
-#     { POST SAMPLE DATA
-#     "billing": 5, id
-#     "service_availed": 12
-# }
 
 
 
@@ -470,10 +443,286 @@ class LabResultFileInGroup(models.Model):
 
 
 
+# ROOMS (updated by sir jess)
+class Room(models.Model):
+    name = models.CharField(max_length=100)
+    hourly_rate = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def __str__(self):
+        return f"{self.name} - ₱{self.hourly_rate}/hr"
+
+class Bed(models.Model):
+    room = models.ForeignKey(Room, on_delete=models.CASCADE)
+    number = models.CharField(max_length=10, unique=True)
+    is_occupied = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f" ID: {self.id} - {self.room.name} - Bed {self.number}"
+
+
+
+class BedAssignment(models.Model):
+    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='bed_assignments')
+    bed = models.ForeignKey(Bed, on_delete=models.CASCADE)
+    assigned_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    start_time = models.DateTimeField(auto_now_add=True)
+    end_time = models.DateTimeField(null=True, blank=True)
+    last_billed_time = models.DateTimeField(null=True, blank=True)
+    total_hours = models.PositiveIntegerField(default=0)
+    billing = models.ForeignKey(Billing, on_delete=models.SET_NULL, null=True, blank=True) 
+
+    def __str__(self):
+        return f"{self.patient.name} - Bed {self.bed.number}"
 
 
 
 
+
+
+    # <-START TIME ---------------CURRENT TIME----(if set, END_TIME)->
+
+    def get_current_hours(self):
+        if self.end_time:
+            duration = self.end_time - self.start_time
+        else:
+            duration = timezone.now() - self.start_time
+        return max(1, math.ceil(duration.total_seconds() / 60))  #3600 1hr 60 1 min
+    
+    # def get_current_hours(self):
+    #     if self.end_time:
+    #         duration = self.end_time - self.start_time
+    #     else:
+    #         duration = timezone.now() - self.start_time
+    #     return max(1, math.ceil(duration.total_seconds() / 60))
+
+
+
+
+
+    #UPDATE! we trigger this at TASKS.py (ASYNC) this is like SERVICE.py
+    @transaction.atomic
+    def create_billing_item(self):
+        # Create BillingItem directly linked to this BedAssignment
+        self.refresh_from_db()
+        billing_item = BillingItem.objects.create(
+            billing=self.billing,
+            bed_assignment=self,
+            quantity=1,
+            subtotal=self.bed.room.hourly_rate
+        )
+        
+        
+        
+        #update tracking
+        self.total_hours += 1
+        self.last_billed_time = timezone.now()
+        self.save(update_fields=['total_hours', 'last_billed_time'])
+        
+        return billing_item
+    
+
+
+
+    #note to anyone: THIS IS JUST LIKE A BASE
+    # create billing but only when there are unbilled minutes/hours at the time of discharge.
+    @transaction.atomic
+    def create_final_billing_item(self):
+        self.refresh_from_db()
+        if not self.billing:
+            raise ValidationError("No billing linked")
+        
+        #ONLY compute this if there are KULANG SA TIME
+        hours = self.get_current_hours() - self.total_hours
+        if hours < 1:
+            return None #if wala, keep the exsiting BILLING ITEM
+
+        billing_item = BillingItem.objects.create(
+            billing=self.billing,
+            bed_assignment=self,
+            quantity=hours,
+            subtotal=self.bed.room.hourly_rate * hours
+        )
+
+        self.total_hours += hours
+        self.last_billed_time = timezone.now()
+        self.save(update_fields=['total_hours', 'last_billed_time'])
+        return billing_item
+    # def create_billing_item(self, hours):
+        
+    #     #creates PatientService + BillingItem
+    #     #creates PatientService + BillingItem
+    #     #creates PatientService + BillingItem
+    #     #creates PatientService + BillingItem
+
+
+
+    #     # Get the "Bed Fee" service
+    #     bed_fee_service = Service.objects.get(name="Bed Fee")
+        
+    #     # Create PatientService with historical cost
+    #     patient_service = PatientService.objects.create(
+    #         patient=self.patient,
+    #         service=bed_fee_service,
+    #         quantity=hours,
+    #         cost_at_time=bed_fee_service.current_cost
+    #     )
+        
+    #     # Get or create an active bill for the patient
+    #     billing, created = Billing.objects.get_or_create(
+    #         patient=self.patient,
+    #         status='Unpaid',
+    #         defaults={'created_by': self.assigned_by}
+    #     )
+        
+    #     # Create BillingItem
+    #     billing_item = BillingItem.objects.create(
+    #         billing=billing,
+    #         service_availed=patient_service,
+    #         quantity=hours,
+    #         subtotal=patient_service.subtotal
+    #     )
+        
+    #     # Update BedAssignment tracking
+    #     self.total_hours += hours
+    #     self.last_billed_time = timezone.now()
+    #     self.save(update_fields=['total_hours', 'last_billed_time'])
+        
+    #     # Recalculate total due
+    #     billing.update_total()
+    #     return billing_item
+
+    # def create_billing_item(self, hours, billing=None):
+        
+    #     #creates PatientService + BillingItem
+    #     #creates PatientService + BillingItem
+    #     #creates PatientService + BillingItem
+    #     #creates PatientService + BillingItem
+
+
+
+    #     # Get the "Bed Fee" service
+    #     bed_fee_service = Service.objects.get(name="Bed Fee")
+
+    #     if not billing:
+    #         billing = Billing.objects.filter(
+    #             patient=self.patient,
+    #             status='Unpaid'
+    #         ).order_by('-date_created').first()
+            
+    #         if not billing:
+    #             raise ValidationError(
+    #                 f"Cannot create billing item: No unpaid bill found for patient {self.patient.id}"
+    #             )
+            
+    #     # Create PatientService
+    #     patient_service = PatientService.objects.create(
+    #         patient=self.patient,
+    #         service=bed_fee_service,
+    #         quantity=hours,
+    #         cost_at_time=bed_fee_service.current_cost
+    #     )
+
+    #     # Create BillingItem
+    #     billing_item = BillingItem.objects.create(
+    #         billing=billing,
+    #         service_availed=patient_service,
+    #         quantity=hours,
+    #         subtotal=patient_service.subtotal
+    #     )
+
+    #     # Update BedAssignment tracking
+    #     self.total_hours += hours
+    #     self.last_billed_time = timezone.now()
+    #     self.save(update_fields=['total_hours', 'last_billed_time'])
+
+    #     # Recalculate total due
+    #     billing.update_total()
+    #     return billing_item
+
+
+
+
+
+
+
+
+
+
+class BillingItem(models.Model):
+    #Many BillingItem to One billing
+
+
+
+    # Exactly. The related_name attribute in a model’s foreign key is used to create a reverse relationship. This reverse relationship lets you access all instances of the related model—even though you didn’t explicitly declare a field in the first model to store that data.
+    billing = models.ForeignKey(Billing, on_delete=models.CASCADE, related_name='billing_items')
+
+
+
+    # LATEST UPDATE: Billing item can have ONE only of the following. SERVICE, ROOM, (? pharmacy), etc...
+    #Many BillingItem to One service_availed
+    
+    service_availed = models.ForeignKey(
+        PatientService, 
+        on_delete=models.CASCADE, 
+        null=True,
+        blank=True
+    )
+
+    bed_assignment = models.ForeignKey(
+        BedAssignment, 
+        on_delete=models.CASCADE, 
+        null=True, 
+        blank=True
+    )
+
+
+    quantity = models.PositiveIntegerField(default=1)
+    subtotal = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def clean(self):
+        #asssure only one of patient_service or bed_assignment is set#
+        if self.service_availed and self.bed_assignment:
+            raise ValidationError("A BillingItem must link to either PatientService or BedAssignment, not both")
+        if not self.service_availed and not self.bed_assignment:
+            raise ValidationError("A BillingItem must link to either PatientService or BedAssignment")
+
+
+    def save(self, *args, **kwargs):
+        """Calculate subtotal before saving."""
+        # UPDATE: Calculate quantity and subtotal based on which relation is set
+        if self.service_availed:
+            self.quantity = self.service_availed.quantity
+            self.subtotal = self.service_availed.subtotal
+        elif self.bed_assignment:
+            self.quantity = 1  # Bed assignment is billed hourly
+            self.subtotal = self.bed_assignment.bed.room.hourly_rate
+        else:
+            raise ValidationError("No service or bed assignment linked")
+
+        super().save(*args, **kwargs)
+
+        # self.quantity = self.service_availed.quantity
+        # self.subtotal = self.service_availed.subtotal
+        # super().save(*args, **kwargs)
+        #IF SAVED, we have signal listener to update the billing.totalDue
+
+    # def __str__(self):
+    #     return f"{self.service_availed.service.name} - {self.service_availed.quantity} x {self.service_availed.service.current_cost}"
+    def __str__(self):
+        if self.service_availed:
+            return f"{self.service_availed.service.name} - {self.service_availed.quantity} x {self.service_availed.service.current_cost}"
+        elif self.bed_assignment:
+            return f"Bed Fee - {self.quantity} x {self.bed_assignment.bed.room.hourly_rate}"
+        else:
+            return "Unlinked Billing Item"
+    
+    
+
+
+#     { POST SAMPLE DATA
+#     "billing": 5, id
+#     "service_availed": 12
+# }
 
 
 

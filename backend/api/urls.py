@@ -81,4 +81,18 @@ urlpatterns = [
     #DEPRECATED
     path('laboratory/get-laboratory/<str:pk>', views.get_laboratory_by_id, name='get_laboratory_by_id'),
 
+
+
+    # fetching bed and room info
+    path('room_bed_list', views.room_bed_list, name='assign_bed_to_billing'),
+
+
+
+
+    # Bed Assignment
+    path('assign-bed/<int:patient_id>/<int:bed_id>/<int:billing_id>', views.assign_bed, name='assign_bed_to_billing'),
+
+    
+    path('discharge-patient/<int:patient_id>', views.discharge_patient, name='discharge_patient'),
+
 ]   

@@ -3,7 +3,7 @@ from .models import BillingItem
 
 from .models import (
     User, Patient, MedicalHistory, Service, PatientService,
-    Billing, LaboratoryResult, LabResultFile, ClinicalNote, UserLog, Payment, LabResultFileInGroup, LabResultFileGroup
+    Billing, LaboratoryResult, LabResultFile, ClinicalNote, UserLog, Payment, LabResultFileInGroup, LabResultFileGroup, Room, BedAssignment, Bed
 )
 
 admin.site.register(User)
@@ -19,6 +19,11 @@ admin.site.register(UserLog)
 admin.site.register(Payment)
 admin.site.register(LabResultFileGroup)
 admin.site.register(LabResultFileInGroup)
+
+admin.site.register(Room)
+admin.site.register(Bed)
+admin.site.register(BedAssignment)
+
 
 
 

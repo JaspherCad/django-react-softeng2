@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "corsheaders",
     'django_extensions',
+    'django_q',
     
 ]
 # Specify the custom user model
@@ -78,6 +79,35 @@ MIDDLEWARE = [
     
     'api.middleware.ThreadLocalUserMiddleware'
 ]
+
+Q_CLUSTER = { # 1 MINUTE TEST
+    'name': 'bed_billing',
+    'workers': 1,
+    'timeout': 60,  # 1 MINUTE TEST 60 / 60 SA RETRY DIN
+    'retry': 60,
+    'save_limit': 250,
+    'sync': False,
+    'catch_up': False,
+    # REDIS ERROR : tell Django‑Q to use your default DATABASES backend as the broker
+    'orm': 'default',
+
+    
+}
+
+
+# Q_CLUSTER = { 
+#     'name': 'bed_billing',
+#     'workers': 1,
+#     'timeout': 3600,  # 1 hour
+#     'retry': 7200,
+#     'save_limit': 250,
+#     'sync': False,
+#     'catch_up': False,
+#     # REDIS ERROR : tell Django‑Q to use your default DATABASES backend as the broker
+#     'orm': 'default',
+
+    
+# }
 
 ROOT_URLCONF = "backend.urls"
 
