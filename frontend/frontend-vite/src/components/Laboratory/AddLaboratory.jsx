@@ -2,6 +2,7 @@ import { useParams } from "react-router-dom";
 import { addLabFilesToLaboratory, fetchLab, SearchPatientsApi } from "../../api/axios";
 import SearchBar from "../AngAtingSeachBarWIthDropDown";
 import { useEffect, useState } from "react";
+import styles from './AddLaboratory.module.css';
 
 const AddLaboratory = ({
   mode, //view / edit / create
@@ -141,6 +142,40 @@ const AddLaboratory = ({
     return date.toLocaleString();
   };
 
+
+
+  //all renders use this, some file are image some files actual files,,,,,
+  function FilePreview({ url }) {
+    const isImage = /\.(jpe?g|png|gif|webp)$/i.test(url);
+
+    return (
+      <div className={styles.filePreviewContainer}>
+        {isImage ? (
+          <a href={`http://localhost:8000${url}`} target="_blank" rel="noopener noreferrer">
+            <img
+              src={`http://localhost:8000${url}`}
+              alt="Preview"
+              className={styles.filePreviewImage}
+            />
+          </a>
+
+        ) : (
+          <a
+            href={`http://localhost:8000${url}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.fileLink}
+          >
+            {url.split("/").pop()}
+          </a>
+        )}
+      </div>
+    );
+  }
+
+
+
+
   return (
     <div className="max-w-lg mx-auto p-4 bg-white rounded shadow">
       <div className="flex justify-between items-center">
@@ -248,7 +283,7 @@ const AddLaboratory = ({
         )}
 
         {/* Existing Attachments */}
-        {labData && labData.attachments && labData.attachments.length > 0 && (
+        {/* {labData && labData.attachments && labData.attachments.length > 0 && (
           <div className="mb-4">
             <label className="block text-sm font-medium mb-1">Legacy Attachments</label>
             <div className="space-y-3">
@@ -262,83 +297,73 @@ const AddLaboratory = ({
               ))}
             </div>
           </div>
-        )}
+        )} */}
 
 
         {/* NEW File Groups */}
-        {labData && labData.file_groups && labData.file_groups.length > 0 && (
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-1">File Groups</label>
-            <div className="space-y-4">
-
-
-
-              {labData.file_groups.map((group) => (
-                <div key={group.id} className="border rounded p-3 bg-gray-50">
-                  <h4 className="font-semibold text-md mb-2">{group.description || "Untitled Group"}</h4>
-                  <ul className="space-y-2">
-                    {group.files.map((file) => (
-                      <li key={file.id} className="text-sm">
-                        <a
-                          href={file.file}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline"
-                        >
-                          {file.file.split('/').pop()}
-                        </a>
-                      </li>
+        {labData?.file_groups?.length > 0 && (
+          <section className={styles.fileGroupSection}>
+            <h2 className={styles.fileGroupHeader}>File Groups</h2>
+            <div className="space-y-6">
+              {labData.file_groups.map(group => (
+                <div key={group.id} className={styles.fileGroupCard}>
+                  <p className={styles.fileGroupDescription}>
+                    {group.description || "Untitled Group"}
+                  </p>
+                  <div className={styles.fileGrid}>
+                    {group.files.map(file => (
+                      <FilePreview
+                        key={file.id}
+                        url={file.file}
+                      />
                     ))}
-                  </ul>
+                  </div>
                 </div>
-
-
-
               ))}
             </div>
-          </div>
+          </section>
         )}
 
 
         {/* TODO: SEPERATE THIS MODAL SOON */}
         {isModalOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[80vh] overflow-y-auto">
-              <h3 className="text-lg font-semibold mb-4">Upload New File Group</h3>
+          <div className={styles.modalOverlay}>
+            <div className={styles.modalContent}>
+              <h3 className={styles.modalHeader}>Upload New File Group</h3>
 
               {modalAttachments.map((att, idx) => (
-                <div key={idx} className="border rounded p-3 mb-3 bg-white shadow-sm">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="font-medium">Group {idx + 1}</span>
+                <div key={idx} className={styles.modalGroup}>
+                  <div className={styles.modalGroupHeader}>
+                    <span className={styles.modalGroupTitle}>Group {idx + 1}</span>
                     {modalAttachments.length > 1 && (
                       <button
                         type="button"
                         onClick={() => removeModalAttachmentRow(idx)}
-                        className="text-sm text-red-500 hover:text-red-700"
+                        className={styles.removeGroupButton}
                       >
                         Remove Group
                       </button>
                     )}
                   </div>
 
-                  <div className="mb-2">
-                    <label className="text-xs text-gray-500">Description (shared for all files)</label>
+                  <div className="mb-3">
+                    <label className="text-xs text-gray-500 mb-1 block">Description</label>
                     <input
                       type="text"
                       placeholder="Group description"
                       value={att.description}
                       onChange={(e) => handleModalAttachmentChange(idx, 'description', e.target.value)}
-                      className="w-full border px-3 py-2 rounded text-sm"
+                      className={styles.modalInput}
                     />
                   </div>
 
                   <div>
-                    <label className="text-xs text-gray-500">Upload Files</label>
+                    <label className="text-xs text-gray-500 mb-1 block">Upload Files</label>
                     <input
                       type="file"
                       multiple
                       onChange={(e) => handleModalAttachmentChange(idx, 'file', e.target.files)}
-                      className="w-full text-sm"
+                      className={styles.modalFileInput}
                     />
                   </div>
                 </div>
@@ -348,23 +373,23 @@ const AddLaboratory = ({
                 <button
                   type="button"
                   onClick={addModalAttachmentRow}
-                  className="mt-2 px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                  className={`${styles.modalButton} ${styles.addButton}`}
                 >
                   + Add Group
                 </button>
 
-                <div className="flex space-x-2">
+                <div className={styles.modalActions}>
                   <button
                     type="button"
                     onClick={() => setIsModalOpen(false)}
-                    className="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400"
+                    className={`${styles.modalButton} ${styles.cancelButton}`}
                   >
                     Cancel
                   </button>
                   <button
                     type="button"
                     onClick={handleModalSubmit}
-                    className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
+                    className={`${styles.modalButton} ${styles.uploadButton}`}
                   >
                     Upload
                   </button>
@@ -391,70 +416,21 @@ const AddLaboratory = ({
 
 
 
-        {/* UPLOAD NEW  Attachments
-        <div className="mb-4">
-          <label className="block text-sm font-medium mb-1">Attachments (Grouped Upload)</label>
-          {attachments.map((att, idx) => (
-            <div key={idx} className="border rounded p-3 mb-3 bg-white shadow-sm">
-              <div className="flex justify-between items-center mb-2">
-                <span className="font-medium">Group {idx + 1}</span>
-                {attachments.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => removeAttachmentRow(idx)}
-                    className="text-sm text-red-500 hover:text-red-700"
-                    disabled={isViewMode && !isEditing}
-                  >
-                    Remove Group
-                  </button>
-                )}
-              </div>
-
-              <div className="mb-2">
-                <label className="text-xs text-gray-500">Description (shared for all files)</label>
-                <input
-                  type="text"
-                  placeholder="Group description"
-                  value={att.description}
-                  onChange={(e) => handleAttachmentChange(idx, 'description', e.target.value)}
-                  className="w-full border px-3 py-2 rounded text-sm"
-                  disabled={isViewMode && !isEditing}
-                />
-              </div>
-
-              <div>
-                <label className="text-xs text-gray-500">Upload Files</label>
-                <input
-                  type="file"
-                  multiple
-                  onChange={(e) => handleAttachmentChange(idx, 'file', e.target.files)}
-                  className="w-full text-sm"
-                  disabled={isViewMode && !isEditing}
-                />
-              </div>
-            </div>
-          ))}
-
-          <button
-            type="button"
-            onClick={addAttachmentRow}
-            className="mt-2 px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
-          >
-            + Add New Group
-          </button>
-        </div> */}
+        
 
         {/* Submit Button */}
-
-        <div className="mt-6">
+        
+        {labId? (<></>): 
+        (<div className="mt-6">
           <button
             type="submit"
             className="w-full bg-green-600 text-black py-2 rounded hover:bg-green-700"
             disabled={isViewMode && !isEditing}
           >
-            {isViewMode ? 'Save Changes' : 'Update'}
+            {isViewMode ? 'Save Changes' : 'CREATE LAB'}
           </button>
-        </div>
+        </div>)}
+        
 
 
       </form>
