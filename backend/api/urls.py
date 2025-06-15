@@ -6,6 +6,9 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 #api/
 urlpatterns = [
+
+    path('server-time', views.get_server_time, name='server-init-time'),
+
     path('about', views.about, name='aboutss'),
     
     path('user/register', views.CreateUserView.as_view(), name='register'),
@@ -41,7 +44,9 @@ urlpatterns = [
 
     path('billings/list', views.get_bills, name='billing_list'),
     path('billings/list/v2', views.get_bills_with_bill_items, name='billing_list'),
-    path('billings/id/<str:pk>', views.get_bills_by_id_with_bill_items, name='billing_by_id'),
+    path('billings/id/<str:pk>', views.get_bills_by_id_with_bill_items, name='billing_by_id'), #THIS IS CODE!!
+    path('billings/actualid/<str:pk>', views.get_bills_by_ACTUAL_id_with_bill_items, name='billing_by_actual_id'),
+
 
                                 #id of that BILLING
     path('billings/add-billing-item/<int:pk>', views.create_bill_item, name='create_billing_item'),
@@ -80,5 +85,21 @@ urlpatterns = [
     path('laboratory/upload-file-laboratory/laboratory-id/<str:pk>', views.create_laboratory_file_result_for_laboratory_class, name='create_laboratory_file_result_for_laboratory_class'),
     #DEPRECATED
     path('laboratory/get-laboratory/<str:pk>', views.get_laboratory_by_id, name='get_laboratory_by_id'),
+
+
+
+    # fetching bed and room info
+    path('room_bed_list', views.room_bed_list, name='assign_bed_to_billing'),
+
+
+
+
+    # Bed Assignment
+    path('assign-bed/<int:patient_id>/<int:bed_id>/<int:billing_id>', views.assign_bed, name='assign_bed_to_billing'),
+
+    
+    path('discharge-patient/<int:patient_id>', views.discharge_patient, name='discharge_patient'),
+    path('bed-assignments/', views.bed_assignment_list, name='bed_assignment_list'),
+
 
 ]   

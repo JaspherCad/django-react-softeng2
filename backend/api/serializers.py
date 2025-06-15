@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, Patient, LaboratoryResult, LabResultFile, UserLog, Service, PatientService, Billing, BillingItem, LabResultFileInGroup, LabResultFileGroup
+from .models import User, Patient, LaboratoryResult, LabResultFile, UserLog, Service, PatientService, Billing, BillingItem, LabResultFileInGroup, LabResultFileGroup, Bed, Room, BedAssignment
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -140,6 +140,59 @@ class UserLogSerializer(serializers.ModelSerializer):
 
 
 
+#ROOM SERIALIZERS#ROOM SERIALIZERS#ROOM SERIALIZERS#ROOM SERIALIZERS#ROOM SERIALIZERS#ROOM SERIALIZERS#ROOM SERIALIZERS#ROOM SERIALIZERS#ROOM SERIALIZERS#ROOM SERIALIZERS#ROOM SERIALIZERS
+
+
+class RoomSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Room
+        fields = ['id', 'name', 'hourly_rate']
+
+
+
+
+
+class BedSerializer(serializers.ModelSerializer):
+    room = RoomSerializer(read_only=True)  # Nested room info
+
+    class Meta:
+        model = Bed
+        fields = ['id', 'room', 'number', 'is_occupied']
+
+class BedAssignmentSerializer(serializers.ModelSerializer):
+    bed = BedSerializer(read_only=True)
+
+    class Meta:
+        model = BedAssignment
+        fields = [
+            'id', 'patient', 'bed', 'assigned_by', 'start_time',
+            'end_time', 'total_hours', 'last_billed_time', 'billing'
+        ]
+        read_only_fields = ['bed', 'start_time', 'total_hours', 'last_billed_time']
+
+
+
+#FOR FETCHING (sole purpose is fetching only)
+class BedOnlySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Bed
+        fields = ['id', 'number', 'is_occupied']
+
+class RoomWithBedInfoSerializer(serializers.ModelSerializer):
+    beds = BedOnlySerializer(source='bed_set', many=True, read_only=True)  
+
+    class Meta:
+        model = Room
+        fields = ['id', 'name', 'hourly_rate', 'beds']
+
+#ROOM SERIALIZERS#ROOM SERIALIZERS#ROOM SERIALIZERS#ROOM SERIALIZERS#ROOM SERIALIZERS#ROOM SERIALIZERS
+
+
+
+
+
+
+
 
 
 #BILLING SERIALIZERS #BILLING SERIALIZERS #BILLING SERIALIZERS #BILLING SERIALIZERS #BILLING SERIALIZERS
@@ -172,12 +225,12 @@ class PatientServiceSerializer(serializers.ModelSerializer):
 class BillingItemSerializer(serializers.ModelSerializer):
     service_name = serializers.SerializerMethodField(read_only=True)
     service_id = serializers.ReadOnlyField(source='service_availed.service.id')
-
+    bed_assignment = BedAssignmentSerializer(read_only=True)
 
 
     class Meta:
         model = BillingItem
-        fields = ['id', 'billing', 'service_availed', "service_id", 'service_name', 'quantity', 'subtotal']
+        fields = ['id', 'billing', 'service_availed', 'bed_assignment',"service_id", 'service_name', 'quantity', 'subtotal']
         extra_kwargs = {
             'subtotal': {'read_only': True},  
         }
@@ -311,4 +364,3 @@ class BillingCreateSerializer(serializers.ModelSerializer):
         }
 
 #BILLING SERIALIZERS #BILLING SERIALIZERS #BILLING SERIALIZERS #BILLING SERIALIZERS #BILLING SERIALIZERS
-

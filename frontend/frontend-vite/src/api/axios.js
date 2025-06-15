@@ -16,14 +16,14 @@ const axiosInstance = axios.create({
 
 
 //NOTE FOR ME:
-  //LOCALSTORAGE:
-    //if we are rfreshing using the localstorage we do this
-      //1. get the refresh token from localstorage
-      //2. send the refresh token to the server
-      //3. server returns a new access token
-      //4. we save the new access token to localstorage
-      //5. we send the new access token to the server
-      // DO U REALIZE THAT WE DONT NEED HEADERS???
+//LOCALSTORAGE:
+//if we are rfreshing using the localstorage we do this
+//1. get the refresh token from localstorage
+//2. send the refresh token to the server
+//3. server returns a new access token
+//4. we save the new access token to localstorage
+//5. we send the new access token to the server
+// DO U REALIZE THAT WE DONT NEED HEADERS???
 
 // Add these constants
 const AUTH_ENDPOINTS = ['/user/login', '/token/refresh'];
@@ -41,7 +41,7 @@ axiosInstance.interceptors.request.use(config => {
   //other endpoints REQUIRES BEARER TOKEN
 
   const token = localStorage.getItem('token');
-  console.log("HEADER HAS BEEN SET: " +  token)
+  console.log("HEADER HAS BEEN SET: " + token)
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
@@ -54,25 +54,25 @@ axiosInstance.interceptors.response.use(
   response => response,
   async error => {
     const originalRequest = error.config;
-    
+
     // Skip handling for auth endpoints and non-401 errors (500,300,400,etc)
-    if (AUTH_ENDPOINTS.some(path => originalRequest.url.includes(path)) || 
-        
-        originalRequest._retryCount >= 2) {
-        if (error.code === "ERR_NETWORK"){
-          alert("ERR_NETWORK: PLEASE CHECK CONNETION")
-        }
-        console.log("ERROR IS NOT 401, so skipping handling expired tokens")
-        return Promise.reject(error);
-          //AFAIK this throws other errors to catch statements 
+    if (AUTH_ENDPOINTS.some(path => originalRequest.url.includes(path)) ||
+
+      originalRequest._retryCount >= 2) {
+      if (error.code === "ERR_NETWORK") {
+        alert("ERR_NETWORK: PLEASE CHECK CONNETION")
+      }
+      console.log("ERROR IS NOT 401, so skipping handling expired tokens")
+      return Promise.reject(error);
+      //AFAIK this throws other errors to catch statements 
     }
 
     const statusCode = error.response?.status;
 
 
-    switch(statusCode){
+    switch (statusCode) {
       case 401:
-            //if error 401: NO TOKEN or EXPIRED TOKEN. do this
+        //if error 401: NO TOKEN or EXPIRED TOKEN. do this
 
         //The retry logic is triggered only when a request receives a 401 Unauthorized error,
         originalRequest._retryCount = (originalRequest._retryCount || 0) + 1;
@@ -92,15 +92,15 @@ axiosInstance.interceptors.response.use(
 
 
         //USE THE REFRESH TOKEN TO GET ACCESS TOKEN AGAIN
-          //if localstorage
-            //get the access token on localStorage then use it 
-                //if refreshtoken is expired, remove all tokens(access/refresh) then redirect to login
+        //if localstorage
+        //get the access token on localStorage then use it 
+        //if refreshtoken is expired, remove all tokens(access/refresh) then redirect to login
 
         alert("BRO! TOKEN IS EXPIRED... refreshing token")
         try {
           if (USE_HTTP_ONLY) {
             await axiosInstance.post('/token/refresh');
-          } 
+          }
           else { //LOCAL STORAGE
             const { data } = await axiosInstance.post('/token/refresh', {
               refresh: localStorage.getItem('refreshToken')
@@ -115,7 +115,7 @@ axiosInstance.interceptors.response.use(
           return Promise.reject(refreshError);
         }
 
-        case 403: // Forbidden
+      case 403: // Forbidden
         console.error("Error 403: You do not have permission.");
         alert("You are not authorized to access this resource.");
         return Promise.reject(error);
@@ -136,7 +136,7 @@ axiosInstance.interceptors.response.use(
         return Promise.reject(error);
     }
 
-    
+
   }
 );
 
@@ -238,7 +238,7 @@ export const testApi = async () => {
 export const listOfPatientAPI = async (page = 1) => {
   try {
     const response = await axiosInstance.get(`/patients/list?page=${page}`);
-    return response; 
+    return response;
   } catch (error) {
     throw error;
   }
@@ -247,7 +247,7 @@ export const listOfPatientAPI = async (page = 1) => {
 
 export const addBillingsApi = async (patientData) => {
   try {
-    const response = await axiosInstance.post('/billings/add', 
+    const response = await axiosInstance.post('/billings/add',
       patientData);
     return response;
   } catch (error) {
@@ -257,13 +257,13 @@ export const addBillingsApi = async (patientData) => {
 
 export const addBillingItemApi = async (billingData, billingId) => {
   try {
-    const response = await axiosInstance.post(`/billings/add-billing-item/${billingId}`, 
+    const response = await axiosInstance.post(`/billings/add-billing-item/${billingId}`,
       billingData);
-//       {
-//     "service": 1,
-//     "quantity": 1,
-//     "cost_at_time": 2000
-// }
+    //       {
+    //     "service": 1,
+    //     "quantity": 1,
+    //     "cost_at_time": 2000
+    // }
 
     return response;
   } catch (error) {
@@ -273,14 +273,14 @@ export const addBillingItemApi = async (billingData, billingId) => {
 
 export const editBillingItemApi = async (billingCode, billingItemId, billingData) => {
   try {
-    const response = await axiosInstance.put(`/billings/${billingCode}/items/${billingItemId}/edit`, 
+    const response = await axiosInstance.put(`/billings/${billingCode}/items/${billingItemId}/edit`,
       billingData);
     console.log(billingData)
-//       {
-//     "service": 1,
-//     "quantity": 1,
-//     "cost_at_time": 2000
-// }
+    //       {
+    //     "service": 1,
+    //     "quantity": 1,
+    //     "cost_at_time": 2000
+    // }
 
     return response;
   } catch (error) {
@@ -291,8 +291,8 @@ export const editBillingItemApi = async (billingCode, billingItemId, billingData
 
 export const SearchBillingsApi = async (searchTerm) => {
   try {
-    const response = await axiosInstance.get('/billings/search',{
-      params: {q : searchTerm}
+    const response = await axiosInstance.get('/billings/search', {
+      params: { q: searchTerm }
     }
 
     );
@@ -303,10 +303,12 @@ export const SearchBillingsApi = async (searchTerm) => {
 };
 
 
+
+
 export const SearchPatientsApi = async (searchTerm) => {
   try {
-    const response = await axiosInstance.get('/patients/search',{
-      params: {q : searchTerm}
+    const response = await axiosInstance.get('/patients/search', {
+      params: { q: searchTerm }
     }
 
     );
@@ -318,8 +320,8 @@ export const SearchPatientsApi = async (searchTerm) => {
 
 export const SearchLaboratoryApi = async (searchTerm) => {
   try {
-    const response = await axiosInstance.get('/laboratory/search-laboratory',{
-      params: {q : searchTerm}
+    const response = await axiosInstance.get('/laboratory/search-laboratory', {
+      params: { q: searchTerm }
     }
 
     );
@@ -332,8 +334,8 @@ export const SearchLaboratoryApi = async (searchTerm) => {
 
 export const SearchServicesApi = async (searchTerm) => {
   try {
-    const response = await axiosInstance.get('/service/search',{
-      params: {q : searchTerm}
+    const response = await axiosInstance.get('/service/search', {
+      params: { q: searchTerm }
     }
 
     );
@@ -344,13 +346,13 @@ export const SearchServicesApi = async (searchTerm) => {
 };
 
 
-export const listOfBillingsAPI = async (page = 1, pageSize=10) => {
+export const listOfBillingsAPI = async (page = 1, pageSize = 10) => {
   try {
     const response = await axiosInstance.get('billings/list/v2', {
       params: { page, pageSize }
     });
 
-    
+
     return response
   } catch (error) {
     throw error;
@@ -378,9 +380,18 @@ export const getBillingByID = async (id) => {
   }
 };
 
+export const getBillingByACTUALIDandNotCODE = async (id) => {
+  try {
+    const response = await axiosInstance.get(`/billings/actualid/${id}`);
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
 export const addPatientAPI = async (newPatientData) => {
   try {
-    const response = await axiosInstance.post('/patients/create', 
+    const response = await axiosInstance.post('/patients/create',
       newPatientData
     );
     return response;
@@ -389,11 +400,11 @@ export const addPatientAPI = async (newPatientData) => {
   }
 };
 
-export const patientDetailsAPI = async (patientId) =>{
-  try{
+export const patientDetailsAPI = async (patientId) => {
+  try {
     const response = await axiosInstance.get(`/patients/${patientId}`)
     return response
-  }catch (error) {
+  } catch (error) {
     throw error;
   }
 }
@@ -436,7 +447,7 @@ export const checkAuthApi = async () => {
 
 export const addLabRecordsToPatient = async (patientId, labData) => {
   try {
-    const response = await axiosInstance.post(`/laboratory/add-patient-laboratory/patient-id/${patientId}`, 
+    const response = await axiosInstance.post(`/laboratory/add-patient-laboratory/patient-id/${patientId}`,
       labData
     );
     return response;
@@ -447,11 +458,11 @@ export const addLabRecordsToPatient = async (patientId, labData) => {
 
 export const addLabFilesToLaboratory = async (labId, labFiles) => {
   try {
-    const response = await axiosInstance.post(`/laboratory/files/group/${labId}`, 
+    const response = await axiosInstance.post(`/laboratory/files/group/${labId}`,
       labFiles,
       {
         headers: {
-          
+
           'Content-Type': 'multipart/form-data',
         },
       }
@@ -463,6 +474,29 @@ export const addLabFilesToLaboratory = async (labId, labFiles) => {
 };
 
 
+
+export const assignBed = async (patientID, bedID, billingID) => {
+      //                PatientID   /  bedID   /   billingID
+
+  try {
+    const response = await axiosInstance.post(`/assign-bed/${patientID}/${bedID}/${billingID}`);
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const fetchServerTime = async () => {
+  try {
+    const res = await client.get('/server-time')  // you need a simple view returning {"server_time": "..."}
+    return res.data
+  } catch (error) {
+    throw error;
+  }
+
+}
+
+
 export const fetchLab = async (labId) => {
   try {
     const response = await axiosInstance.get(`/laboratory/get-laboratory/${labId}`);
@@ -471,6 +505,28 @@ export const fetchLab = async (labId) => {
     throw error;
   }
 };
+
+export const fetchBedAssignments = async (activeOnlyBoolean) => {
+  try {
+    const response = await axiosInstance.get(`/bed-assignments/?active=${activeOnlyBoolean}`)
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+
+export const fetchRooms = async () => {
+  try {
+    const response = await axiosInstance.get(`/room_bed_list`);
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+
+
 
 export const currentUserLogs = async () => {
   try {

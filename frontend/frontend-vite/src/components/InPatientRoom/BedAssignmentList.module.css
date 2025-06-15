@@ -1,0 +1,72 @@
+/* src/pages/BedAssignments/BedAssignmentList.module.css */
+.page {
+  max-width: 900px;
+  margin: 2rem auto;
+  font-family: sans-serif;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 1rem;
+}
+
+.clock {
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.controls {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.searchInput {
+  flex: 1;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.tableWrapper {
+  max-height: 500px;
+  overflow: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  border: 1px solid #ddd;
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+}
+
+.table th {
+  position: sticky;
+  top: 0;
+  background: #f7f7f7;
+  z-index: 1;
+}
+
+.table tbody tr:nth-child(even) {
+  background: #fafafa;
+}
+
+.loading,
+.error {
+  text-align: center;
+  margin-top: 2rem;
+}
+
+.error {
+  color: #b00020;
+}

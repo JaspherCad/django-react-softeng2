@@ -1,14 +1,15 @@
+from django.utils import timezone
 import json
 from rest_framework import generics
 from rest_framework import status
 from django.db import transaction
 from django.db.models import Q
 
-from .serializers import UserSerializer, PatientSerializer, UserLogSerializer, BillingCreateSerializer, ServiceSerializer, PatientServiceSerializer, LaboratoryResultSerializer, LabResultFileSerializer, BillingItemSerializer, BillingSerializer, BillingSerializerNoList, Billing_PatientInfo_Serializer, LabResultFileGroupSerializer, LabResultFileInGroup, LabResultFileInGroupSerializer
+from .serializers import UserSerializer, PatientSerializer, UserLogSerializer, BillingCreateSerializer, ServiceSerializer, PatientServiceSerializer, LaboratoryResultSerializer, LabResultFileSerializer, BillingItemSerializer, BillingSerializer, BillingSerializerNoList, Billing_PatientInfo_Serializer, LabResultFileGroupSerializer, LabResultFileInGroup, LabResultFileInGroupSerializer, RoomWithBedInfoSerializer, BedAssignmentSerializer
 
 
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from .models import User, LabResultFileGroup, LabResultFileInGroup ,Patient, UserLog, Billing, BillingItem, BillingOperatorLog, PatientService, Service, LaboratoryResult, LabResultFile
+from .models import User, LabResultFileGroup, LabResultFileInGroup ,Patient, UserLog, Billing, BillingItem, BillingOperatorLog, PatientService, Service, LaboratoryResult, LabResultFile, Bed, BedAssignment, Room
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -581,6 +582,10 @@ def create_bill_item(request, pk):
     return Response(patient_service_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+
+
+
+
 @api_view(['GET'])
 @permission_classes([IsAdmin | IsAuthenticated])
 def search_service(request):
@@ -835,6 +840,46 @@ def get_bills_by_id_with_bill_items(request, pk):
         )
     
 
+
+@api_view(['GET'])
+@permission_classes([IsAdmin | IsTeller])
+def get_bills_by_ACTUAL_id_with_bill_items(request, pk):
+    try:
+                #get specific billing record by ID
+        # bill = Billing.objects.prefetch_related('billing_items').filter(id=pk).first() //not sure if keep or remove this line
+
+        bill = Billing.objects.filter(id=pk).first()
+
+
+        if not bill:
+            #get all existing Billing codes as return coz its confusing me.. id!=billing_code
+            available_codes = list(
+                Billing.objects
+                       .order_by('code')
+                       .values_list('code', flat=True)
+            )
+
+            return Response(
+                {
+                    "error": f"Billing record with code '{pk}' not found.",
+                    "available_codes": available_codes
+                },
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # If found, serialize and return.
+        serializer = Billing_PatientInfo_Serializer(bill)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response(
+            {
+                "error": "Something went wrong while fetching bills.",
+                "details": str(e)
+            },
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+    
     
 @api_view(['POST'])
 @permission_classes([IsAdmin | IsTeller])
@@ -1246,12 +1291,88 @@ def get_laboratory_file_group(request, group_id):
         )
 
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_server_time(request):
+    try:
+        server_time = timezone.now().isoformat()
+        return Response({'server_time': server_time}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"error": "Failed to retrieve server time", "details": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+
+
 
 #on EDIT lab
 #we can edit the TEST TYPE && RESULT SUMMARY
 
 #on EDIT lab files (group new update)
 #we cant edit files, only DELETE and ADD more
+
+
+
+
+
+
+
+
+
+@api_view(['POST'])
+@permission_classes([IsAdmin | IsDoctor])
+def assign_bed(request, patient_id, bed_id, billing_id):
+    patient = get_object_or_404(Patient, id=patient_id)
+    bed = get_object_or_404(Bed, id=bed_id)
+    billing = get_object_or_404(Billing, id=billing_id)
+    
+    # Ensure billing belongs to the patient
+    if billing.patient.id != patient.id:
+        return Response(
+            {"error": f"Billing ID {billing.id} does not belong to Patient {patient.id}"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # Ensure patient is Admitted
+    if patient.status != 'Admitted':
+        return Response(
+            {"error": "Only admitted patients can be assigned a bed"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    
+        
+    assignment = BedAssignment.objects.create(
+        patient=patient,
+        bed=bed,
+        assigned_by=request.user,
+        billing=billing  
+    )
+    bed.is_occupied = True
+    bed.save()
+
+
+    return Response({
+        "id": assignment.id,
+        "patient": {
+            "id": patient.id,
+            "name": patient.name
+        },
+        "bed": {
+            "id": bed.id,
+            "number": bed.number
+        },
+        "start_time": assignment.start_time
+    }, status=status.HTTP_201_CREATED)
+
+
+
+
+
+
+
 
 @api_view(['POST'])
 @permission_classes([IsAdmin | IsDoctor])
@@ -1261,10 +1382,123 @@ def add_laboratory_file_group_to_existing_lab(request, labId):
 
 
 
+# views.py
+@api_view(['POST'])
+@permission_classes([IsAdmin | IsDoctor])
+def discharge_patient(request, patient_id):
+    patient = get_object_or_404(Patient, id=patient_id)
+    assignment = patient.bed_assignments.filter(end_time__isnull=True).first()
+
+    if not assignment:
+        return Response(
+            {"error": "No active bed assignment found"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    try:
+        #NOTE: goal is to put end_time value,, if end_time the tasks.py stops hrly incremental
+        # Set end_time
+        assignment.end_time = timezone.now()
+        assignment.save(update_fields=['end_time'])
+
+        #note to anyone: THIS IS JUST LIKE A BASE
+        # create billing but only when there are unbilled minutes/hours at the time of discharge.
+        assignment.create_final_billing_item()
+
+        # Mark patient as discharged
+        patient.status = 'Discharged'
+        patient.save()
+
+        # Free up bed
+        bed = assignment.bed
+        bed.is_occupied = False
+        bed.save()
+
+        return Response({
+            "message": "Patient discharged successfully",
+            "final_hours": assignment.get_current_hours() - assignment.total_hours,
+            "billing_id": assignment.billing.id if assignment.billing else None
+        }, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response(
+            {"error": "Failed to discharge patient", "details": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+
+# @api_view(['POST'])
+# @permission_classes([IsAdmin | IsDoctor])
+# def discharge_patient(request, patient_id):
+#     patient = get_object_or_404(Patient, id=patient_id)
+#     assignment = BedAssignment.objects.filter(patient=patient, end_time__isnull=True).first()
+
+#     if not assignment:
+#         return Response(
+#             {"error": "No active bed assignment found for this patient"},
+#             status=status.HTTP_404_NOT_FOUND
+#         )
+
+#     hours_to_bill = assignment.get_current_minutes() - assignment.total_hours
+#     if hours_to_bill >= 1:
+#         assignment.create_billing_item(hours_to_bill)
+
+#     assignment.end_time = timezone.now()
+#     assignment.save(update_fields=['end_time'])
+
+#     patient.status = 'Discharged'
+#     patient.save()
+
+#     return Response({
+#         "message": "Patient discharged successfully",
+#         "final_hours": hours_to_bill,
+#         "total_billed": hours_to_bill * assignment.bed.room.hourly_rate
+#     }, status=status.HTTP_200_OK)
+
+
+# @api_view(['POST'])
+# @permission_classes([IsAdmin | IsDoctor])
+# def trigger_billing_task(request):
+#     generate_hourly_besd_chargess()  # Manually run the task
+#     return Response({"message": "Billing task executed"}, status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated | IsAdmin])
+def room_bed_list(request):
+    rooms = Room.objects.prefetch_related('bed_set').all()
+    serializer = RoomWithBedInfoSerializer(rooms, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 
 
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def bed_assignment_list(request):
+
+    #optional param active
+      #active=true  → only assignments with end_time == null
+      #active=false → only assignments with end_time != null
+    active_q = request.query_params.get('active')
+    qs = BedAssignment.objects.select_related('bed', 'patient', 'billing', 'assigned_by')
+
+    #conditional render base case   
+    if active_q is not None: 
+        if active_q.lower() in ('true', '1', 'yes'):
+            qs = qs.filter(end_time__isnull=True)
+        elif active_q.lower() in ('false', '0', 'no'):
+            qs = qs.filter(end_time__isnull=False)
+        else:
+            return Response(
+                {"error": "Invalid value for 'active'; use true or false."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    #all
+    serializer = BedAssignmentSerializer(qs, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 # Create your views here.
