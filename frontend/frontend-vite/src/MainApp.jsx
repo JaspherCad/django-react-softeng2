@@ -10,6 +10,8 @@ import { AuthContext } from './context/AuthContext';
 import Patients from './components/Patients';
 import Billing from './components/Billing'
 import Laboratory from './components/Laboratory';
+import InPatientRoom from './components/InPatientRoom';
+
 import TellerDashboard from './components/DashBoardTeller';
 
 // Protected Route Component
@@ -98,6 +100,8 @@ const MainApp = () => {
           <Route path="/patients/*" element={<Patients />} />
           <Route path="/billing/*" element={<Billing />} />
           <Route path="/laboratory/*" element={<Laboratory />} />
+          <Route path="/InPatientRoom/*" element={<InPatientRoom />} />
+
 
 
 

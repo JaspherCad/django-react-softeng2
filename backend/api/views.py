@@ -5,7 +5,7 @@ from rest_framework import status
 from django.db import transaction
 from django.db.models import Q
 
-from .serializers import UserSerializer, PatientSerializer, UserLogSerializer, BillingCreateSerializer, ServiceSerializer, PatientServiceSerializer, LaboratoryResultSerializer, LabResultFileSerializer, BillingItemSerializer, BillingSerializer, BillingSerializerNoList, Billing_PatientInfo_Serializer, LabResultFileGroupSerializer, LabResultFileInGroup, LabResultFileInGroupSerializer, RoomWithBedInfoSerializer
+from .serializers import UserSerializer, PatientSerializer, UserLogSerializer, BillingCreateSerializer, ServiceSerializer, PatientServiceSerializer, LaboratoryResultSerializer, LabResultFileSerializer, BillingItemSerializer, BillingSerializer, BillingSerializerNoList, Billing_PatientInfo_Serializer, LabResultFileGroupSerializer, LabResultFileInGroup, LabResultFileInGroupSerializer, RoomWithBedInfoSerializer, BedAssignmentSerializer
 
 
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -840,6 +840,46 @@ def get_bills_by_id_with_bill_items(request, pk):
         )
     
 
+
+@api_view(['GET'])
+@permission_classes([IsAdmin | IsTeller])
+def get_bills_by_ACTUAL_id_with_bill_items(request, pk):
+    try:
+                #get specific billing record by ID
+        # bill = Billing.objects.prefetch_related('billing_items').filter(id=pk).first() //not sure if keep or remove this line
+
+        bill = Billing.objects.filter(id=pk).first()
+
+
+        if not bill:
+            #get all existing Billing codes as return coz its confusing me.. id!=billing_code
+            available_codes = list(
+                Billing.objects
+                       .order_by('code')
+                       .values_list('code', flat=True)
+            )
+
+            return Response(
+                {
+                    "error": f"Billing record with code '{pk}' not found.",
+                    "available_codes": available_codes
+                },
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # If found, serialize and return.
+        serializer = Billing_PatientInfo_Serializer(bill)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response(
+            {
+                "error": "Something went wrong while fetching bills.",
+                "details": str(e)
+            },
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+    
     
 @api_view(['POST'])
 @permission_classes([IsAdmin | IsTeller])
@@ -1251,6 +1291,19 @@ def get_laboratory_file_group(request, group_id):
         )
 
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_server_time(request):
+    try:
+        server_time = timezone.now().isoformat()
+        return Response({'server_time': server_time}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"error": "Failed to retrieve server time", "details": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
 
 
 
@@ -1417,6 +1470,35 @@ def room_bed_list(request):
     serializer = RoomWithBedInfoSerializer(rooms, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
+
+
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def bed_assignment_list(request):
+
+    #optional param active
+      #active=true  → only assignments with end_time == null
+      #active=false → only assignments with end_time != null
+    active_q = request.query_params.get('active')
+    qs = BedAssignment.objects.select_related('bed', 'patient', 'billing', 'assigned_by')
+
+    #conditional render base case   
+    if active_q is not None: 
+        if active_q.lower() in ('true', '1', 'yes'):
+            qs = qs.filter(end_time__isnull=True)
+        elif active_q.lower() in ('false', '0', 'no'):
+            qs = qs.filter(end_time__isnull=False)
+        else:
+            return Response(
+                {"error": "Invalid value for 'active'; use true or false."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    #all
+    serializer = BedAssignmentSerializer(qs, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 # Create your views here.

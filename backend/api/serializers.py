@@ -136,6 +136,13 @@ class UserLogSerializer(serializers.ModelSerializer):
 
 
 
+
+
+
+
+#ROOM SERIALIZERS#ROOM SERIALIZERS#ROOM SERIALIZERS#ROOM SERIALIZERS#ROOM SERIALIZERS#ROOM SERIALIZERS#ROOM SERIALIZERS#ROOM SERIALIZERS#ROOM SERIALIZERS#ROOM SERIALIZERS#ROOM SERIALIZERS
+
+
 class RoomSerializer(serializers.ModelSerializer):
     class Meta:
         model = Room
@@ -177,6 +184,14 @@ class RoomWithBedInfoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Room
         fields = ['id', 'name', 'hourly_rate', 'beds']
+
+#ROOM SERIALIZERS#ROOM SERIALIZERS#ROOM SERIALIZERS#ROOM SERIALIZERS#ROOM SERIALIZERS#ROOM SERIALIZERS
+
+
+
+
+
+
 
 
 
