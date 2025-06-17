@@ -302,6 +302,19 @@ export const SearchBillingsApi = async (searchTerm) => {
   }
 };
 
+export const SearchHospitalUserApi = async (searchTerm) => {
+  try {
+    const response = await axiosInstance.get('/users/search', {
+      params: { q: searchTerm }
+    }
+
+    );
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
 
 
 
@@ -501,6 +514,25 @@ export const fetchLab = async (labId) => {
   try {
     const response = await axiosInstance.get(`/laboratory/get-laboratory/${labId}`);
     return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+
+export const FetchUsersAPI = async () => {
+  try {
+    const response = await axiosInstance.get(`/users/list`);
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const FetchUsersRolesAPI = async () => {
+  try {
+    const response = await axiosInstance.get(`/users/roles`);
+    return response;
   } catch (error) {
     throw error;
   }

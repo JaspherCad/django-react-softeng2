@@ -163,7 +163,7 @@ const Billing = () => {
           <div className={styles.searchBarContainer}>
             <SearchBar
               data={dummyBillingData}
-              placeholder={"IDKss"}
+              placeholder={"IDKsss"}
               searchApi={SearchBillingsApi}
               // accept the argument passed by the SearchBar component (item) when onSelectSuggestion is invoked
               //to accept *-*

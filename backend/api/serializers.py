@@ -1,26 +1,35 @@
 from rest_framework import serializers
-from .models import User, Patient, LaboratoryResult, LabResultFile, UserLog, Service, PatientService, Billing, BillingItem, LabResultFileInGroup, LabResultFileGroup, Bed, Room, BedAssignment
+from .models import User, Patient, LaboratoryResult, LabResultFile, UserImage, UserLog, Service, PatientService, Billing, BillingItem, LabResultFileInGroup, LabResultFileGroup, Bed, Room, BedAssignment, MedicalHistory
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ["id", "user_id", "password", "role", "department", "is_active", "is_staff"]
+        fields = ["id", "first_name","last_name","user_id", "password", "role", "department", "is_active", "is_staff"]
         extra_kwargs = {
-            "password": {"write_only": True},  # Ensure the password is write-only
+            "password": {"write_only": True}, 
+            'is_staff': {'read_only': True}
         }
 
-    def create(self, validated_data):
-        # Use the create_user method from your CustomUserManager
-        user = User.objects.create_user(
-            user_id=validated_data['user_id'],
-            password=validated_data['password'],
-            role=validated_data['role'],
-            department=validated_data['department'],
-            is_active=validated_data.get('is_active', True),
-            is_staff=validated_data.get('is_staff', False),
-        )
-        return user
+    # def create(self, validated_data):
+    #     # Use the create_user method from your CustomUserManager
+    #     user = User.objects.create_user(
+    #         user_id=validated_data['user_id'],
+    #         password=validated_data['password'],
+    #         role=validated_data['role'],
+    #         department=validated_data['department'],
+    #         is_active=validated_data.get('is_active', True),
+    #         is_staff=validated_data.get('is_staff', False),
+    #     )
+    #     return user
 
+    def create(self, validated_data):
+        #force is_staff=True for Admin, Doctor, Teller
+        role = validated_data.get('role')
+        if role in ['Admin', 'Doctor', 'Teller', 'Nurse', 'Receptionist']:
+            validated_data['is_staff'] = True
+
+        return User.objects.create_user(**validated_data)
+    
     def update(self, instance, validated_data):
         # Handle updating the user instance
         instance.user_id = validated_data.get('user_id', instance.user_id)
@@ -46,6 +55,22 @@ class PatientSerializer(serializers.ModelSerializer):
         model = Patient
         fields = '__all__'
 
+
+class MedicalHistorySerializer(serializers.ModelSerializer):
+    diagnosed_by = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = MedicalHistory
+        fields = '__all__'
+    
+    def get_diagnosed_by(self, obj):
+        if obj.diagnosed_by:
+            return {
+                'id': obj.diagnosed_by.id,
+                'user_id': obj.diagnosed_by.user_id,
+                'role': obj.diagnosed_by.role
+            }
+        return None
 
 class PatientServieSerializer(serializers.ModelSerializer):
     class Meta:
@@ -122,9 +147,41 @@ class LaboratoryResultSerializer(serializers.ModelSerializer):
 
 
 
+class PatientHistorySerializer(serializers.ModelSerializer):
+    changed_by = serializers.SerializerMethodField()
+    changes = serializers.SerializerMethodField()
 
+    class Meta:
+        model = Patient.history.model
+        exclude = ['id', 'history_id']
 
+    def get_changed_by(self, obj):
+        if hasattr(obj, 'history_user') and obj.history_user:
+            return {
+                'id': obj.history_user.id,
+                'user_id': obj.history_user.user_id,
+                'role': obj.history_user.role
+            }
+        return None
 
+    def get_changes(self, obj):
+        
+        try:
+            prev = obj.prev_record
+            if prev:
+                diff = obj.diff_against(prev)
+                return {
+                    change.field: {
+                        'old': change.old,
+                        'new': change.new
+                    }
+                    for change in diff.changes
+                }
+            return {}
+        except Exception as e:
+            return {}
+        
+        
 #save state save stat eito hahaha 123 
 
 class UserLogSerializer(serializers.ModelSerializer):
@@ -312,7 +369,19 @@ class BillingSerializer(serializers.ModelSerializer):
         }
 
 
+class UserImageSerializer(serializers.ModelSerializer):
+    uploaded_by = UserSerializer(read_only=True)
 
+    class Meta:
+        model = UserImage
+        fields = ['id', 'user', 'file', 'description', 'uploaded_by', 'uploaded_at']
+        extra_kwargs = {
+            'user': {'read_only': True},
+            'file': {'required': True},
+            'description': {'required': False}
+        }
+
+        
 class BillingSerializerNoList(serializers.ModelSerializer):
     #since we cant see the name of the Patient name (instead we got id)
     #find way to do it where patient == id and name
@@ -346,6 +415,72 @@ class Billing_PatientInfo_Serializer(serializers.ModelSerializer):
             'date_created': {'read_only': True},
         
         }
+#save state
+from django.contrib.auth.models import Group, Permission
+
+
+class GroupSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Group
+        fields = ['id', 'name']
+
+class PermissionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Permission
+        fields = ['id', 'name', 'codename']
+
+class UserCreateSerializer(serializers.ModelSerializer):
+    groups = serializers.PrimaryKeyRelatedField(queryset=Group.objects.all(), many=True, required=False)
+    user_permissions = serializers.PrimaryKeyRelatedField(
+        queryset=Permission.objects.all(),
+        many=True,
+        required=False
+    )
+
+    class Meta:
+        model = User
+        fields = [
+            'user_id',
+            'role',
+            'department',
+            'is_active',
+            'is_staff',
+            'is_superuser',
+            'groups',
+            'user_permissions'
+        ]
+
+    def validate_user_id(self, value):
+        if User.objects.filter(user_id=value).exists():
+            raise serializers.ValidationError("User ID already taken.")
+        return value
+
+
+
+class PermissionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Permission
+        fields = ['id', 'name', 'codename']
+
+class GroupSerializer(serializers.ModelSerializer):
+    permissions = PermissionSerializer(many=True, read_only=True)
+    
+    class Meta:
+        model = Group
+        fields = ['id', 'name', 'permissions']
+
+
+class GroupPermissionUpdateSerializer(serializers.ModelSerializer):
+    permissions = serializers.PrimaryKeyRelatedField(
+        queryset=Permission.objects.all(), 
+        many=True, 
+        required=False
+    )
+
+    class Meta:
+        model = Group
+        fields = ['id', 'name', 'permissions']
+
 
 
 

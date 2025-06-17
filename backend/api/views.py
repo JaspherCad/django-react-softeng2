@@ -4,9 +4,10 @@ from rest_framework import generics
 from rest_framework import status
 from django.db import transaction
 from django.db.models import Q
+from django.contrib.auth.models import Group, Permission
 
-from .serializers import UserSerializer, PatientSerializer, UserLogSerializer, BillingCreateSerializer, ServiceSerializer, PatientServiceSerializer, LaboratoryResultSerializer, LabResultFileSerializer, BillingItemSerializer, BillingSerializer, BillingSerializerNoList, Billing_PatientInfo_Serializer, LabResultFileGroupSerializer, LabResultFileInGroup, LabResultFileInGroupSerializer, RoomWithBedInfoSerializer, BedAssignmentSerializer
-
+from .serializers import GroupPermissionUpdateSerializer, GroupSerializer, PatientHistorySerializer, UserImageSerializer, UserSerializer, PatientSerializer, UserLogSerializer, BillingCreateSerializer, ServiceSerializer, PatientServiceSerializer, LaboratoryResultSerializer, LabResultFileSerializer, BillingItemSerializer, BillingSerializer, BillingSerializerNoList, Billing_PatientInfo_Serializer, LabResultFileGroupSerializer, LabResultFileInGroup, LabResultFileInGroupSerializer, RoomWithBedInfoSerializer, BedAssignmentSerializer, UserCreateSerializer
+from django.contrib.auth.hashers import make_password
 
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from .models import User, LabResultFileGroup, LabResultFileInGroup ,Patient, UserLog, Billing, BillingItem, BillingOperatorLog, PatientService, Service, LaboratoryResult, LabResultFile, Bed, BedAssignment, Room
@@ -230,6 +231,7 @@ def patient_update(request, pk):
             
 
             if serializer.is_valid():
+                serializer.save(_history_user=request.user)
                 serializer.save()
                 log_action(
                     user=request.user,
@@ -248,7 +250,33 @@ def patient_update(request, pk):
         except:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
-       
+
+
+
+@api_view(['GET'])
+@permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist])
+def patient_history(request, pk):
+    if request.method == "GET":
+        try:
+            patient = Patient.objects.get(pk=pk)
+            history_records = patient.history.all().select_related('history_user')
+            
+            serializer = PatientHistorySerializer(history_records, many=True)
+            
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        
+        except Patient.DoesNotExist:
+            return Response(
+                {"error": "Patient not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {"error": "Something went wrong while fetching patient history", "details": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
 
 @api_view(['PUT'])
 @permission_classes([IsAdmin])
@@ -332,6 +360,8 @@ def get_user_logs(request):
 # % BILLING VIEWS % #
 ####################################################################
 
+
+
 @api_view(['POST'])
 @permission_classes([IsAdmin | IsTeller])
  # {
@@ -399,6 +429,40 @@ def create_billing(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
+
+@api_view(['POST'])
+@permission_classes([IsAdmin | IsTeller])
+def mark_billing_paid(request, billing_code):
+    billing = get_object_or_404(Billing, code=billing_code)
+    
+    if billing.status == 'Paid':
+        return Response(
+            {"error": "This bill is already marked as paid"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    billing.status = 'Paid'
+    billing.save(update_fields=['status'])
+
+
+    user = request.user
+    if user and user.is_authenticated:
+        #Add operator if not already present
+        if not billing.operator.filter(id=user.id).exists():
+            billing.operator.add(user)
+
+        #log action
+        BillingOperatorLog.objects.create(
+            billing=billing,
+            user=user,
+            action="Marked as Paid"
+        )
+
+    return Response({
+        "message": "Billing marked as paid",
+        "billing_code": billing.code,
+        "total_due": billing.total_due
+    }, status=status.HTTP_200_OK)
 
 
 @api_view(['PATCH'])
@@ -647,6 +711,26 @@ def search_patients(request):
 
 
 
+@api_view(['GET'])
+@permission_classes([IsAdmin | IsAuthenticated])
+def search_users(request):
+    q = request.query_params.get('q', '').strip()
+    if not q:
+        return Response([], status=status.HTTP_200_OK)
+
+    try:
+        qs = User.objects.filter(
+            Q(user_id__icontains=q) |
+            Q(role__icontains=q) |
+            Q(department__icontains=q)
+        )[:5]
+        serializer = UserSerializer(qs, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"error": "Something went wrong while searching users", "details": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 
 
@@ -1207,7 +1291,7 @@ def get_laboratory_by_id(request, pk):
 
 
 #GROUP UPLAOD FILES to an EXISTING LABORATORY   
-# views.py
+
 @api_view(['POST'])
 @permission_classes([IsAdmin | IsDoctor])
 def create_laboratory_file_group(request, labId):
@@ -1289,6 +1373,64 @@ def get_laboratory_file_group(request, group_id):
             {"error": "Failed to retrieve file group", "details": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+    
+
+# views.py
+
+from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.decorators import parser_classes
+
+@api_view(['POST'])
+@permission_classes([IsAdmin | IsDoctor])
+@parser_classes([MultiPartParser, FormParser])
+def upload_user_image(request, user_id):
+    """
+    Upload one or more images to a User.
+    URL: /api/user/<user_id>/upload-image/
+    """
+    user = get_object_or_404(User, id=user_id)
+
+    upload_list = request.FILES.getlist('file')
+    if not upload_list:
+        return Response(
+            {"error": "No files were provided under key 'file'."},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    descriptions = request.data.getlist('description', [])
+    valid_serializers = []
+
+    for i, upload in enumerate(upload_list):
+        description = descriptions[i] if i < len(descriptions) else request.data.get('description', '')
+
+        data = {
+            'file': upload,
+            'description': description
+        }
+
+        serializer = UserImageSerializer(data=data, context={'request': request})
+        if not serializer.is_valid():
+            return Response(
+                {"error": f"Error in file {i+1}", "details": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        valid_serializers.append(serializer)
+
+    try:
+        results = []
+        with transaction.atomic():
+            for serializer in valid_serializers:
+                instance = serializer.save(user=user, uploaded_by=request.user)
+                results.append(UserImageSerializer(instance).data)
+
+        return Response(results, status=status.HTTP_201_CREATED)
+
+    except Exception as e:
+        return Response(
+            {"error": "Failed to upload images", "details": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 
 @api_view(['GET'])
@@ -1335,7 +1477,7 @@ def assign_bed(request, patient_id, bed_id, billing_id):
             status=status.HTTP_400_BAD_REQUEST
         )
 
-    # Ensure patient is Admitted
+    #base case revised
     if patient.status != 'Admitted':
         return Response(
             {"error": "Only admitted patients can be assigned a bed"},
@@ -1507,7 +1649,50 @@ class CreateUserView(generics.CreateAPIView):
     serializer_class = UserSerializer
     permission_classes = [AllowAny]
 
+    
+from rest_framework.views import APIView
 
+#CUSTOM USER CREATION
+class UserCreateView(APIView):
+    permission_classes = [IsAdmin]
+
+    def post(self, request):
+        try:
+            with transaction.atomic():
+                data = request.data.copy()
+                
+                # Hash password
+                if 'password' in data:
+                    data['password'] = make_password(data['password'])
+
+                # Handle groups and permissions
+                group_ids = data.pop('groups', [])
+                permission_ids = data.pop('user_permissions', [])
+
+                # Create user
+                serializer = UserCreateSerializer(data=data)
+                if not serializer.is_valid():
+                    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+                user = serializer.save()
+
+                # Assign groups
+                if group_ids:
+                    groups = Group.objects.filter(id__in=group_ids)
+                    user.groups.set(groups)
+
+                # Assign permissions
+                if permission_ids:
+                    permissions = Permission.objects.filter(id__in=permission_ids)
+                    user.user_permissions.set(permissions)
+
+                return Response(UserCreateSerializer(user).data, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            return Response(
+                {"error": "Failed to create user", "details": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 # api/views.py
 
@@ -1517,10 +1702,35 @@ def about(request):
     return HttpResponse("This is the ABOUT page.")
     
 
+#IDK BATTERY INCLUDED TO!
+
+class GroupListCreateView(generics.ListCreateAPIView):
+    """
+    GET /api/groups/ - List all groups
+    POST /api/groups/ - Create new group
+    """
+    queryset = Group.objects.all()
+    serializer_class = GroupSerializer
+    permission_classes = [IsAdmin]
 
 
+class GroupPermissionUpdateView(generics.RetrieveUpdateAPIView):
+    """
+    GET /api/groups/<group_id>/permissions/ - Get group details with permissions
+    PUT /api/groups/<group_id>/permissions/ - Update group permissions
+    """
+    queryset = Group.objects.all()
+    serializer_class = GroupPermissionUpdateSerializer
+    permission_classes = [IsAdmin]
+    lookup_url_kwarg = 'group_id'
 
-
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        if self.request.method == 'GET':
+            context.update({
+                "permissions": Permission.objects.all()
+            })
+        return context
 
 
 ####################################################################
@@ -1570,3 +1780,73 @@ def log_action(user: User, action: str, details: dict):
         details=details
     )
 
+####################################################################
+# % ADMIN PANEL % #
+####################################################################
+
+def is_admin(user):
+    return user.role == 'Admin'
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def user_list(request):
+    """List all users or create a new one"""
+    if not is_admin(request.user):
+        return Response({"error": "Only administrators can manage users"}, 
+                      status=status.HTTP_403_FORBIDDEN)
+    
+    if request.method == 'GET':
+        users = User.objects.all().prefetch_related('groups')
+        serializer = UserSerializer(users, many=True)
+        return Response(serializer.data)
+    
+
+#USER CRAETION AT urls.py
+    # path('user/register', views.CreateUserView.as_view(), name='register'),
+    # path('user/login', TokenObtainPairView.as_view(), name='login'),
+
+@api_view(['GET', 'PUT', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def user_detail(request, pk):
+    """Retrieve, update or delete a user"""
+    if not is_admin(request.user):
+        return Response({"error": "Only administrators can manage users"}, 
+                      status=status.HTTP_403_FORBIDDEN)
+    
+    try:
+        user = User.objects.prefetch_related('groups').get(pk=pk)
+    except User.DoesNotExist:
+        return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+    
+    if request.method == 'GET':
+        serializer = UserSerializer(user)
+        return Response(serializer.data)
+    
+    elif request.method == 'PUT':
+        serializer = UserSerializer(user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    elif request.method == 'DELETE':
+        if user == request.user:
+            return Response({"error": "Cannot delete self"}, status=status.HTTP_400_BAD_REQUEST)
+        user.is_active = False
+        user.save()
+        return Response({"message": "User deactivated successfully"}, status=status.HTTP_204_NO_CONTENT)
+
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def user_roles(request):
+    if not is_admin(request.user):
+        return Response({"error": "Only administrators can access role information"}, 
+                      status=status.HTTP_403_FORBIDDEN)
+    
+    return Response(dict(User.ROLE_CHOICES))
+####################################################################
+# % ADMIN PANEL % #
+####################################################################

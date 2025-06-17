@@ -2,6 +2,8 @@
 
 from django.urls import path
 from . import views
+from .views import GroupListCreateView, GroupPermissionUpdateView
+
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 #api/
@@ -25,9 +27,12 @@ urlpatterns = [
     path('patients/create', views.patient_create, name='patient_create'),
     path('patients/<int:pk>', views.patient_details, name='patient_get_specific'),
     path('patients/update/<int:pk>', views.patient_update, name='patient_update'),
+    path('patients/<int:pk>/history', views.patient_history, name='patient-history'),
     path('patients/deactivate/<int:pk>', views.patient_deactivate, name='patient_deactivate'),
     # sEarch function for patient
     path('patients/search', views.search_patients, name='search_billings'),
+    path('users/search', views.search_users, name='search_users'),
+
 
 
 
@@ -55,7 +60,7 @@ urlpatterns = [
     path('billings/<str:billing_pk>/items/<str:item_pk>/edit', views.edit_bill_item, name='edit_bill_item'),
 
     path('billings/<str:billing_pk>/items/<str:item_pk>/get', views.get_bill_item, name='get_bill_item'),
-
+    path('billings/<int:billing_id>/mark-paid/', views.mark_billing_paid, name='mark_billing_paid'),
 
 
     #GET /api/billings/search?q=john
@@ -79,6 +84,8 @@ urlpatterns = [
 
     path('laboratory/files/group/<int:group_id>/', views.get_laboratory_file_group, name='get-lab-file-group'),
 
+    #IMAGE UPLOAD
+    path('user/<int:user_id>/upload-image', views.upload_user_image, name='upload_user_image'),
 
 
     #DEPRECATED
@@ -101,5 +108,19 @@ urlpatterns = [
     path('discharge-patient/<int:patient_id>', views.discharge_patient, name='discharge_patient'),
     path('bed-assignments/', views.bed_assignment_list, name='bed_assignment_list'),
 
+
+
+
+
+    # Group management
+    path('groups/', GroupListCreateView.as_view(), name='group-list-create'),
+    path('groups/<int:group_id>/permissions/', GroupPermissionUpdateView.as_view(), name='group-permission-update'),
+    
+    # # Optional: List all permissions
+    # path('permissions/', views.list_permissions, name='list_permissions'),
+    # User Management Endpoints
+    path('users/list', views.user_list, name='user_list'),
+    path('users/<int:pk>', views.user_detail, name='user_detail'),
+    path('users/roles', views.user_roles, name='user_roles'),
 
 ]   

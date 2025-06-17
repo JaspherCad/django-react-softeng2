@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     "corsheaders",
     'django_extensions',
     'django_q',
+    'simple_history',
     
 ]
 # Specify the custom user model
@@ -77,7 +78,10 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     
-    'api.middleware.ThreadLocalUserMiddleware'
+    'api.middleware.ThreadLocalUserMiddleware',
+    'simple_history.middleware.HistoryRequestMiddleware',
+
+    
 ]
 
 Q_CLUSTER = { # 1 MINUTE TEST

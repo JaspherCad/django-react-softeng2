@@ -72,7 +72,7 @@ const SearchBar = ({ searchTerm, setSearchTerm, placeholder, onSelectSuggestion,
           padding: '10px',
           borderBottom: '1px solid #ddd',
           cursor: 'pointer',
-          backgroundColor: 'green'
+          // backgroundColor: 'green'
         }}
       >
 
@@ -186,7 +186,7 @@ const SearchBar = ({ searchTerm, setSearchTerm, placeholder, onSelectSuggestion,
             top: 'calc(100% + 2px)',
             left: 0,
             width: '100%',
-            
+
             maxHeight: maxDropdownHeight,
 
             overflowY: 'auto',
