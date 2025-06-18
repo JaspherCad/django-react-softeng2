@@ -123,4 +123,14 @@ urlpatterns = [
     path('users/<int:pk>', views.user_detail, name='user_detail'),
     path('users/roles', views.user_roles, name='user_roles'),
 
+
+    #NOTES
+    path('notes/<str:case_number>', views.get_clinical_notes_by_code, name='get_notes_by_code'),
+    
+    path('notes/all-notes-patientid/<int:patient_id>', views.get_clinical_notes_by_patient, name='get_notes_by_patient'),
+
+
+    path('notes/<str:case_number>/create', views.create_clinical_note, name='create_clinical_note'),
+
+
 ]   

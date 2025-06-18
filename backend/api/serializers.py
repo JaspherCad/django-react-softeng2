@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, Patient, LaboratoryResult, LabResultFile, UserImage, UserLog, Service, PatientService, Billing, BillingItem, LabResultFileInGroup, LabResultFileGroup, Bed, Room, BedAssignment, MedicalHistory
+from .models import ClinicalNote, User, Patient, LaboratoryResult, LabResultFile, UserImage, UserLog, Service, PatientService, Billing, BillingItem, LabResultFileInGroup, LabResultFileGroup, Bed, Room, BedAssignment, MedicalHistory
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -47,6 +47,18 @@ class UserSerializer(serializers.ModelSerializer):
         return instance
     
 
+class ClinicalNoteSerializer(serializers.ModelSerializer):
+    patient_case_number = serializers.CharField(
+        source='patient.case_number',
+        read_only=True
+    )
+    class Meta:
+        model = ClinicalNote
+        fields = [
+            'id','patient','patient_case_number', 'author','note_type','note_date',
+            'focus_problem','progress_notes','orders','content',
+            'medication','dose_frequency','created_at','updated_at'
+        ]
 
 
 

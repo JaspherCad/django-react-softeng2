@@ -538,6 +538,16 @@ export const FetchUsersRolesAPI = async () => {
   }
 };
 
+
+export const fetchPatientHistoryAPI = async (labId) => {
+  try {
+    const response = await axiosInstance.get(`/patients/${labId}/history`);
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
 export const fetchBedAssignments = async (activeOnlyBoolean) => {
   try {
     const response = await axiosInstance.get(`/bed-assignments/?active=${activeOnlyBoolean}`)

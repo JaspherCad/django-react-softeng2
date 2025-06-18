@@ -266,7 +266,7 @@ export default Billing;
 
 {/* <Routes>
           <Route path="billing_items_of_billing/:id" element={<BillingItems/>} />
-          {/* <Route path="edit/:id" element={<PatientForm onSubmit={handleEditPatient} loading={loading} errorMsg={errorMsg} />} /> 
+          {/* <Route path="edit/:id" element={<PatientForm onSubmit={handleEditPatienst} loading={loading} errorMsg={errorMsg} />} /> 
           
           </Routes>
           */}

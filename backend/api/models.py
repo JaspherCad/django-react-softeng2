@@ -152,6 +152,7 @@ class Patient(models.Model):
     has_philhealth = models.BooleanField(default=False)
     case_number = models.CharField(
         unique=True,
+        db_index=True,
         null=True,
         blank=False,
         default=None,
@@ -159,7 +160,6 @@ class Patient(models.Model):
     )
 
     hospital_case_number = models.CharField(
-        unique=True,
         null=True,
         blank=False,
         default=None,
@@ -169,7 +169,6 @@ class Patient(models.Model):
 
     has_hmo = models.BooleanField(default=False)
     hmo = models.CharField(
-        unique=True,
         null=True,
         blank=True,
         max_length=255
@@ -862,15 +861,82 @@ class ClinicalNote(models.Model):
     NOTE_TYPES = [
         ('Doctor', 'Doctor Note'),
         ('Nurse', 'Nurse Note'),
-        ('General', 'General Note')
+        ('General', 'General Note'),
+        ('Medication', 'Medication Note'),
     ]
+
     
+    #save satate
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='clinical_notes')
-    author = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
-    note_type = models.CharField(max_length=20, choices=NOTE_TYPES)
-    content = models.TextField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+
+    #ClinicalNote.objects.filter(patient__case_number='CN-20250617-001') to FILTER the notes to patient 
+
+    author = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, help_text="Who created this note"
+    )
+
+    note_type = models.CharField(
+        max_length=120,
+        choices=NOTE_TYPES,
+        null=True,
+        blank=True
+    )
+
+    #date/shift additional
+    # date/shift additional
+    note_date = models.DateTimeField(
+        default=timezone.now,
+        null=True,
+        blank=True,
+        help_text="Date/time for this note (can represent shift)"
+    )
+
+    focus_problem = models.TextField(
+        null=True,
+        blank=True,
+        help_text="Primary problem or focus of this note"
+    )
+    progress_notes = models.TextField(
+        null=True,
+        blank=True,
+        help_text="Progress since last note"
+    )
+    orders = models.TextField(
+        null=True,
+        blank=True,
+        help_text="Any new orders (labs, imaging, meds, etc.)"
+    )
+    content = models.TextField(
+        null=True,
+        blank=True,
+        help_text="General narrative (if applicable)"
+    )
+
+
+        # Medication‑specific fields
+    medication = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+        help_text="Medication name (for Medication notes)"
+    )
+    dose_frequency = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True,
+        help_text="e.g. 'Once daily', '2x per day'"
+    )
+
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        null=True,
+        blank=True
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        null=True,
+        blank=True
+    )
 
     def __str__(self):
         return f"{self.patient.name} - {self.note_type}"

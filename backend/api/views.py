@@ -6,11 +6,11 @@ from django.db import transaction
 from django.db.models import Q
 from django.contrib.auth.models import Group, Permission
 
-from .serializers import GroupPermissionUpdateSerializer, GroupSerializer, PatientHistorySerializer, UserImageSerializer, UserSerializer, PatientSerializer, UserLogSerializer, BillingCreateSerializer, ServiceSerializer, PatientServiceSerializer, LaboratoryResultSerializer, LabResultFileSerializer, BillingItemSerializer, BillingSerializer, BillingSerializerNoList, Billing_PatientInfo_Serializer, LabResultFileGroupSerializer, LabResultFileInGroup, LabResultFileInGroupSerializer, RoomWithBedInfoSerializer, BedAssignmentSerializer, UserCreateSerializer
+from .serializers import ClinicalNoteSerializer, GroupPermissionUpdateSerializer, GroupSerializer, PatientHistorySerializer, UserImageSerializer, UserSerializer, PatientSerializer, UserLogSerializer, BillingCreateSerializer, ServiceSerializer, PatientServiceSerializer, LaboratoryResultSerializer, LabResultFileSerializer, BillingItemSerializer, BillingSerializer, BillingSerializerNoList, Billing_PatientInfo_Serializer, LabResultFileGroupSerializer, LabResultFileInGroup, LabResultFileInGroupSerializer, RoomWithBedInfoSerializer, BedAssignmentSerializer, UserCreateSerializer
 from django.contrib.auth.hashers import make_password
 
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from .models import User, LabResultFileGroup, LabResultFileInGroup ,Patient, UserLog, Billing, BillingItem, BillingOperatorLog, PatientService, Service, LaboratoryResult, LabResultFile, Bed, BedAssignment, Room
+from .models import ClinicalNote, User, LabResultFileGroup, LabResultFileInGroup ,Patient, UserLog, Billing, BillingItem, BillingOperatorLog, PatientService, Service, LaboratoryResult, LabResultFile, Bed, BedAssignment, Room
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -140,6 +140,64 @@ def patient_list(request):
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# CLINICAL NOTES # CLINICAL NOTES# CLINICAL NOTES# CLINICAL NOTES# CLINICAL NOTES# CLINICAL NOTES
+@api_view(['GET'])
+@permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist])
+def get_clinical_notes_by_code(request, case_number):
+
+    # Retrieve all clinical notes for a patient identified by its case_number.
+    
+    notes = ClinicalNote.objects.filter(patient__case_number=case_number)
+    serializer = ClinicalNoteSerializer(notes, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist])
+def create_clinical_note(request, case_number):
+    
+    #POST  a new clinical note for the patient identified by case_number.
+    #Expected JSON body matches ClinicalNoteSerializer fields (excluding patient).
+    
+    patient = get_object_or_404(Patient, case_number=case_number)
+    data = request.data.copy()
+    data['patient'] = patient.id
+
+    serializer = ClinicalNoteSerializer(data=data)
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
+    return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+@api_view(['GET'])
+@permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist])
+def get_clinical_notes_by_patient(request, patient_id):
+    notes = ClinicalNote.objects.filter(patient_id=patient_id)
+    serializer = ClinicalNoteSerializer(notes, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+
+# CLINICAL NOTES # CLINICAL NOTES# CLINICAL NOTES# CLINICAL NOTES# CLINICAL NOTES# CLINICAL NOTES
+
 @api_view(['POST'])
 @permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist])
 def patient_create(request):
@@ -148,11 +206,12 @@ def patient_create(request):
 
             #1: since this is request, we recieve API DATA from FRONTEND then "deserialize it"
             patient_serializer = PatientSerializer(data=request.data)
-
+            
             if not patient_serializer.is_valid():
                 raise ValidationError(patient_serializer.errors)# Auto-400 with error details
 
             if patient_serializer.is_valid():
+                patient_serializer.is_valid(raise_exception=True)
                 patient = patient_serializer.save()
                 return Response(patient_serializer.data, status=status.HTTP_201_CREATED)
             
