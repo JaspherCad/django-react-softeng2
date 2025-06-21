@@ -418,6 +418,20 @@ def patient_history(request, pk):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
+@api_view(['GET'])
+@permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist])
+def patient_history_byId(request, pk, historyId):
+   
+    patient = get_object_or_404(Patient, pk=pk)
+
+    history_record = get_object_or_404(
+        patient.history.select_related('history_user'),
+        pk=historyId
+    )
+
+    serializer = PatientHistorySerializer(history_record)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 
 @api_view(['PUT'])

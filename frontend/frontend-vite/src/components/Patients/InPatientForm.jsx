@@ -117,8 +117,13 @@ const InPatientForm = ({ onSubmit }) => { //onSubmit yung function pano sinend s
   const [isDropdownVisible, setIsDropdownVisible] = useState(false)  //required for SearchBar
 
   //--- patient image
+
+  //for uploadd
   const [selectedImages, setSelectedImages] = useState([]);
   const [imagePreviews, setImagePreviews] = useState([]);
+
+
+  //for fetching existing ofc...
   const [existingImages, setExistingImages] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
   const navigate = useNavigate();
@@ -186,6 +191,7 @@ const InPatientForm = ({ onSubmit }) => { //onSubmit yung function pano sinend s
       try {
         if (id) {
           const { data } = await patientDetailsAPI(id);
+          console.log(data)
           setFormData({
             has_philhealth: data.has_philhealth,
             case_number: data.case_number || '',

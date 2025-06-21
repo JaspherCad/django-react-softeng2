@@ -28,6 +28,8 @@ urlpatterns = [
     path('patients/<int:pk>', views.patient_details, name='patient_get_specific'),
     path('patients/update/<int:pk>', views.patient_update, name='patient_update'),
     path('patients/<int:pk>/history', views.patient_history, name='patient-history'),
+    path('patients/<int:pk>/history/id/<int:historyId>', views.patient_history_byId, name='patient-history'),
+
     path('patients/deactivate/<int:pk>', views.patient_deactivate, name='patient_deactivate'),
     # sEarch function for patient
     path('patients/search', views.search_patients, name='search_billings'),
@@ -78,7 +80,7 @@ urlpatterns = [
 
     #LAB RESULTS
     path('laboratory/add-patient-laboratory/patient-id/<str:pk>', views.create_laboratory_result_for_patient, name='create_laboratory_result_for_patient'),
-    #TODO: finish this today the seach lab
+    #TODO: finish this today the seach lab save state
     path('laboratory/search-laboratory', views.search_labId, name='search_labId'),
 
 

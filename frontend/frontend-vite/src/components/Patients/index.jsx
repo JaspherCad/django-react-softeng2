@@ -126,7 +126,7 @@ const Patients = () => {
       <Route path="inpatient/edit/:id" element={<InPatientForm onSubmit={handleEditPatient} loading={loading} errorMsg={errorMsg} />} />
       <Route path="history/:id" element={<PatientHistory setSelectedMedicalHistory={setSelectedMedicalHistory}  />} />
 
-      <Route path="history/:patientid/casecode/:caseCode" element={<PatientHistoryCaseCode setSelectedMedicalHistory={setSelectedMedicalHistory}  />} />
+      <Route path="history/:patientid/casecode/:caseCode/historyId/:historyid" element={<PatientHistoryCaseCode setSelectedMedicalHistory={setSelectedMedicalHistory}  />} />
       
 
 

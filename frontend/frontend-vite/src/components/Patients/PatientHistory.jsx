@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { fetchPatientHistoryAPI } from '../../api/axios';
 import styles from './Patients.module.css';
+import PatientHistoryModal from './PatientHistoryModal';
 
 const PatientHistory = ({ setSelectedMedicalHistory }) => {
   const { id } = useParams();
@@ -10,6 +11,9 @@ const PatientHistory = ({ setSelectedMedicalHistory }) => {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const [selectedNote, setSelectedNote] = useState(null);
+
 
   /* ───────── fetch once per patient ───────── */
   useEffect(() => {
@@ -32,11 +36,21 @@ const PatientHistory = ({ setSelectedMedicalHistory }) => {
 
 
   const handleView = (note) => {
-    setSelectedMedicalHistory(note);                      
+
+    setSelectedMedicalHistory(note);
     console.log(note.case_number)
-    navigate(`/patients/history/${id}/casecode/${note.case_number}`);
+    navigate(`/patients/history/${id}/casecode/${note.case_number}/historyId/${note.history_id}`);
 
   };
+
+  const handleSeeMore = (note) => {
+    setSelectedNote(note);
+    console.log(note)
+
+  }
+
+  const closeModal = () => setSelectedNote(null);
+
 
   if (loading) return <div className={styles.loading}>Loading history…</div>;
   if (error) return <div className={styles.error}>{error}</div>;
@@ -44,7 +58,6 @@ const PatientHistory = ({ setSelectedMedicalHistory }) => {
   return (
     <div className={styles.patientManagement}>
       <h2>Medical History for Patient #{id}</h2>
-
       <div className={styles.tableContent}>
         <table className={styles.table}>
           <thead>
@@ -66,9 +79,9 @@ const PatientHistory = ({ setSelectedMedicalHistory }) => {
             ) : (
               history.map((note, idx) => (
                 <tr
-                  /* safe unique key */
                   key={note.idx ?? `${note.case_number}-${idx}`}
                   className={styles.tableRow}
+                  onClick={() => handleSeeMore(note)}
                 >
                   <td>{note.status}</td>
                   <td>{note.case_number}</td>
@@ -90,6 +103,20 @@ const PatientHistory = ({ setSelectedMedicalHistory }) => {
           </tbody>
         </table>
       </div>
+
+      {selectedNote && (
+        <div className={styles.modalOverlay} onClick={closeModal}>
+          <div
+            className={styles.modalContent}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button className={styles.closeButton} onClick={closeModal}>
+              &times;
+            </button>
+            <PatientHistoryModal note={selectedNote} handleView={handleView} />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

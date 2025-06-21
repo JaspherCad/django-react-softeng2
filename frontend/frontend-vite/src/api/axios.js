@@ -582,6 +582,16 @@ export const fetchClinicalNotesByCodeAPI = async (code) => {
   }
 };
 
+
+export const fetchPatientHistoryByIdAPI  = async (patientId, historyId) => {
+  try {
+    const response = await axiosInstance.get(`/patients/${patientId}/history/id/${historyId}`);
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
 export const FetchUsersAPI = async () => {
   try {
     const response = await axiosInstance.get(`/users/list`);
