@@ -3,13 +3,13 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { fetchPatientHistoryAPI } from '../../api/axios';
 import styles from './Patients.module.css';
 
-const PatientHistory = () => {
+const PatientHistory = ({ setSelectedMedicalHistory }) => {
   const { id } = useParams();
   const navigate = useNavigate();
 
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState(null);
+  const [error, setError] = useState(null);
 
   /* ───────── fetch once per patient ───────── */
   useEffect(() => {
@@ -28,13 +28,18 @@ const PatientHistory = () => {
     })();
   }, [id]);
 
-  /* ───────── when “VIEW” is clicked ───────── */
+
+
+
   const handleView = (note) => {
-    navigate(`/patients/${id}/history/${note.id || note.case_number}`);
+    setSelectedMedicalHistory(note);                      
+    console.log(note.case_number)
+    navigate(`/patients/history/${id}/casecode/${note.case_number}`);
+
   };
 
   if (loading) return <div className={styles.loading}>Loading history…</div>;
-  if (error)   return <div className={styles.error}>{error}</div>;
+  if (error) return <div className={styles.error}>{error}</div>;
 
   return (
     <div className={styles.patientManagement}>
@@ -62,7 +67,7 @@ const PatientHistory = () => {
               history.map((note, idx) => (
                 <tr
                   /* safe unique key */
-                  key={note.id ?? `${note.case_number}-${idx}`}
+                  key={note.idx ?? `${note.case_number}-${idx}`}
                   className={styles.tableRow}
                 >
                   <td>{note.status}</td>

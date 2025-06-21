@@ -155,7 +155,7 @@ const PatientList = ({
                     <td data-label="Admission_Date">{patient.admission_date}</td>
                     <td data-label="Status">{patient.status}</td>
                     <td data-label="case_number">{patient.case_number}</td>
-                    
+
                     <td data-label="Delete">
                       <button
                         className={styles.btnTrash}
@@ -260,6 +260,19 @@ const PatientList = ({
               <div className={styles.patientDetail}>
                 <strong>Active Status:</strong> {selectedPatient.is_active}
               </div>
+
+
+              <div className={styles.patientDetail}>
+                <strong>VIEW MEDICAL HISTORY</strong>
+                <button
+                  className={styles.historyBtn}         
+                  onClick={() => navigate(`/patients/history/${selectedPatient.id}`)}
+                >
+                  VIEW&nbsp;MEDICAL&nbsp;HISTORY
+                </button>
+
+              </div>
+
             </div>
           </div>
         </div>
@@ -328,7 +341,7 @@ const PatientList = ({
                     Inpatient
                   </button>
 
-                  
+
                   <button
                     className={styles.btnOption}
                     onClick={() => {

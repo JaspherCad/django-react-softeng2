@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import ClinicalNote, User, Patient, LaboratoryResult, LabResultFile, UserImage, UserLog, Service, PatientService, Billing, BillingItem, LabResultFileInGroup, LabResultFileGroup, Bed, Room, BedAssignment, MedicalHistory
+from .models import ClinicalNote, PatientImage, User, Patient, LaboratoryResult, LabResultFile, UserImage, UserLog, Service, PatientService, Billing, BillingItem, LabResultFileInGroup, LabResultFileGroup, Bed, Room, BedAssignment, MedicalHistory
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -48,14 +48,11 @@ class UserSerializer(serializers.ModelSerializer):
     
 
 class ClinicalNoteSerializer(serializers.ModelSerializer):
-    patient_case_number = serializers.CharField(
-        source='patient.case_number',
-        read_only=True
-    )
+    
     class Meta:
         model = ClinicalNote
         fields = [
-            'id','patient','patient_case_number', 'author','note_type','note_date',
+            'id','patient','case_number_patient', 'author','note_type','note_date',
             'focus_problem','progress_notes','orders','content',
             'medication','dose_frequency','created_at','updated_at'
         ]
@@ -66,6 +63,19 @@ class PatientSerializer(serializers.ModelSerializer):
     class Meta:
         model = Patient
         fields = '__all__'
+
+
+class PatientImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PatientImage
+        fields = ['id', 'patient', 'file', 'description', 'uploaded_by', 'uploaded_at']
+        read_only_fields = ['uploaded_by', 'uploaded_at']
+
+    def create(self, validated_data):
+        request = self.context.get('request')
+        if request and hasattr(request, "user"):
+            validated_data['uploaded_by'] = request.user
+        return super().create(validated_data)
 
 
 class MedicalHistorySerializer(serializers.ModelSerializer):
@@ -162,10 +172,12 @@ class LaboratoryResultSerializer(serializers.ModelSerializer):
 class PatientHistorySerializer(serializers.ModelSerializer):
     changed_by = serializers.SerializerMethodField()
     changes = serializers.SerializerMethodField()
+    original_case_number = serializers.SerializerMethodField()
 
+        
     class Meta:
         model = Patient.history.model
-        exclude = ['id', 'history_id']
+        fields = '__all__' 
 
     def get_changed_by(self, obj):
         if hasattr(obj, 'history_user') and obj.history_user:
@@ -175,6 +187,15 @@ class PatientHistorySerializer(serializers.ModelSerializer):
                 'role': obj.history_user.role
             }
         return None
+    
+    def get_original_case_number(self, obj):
+        # obj.changes is a dict like {"case_number": {"old": "...", "new": "..."}}
+        changes = getattr(obj, 'changes', {}) or {}
+        if 'case_number' in changes:
+            return changes['case_number'].get('old')
+        # if it never changed, fall back to whatever the snapshot shows
+        return obj.case_number
+
 
     def get_changes(self, obj):
         

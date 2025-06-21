@@ -1,14 +1,57 @@
 import React, { useEffect, useState } from 'react';
 import styles from './Patients.module.css';
-import { useParams } from 'react-router-dom';
-import { patientDetailsAPI, SearchBillingsApi, SearchHospitalUserApi } from '../../api/axios';
+import { useNavigate, useParams } from 'react-router-dom';
+import { patientDetailsAPI, getPatientImagesAPI, SearchBillingsApi, SearchHospitalUserApi, uploadPatientImageAPI } from '../../api/axios';
 import SearchBar from '../AngAtingSeachBarWIthDropDown';
 
-const formatDateToLocal  = (dateTimeStr) => {
-  if (!dateTimeStr) return null;
-  const date = new Date(dateTimeStr);
-  return date.toISOString(); 
+
+
+
+
+
+
+//----------------------------------------date format fix--------------------------------------
+//pseudo: when edit, we have to get the FORMATTED String 00:z from backend to frontend BUT we have to convert that into input format (YYYY-MM-DDTHH:MM)
+
+// Helper: Convert ISO date to datetime-local input format (YYYY-MM-DDTHH:MM)
+//recieves string from backend then convert this into INPUT FIELDS para readable sa INPUT DATES
+const isoToInputDateTime = (isoStr) => {
+  if (!isoStr) return '';
+  const date = new Date(isoStr);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
 };
+
+//helper 2: since the input is in form of input format (YYYY-MM-DDTHH:MM) -> convert into roper zzz something idk
+const inputDateTimeToISO = (dateTimeString) => {
+  if (!dateTimeString) return null;
+  const date = new Date(dateTimeString);
+  return isNaN(date.getTime()) ? null : date.toISOString();
+};
+
+const formatDateToLocal = (dateTimeString) => {
+  if (!dateTimeString) return null;
+  const date = new Date(dateTimeString);
+  return date.toISOString();
+};
+
+
+
+
+
+//----------------------------------------date format fix--------------------------------------
+
+
+
+
+
+
+
+
 
 //note THIS IS WHAT WE SEND TO BACKEND.. ai prompt nio nalang. you have to match the  formData doon... formData lang naman. values
 // const [formData, setFormData] = useState({
@@ -73,6 +116,14 @@ const InPatientForm = ({ onSubmit }) => { //onSubmit yung function pano sinend s
 
   const [isDropdownVisible, setIsDropdownVisible] = useState(false)  //required for SearchBar
 
+  //--- patient image
+  const [selectedImages, setSelectedImages] = useState([]);
+  const [imagePreviews, setImagePreviews] = useState([]);
+  const [existingImages, setExistingImages] = useState([]);
+  const [modalOpen, setModalOpen] = useState(false);
+  const navigate = useNavigate();
+
+
   const [formData, setFormData] = useState({
     has_philhealth: false,
     case_number: '',
@@ -118,7 +169,16 @@ const InPatientForm = ({ onSubmit }) => { //onSubmit yung function pano sinend s
   const [loading, setLoading] = useState(true);
 
 
-
+  useEffect(() => {
+    if (formData.note_type !== "Nurse") {
+      setFormData((prev) => ({
+        ...prev,
+        data: "",
+        action: "",
+        response: ""
+      }));
+    }
+  }, [formData.note_type]);
 
 
   useEffect(() => {
@@ -134,7 +194,7 @@ const InPatientForm = ({ onSubmit }) => { //onSubmit yung function pano sinend s
             hmo: data.hmo || '',
             name: data.name,
             status: data.status,
-            admission_date: formatDateToLocal(data.admission_date),
+            admission_date: isoToInputDateTime(data.admission_date),
             current_condition: data.current_condition,
             date_of_birth: data.date_of_birth?.split('T')[0] || '',
             address: data.address || '',
@@ -144,10 +204,10 @@ const InPatientForm = ({ onSubmit }) => { //onSubmit yung function pano sinend s
             religion: data.religion || '',
             attending_physician: data.attending_physician_id || '',
             visit_type: data.visit_type || 'New',
-            consultation_datetime: formatDateToLocal(data.consultation_datetime),
+            consultation_datetime: isoToInputDateTime(data.consultation_datetime),
             referred_by: data.referred_by || '',
-            next_consultation_date: formatDateToLocal(data.next_consultation_date),
-            discharge_date: formatDateToLocal(data.discharge_date),
+            next_consultation_date: isoToInputDateTime(data.next_consultation_date),
+            discharge_date: isoToInputDateTime(data.discharge_date),
             phone: data.phone || '',
             emergency_contact_name: data.emergency_contact_name || '',
             emergency_contact_phone: data.emergency_contact_phone || '',
@@ -168,6 +228,9 @@ const InPatientForm = ({ onSubmit }) => { //onSubmit yung function pano sinend s
             diagnosis: data.diagnosis || '',
             treatment: data.treatment || '',
           });
+
+          const imageResponse = await getPatientImagesAPI(id);
+          setExistingImages(imageResponse.data || []);
         }
       } catch (err) {
         console.error('Failed to load patient data.', err);
@@ -183,6 +246,27 @@ const InPatientForm = ({ onSubmit }) => { //onSubmit yung function pano sinend s
     const num = parseFloat(value);
     return isNaN(num) ? '' : num.toFixed(2);
   };
+
+
+  const handleImageChange = (e) => {
+    const files = Array.from(e.target.files);
+    setSelectedImages(files);
+
+    const previews = files.map(file => ({
+      file,
+      preview: URL.createObjectURL(file)
+    }));
+    setImagePreviews(previews);
+  };
+
+  //"""When you use URL.createObjectURL() to preview images, the browser creates a temporary reference to the file in memory. If you don’t clean this up, those references remain in memory even after the component unmounts"""
+  //-chatG
+  useEffect(() => {
+    return () => {
+      imagePreviews.forEach(preview => URL.revokeObjectURL(preview.preview));
+    };
+  }, [imagePreviews]);
+
 
   const handleSelected = (filteredItem) => {
     console.log(filteredItem.id)
@@ -210,48 +294,115 @@ const InPatientForm = ({ onSubmit }) => { //onSubmit yung function pano sinend s
     }));
   };
 
-  const handleSubmit = (e) => {
-  e.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  let payload = { ...formData };
+    let payload = { ...formData };
 
-  // Validate hospital_case_number
-  if (!payload.hospital_case_number) {
-    alert("Hospital Case Number is required.");
-    return;
-  }
+    // Validate hospital_case_number
+    if (!payload.hospital_case_number) {
+      alert("Hospital Case Number is required.");
+      return;
+    }
 
-  
 
-  // // Validate ICD code
-  // if (payload.icd_code && !isValidICDCode(payload.icd_code)) {
-  //   alert('Please enter a valid ICD-10 code (e.g., J45.9).');
-  //   return;
-  // }
 
-  // Format datetime fields
-  payload.consultation_datetime = formatDateToLocal(payload.consultation_datetime);
-  payload.next_consultation_date = formatDateToLocal(payload.next_consultation_date);
+    // // Validate ICD code
+    // if (payload.icd_code && !isValidICDCode(payload.icd_code)) {
+    //   alert('Please enter a valid ICD-10 code (e.g., J45.9).');
+    //   return;
+    // }
 
-  // Format numeric fields
-  const numericFields = ["height", "weight", "pulse_rate", "respiratory_rate", "temperature"];
-  numericFields.forEach((field) => {
-    payload[field] = formatNumber(payload[field]);
-  });
+    // Format datetime fields
+    payload.admission_date = inputDateTimeToISO(payload.admission_date);
+    payload.discharge_date = inputDateTimeToISO(payload.discharge_date);
+    payload.consultation_datetime = inputDateTimeToISO(payload.consultation_datetime);
+    payload.next_consultation_date = inputDateTimeToISO(payload.next_consultation_date);
 
-  // Replace empty strings with null for nullable fields
-  ['admission_date', 'discharge_date', 'consultation_datetime', 'next_consultation_date']
-    .forEach(key => {
-      if (!payload[key]) payload[key] = null;
+    // Format numeric fields
+    const numericFields = ["height", "weight", "pulse_rate", "respiratory_rate", "temperature"];
+    numericFields.forEach((field) => {
+      payload[field] = formatNumber(payload[field]);
     });
 
-  if (id) {
-    onSubmit(id, payload);
-  } else {
-    onSubmit(payload);
-  }
-};
+    // Replace empty strings with null for nullable fields
+    ['admission_date', 'discharge_date', 'consultation_datetime', 'next_consultation_date']
+      .forEach(key => {
+        if (!payload[key]) payload[key] = null;
+      });
 
+
+    try {
+      let patientId;
+      if (id) {
+        await onSubmit(id, payload);
+        console.log(payload)
+        patientId = id;
+      } else {
+        const response = await onSubmit(payload);
+        patientId = response.data.id
+      }
+
+
+      //then upload images if any
+      if (selectedImages.length > 0 && patientId) {
+        const formData = new FormData();
+
+        // Append each file to FormData
+        selectedImages.forEach((file) => {
+          formData.append('file', file);
+        });
+
+        // Include patient ID
+        formData.append('patient', patientId);
+
+        // Upload images
+        await uploadPatientImageAPI(formData);
+
+        // Reset image selection
+        setSelectedImages([]);
+        setImagePreviews([]);
+        navigate('/patients');
+
+      }
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      alert('Failed to save patient or upload images');
+    }
+
+
+  };
+
+
+
+  //all renders use this, some file are image some files actual files,,,,,
+  function FilePreview({ url }) {
+    const isImage = /\.(jpe?g|png|gif|webp)$/i.test(url);
+
+    return (
+      <div className={styles.filePreviewContainer}>
+        {isImage ? (
+          <a href={`http://localhost:8000${url}`} target="_blank" rel="noopener noreferrer">
+            <img
+              src={`http://localhost:8000${url}`}
+              alt="Preview"
+              className={styles.filePreviewImage}
+            />
+          </a>
+
+        ) : (
+          <a
+            href={`http://localhost:8000${url}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.fileLink}
+          >
+            {url.split("/").pop()}
+          </a>
+        )}
+      </div>
+    );
+  }
 
   if (loading) return <div>Loading…</div>;
 
@@ -662,6 +813,96 @@ const InPatientForm = ({ onSubmit }) => { //onSubmit yung function pano sinend s
             onChange={handleChange}
           />
         </label>
+
+
+
+
+
+        {/* Image Upload Section */}
+        <div className={styles.imageUploadSection}>
+          <label className={styles.label}>
+            Upload Patient Images
+            <input
+              type="file"
+              name="patientImages"
+              multiple
+              accept="image/*,.pdf"
+              onChange={handleImageChange}
+            />
+          </label>
+
+          {/* New Image Previews */}
+          {imagePreviews.length > 0 && (
+            <div className={styles.imagePreviewContainer}>
+              <h3>New Images to Upload:</h3>
+              <div className={styles.imagePreviewGrid}>
+                {imagePreviews.map((preview, index) => (
+                  <div key={index} className={styles.imagePreview}>
+                    {preview.file.type.startsWith('image/') ? (
+                      <img src={preview.preview} alt={`Preview ${index}`} />
+                    ) : (
+                      <div className={styles.fileIcon}>
+                        {preview.file.name.split('.').pop().toUpperCase()} File
+                      </div>
+                    )}
+                    <p>{preview.file.name}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Existing Images (Edit Mode Only) */}
+          {id && existingImages.length > 0 && (
+            <div
+              className={styles.firstImageContainer}
+              onClick={() => setModalOpen(true)}
+            >
+              <img
+                src={
+                  existingImages[0].file.startsWith('http')
+                    ? existingImages[0].file
+                    : `http://localhost:8000${existingImages[0].file}`
+                }
+                alt="Patient"
+                className={styles.firstImage}
+              />
+              <div className={styles.viewAllIconContainer}>
+                VIEW
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Modal for all images */}
+        {modalOpen && (
+          <div className={styles.modalOverlay} onClick={() => setModalOpen(false)}>
+            <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
+              <button
+                className={styles.closeButton}
+                onClick={() => setModalOpen(false)}
+              >
+                ×
+              </button>
+              <div className={styles.imageGrid}>
+                {existingImages.map(img => (
+                  <img
+                    key={img.id}
+                    src={
+                      img.file.startsWith('http')
+                        ? img.file
+                        : `http://localhost:8000${img.file}`
+                    }
+                    alt="Patient"
+                    className={styles.gridImage}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+
 
         <button type="submit" className={styles.submitButton}>
           {id ? 'Save Changes' : 'Add Patient'}

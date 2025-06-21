@@ -38,6 +38,17 @@ def generate_laboratoryresult_code():
     ).random(length=6)
 
 
+
+
+# def user_image_upload_path(instance, filename):
+#     return f'user_images/{instance.user.user_id}/{filename}'
+
+def patient_image_upload_path(instance, filename):
+   
+    return f'patient_images/patient_{instance.patient.id}/{filename}'
+
+
+
 # Custom User Manager
 class CustomUserManager(BaseUserManager):
     #wait. this is boiler plate ng django no need to overThink
@@ -429,7 +440,28 @@ class BillingOperatorLog(models.Model):
 
 
 
+class PatientImage(models.Model):
+    
+    patient = models.ForeignKey(
+        Patient,
+        on_delete=models.CASCADE,
+        related_name='images'
+    )
+    file = models.FileField(
+        upload_to=patient_image_upload_path,
+        validators=[validate_file_extension]  
+    )
+    description = models.TextField(blank=True)
+    uploaded_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='uploaded_patient_images'
+    )
+    uploaded_at = models.DateTimeField(auto_now_add=True)
 
+    def __str__(self):
+        return f"Image {self.id} for Patient {self.patient.id}"
 
 
 
@@ -906,6 +938,13 @@ class ClinicalNote(models.Model):
         help_text="Any new orders (labs, imaging, meds, etc.)"
     )
     content = models.TextField(
+        null=True,
+        blank=True,
+        help_text="General narrative (if applicable)"
+    )
+
+
+    case_number_patient = models.TextField(
         null=True,
         blank=True,
         help_text="General narrative (if applicable)"

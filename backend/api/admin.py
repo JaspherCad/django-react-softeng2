@@ -4,7 +4,7 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.forms import UserCreationForm, UserChangeForm
 from .models import (
     User, Patient, MedicalHistory, Service, PatientService,
-    Billing, LaboratoryResult, LabResultFile, ClinicalNote, UserLog, Payment, LabResultFileInGroup, LabResultFileGroup, Room, BedAssignment, Bed, User
+    Billing, LaboratoryResult, LabResultFile, ClinicalNote, UserLog, Payment, LabResultFileInGroup, LabResultFileGroup, Room, BedAssignment, Bed, User, PatientImage
 )
 
 admin.site.register(User)
@@ -25,6 +25,9 @@ admin.site.register(UserImage)
 admin.site.register(Room)
 admin.site.register(Bed)
 admin.site.register(BedAssignment)
+
+admin.site.register(PatientImage)
+
 
 
 

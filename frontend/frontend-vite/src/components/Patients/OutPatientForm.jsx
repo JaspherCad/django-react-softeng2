@@ -1,12 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import styles from './Patients.module.css';
 import { useParams } from 'react-router-dom';
-import { patientDetailsAPI, SearchBillingsApi, SearchHospitalUserApi } from '../../api/axios';
+import { patientDetailsAPI, getPatientImagesAPI, SearchBillingsApi, SearchHospitalUserApi, uploadPatientImageAPI } from '../../api/axios';
 import SearchBar from '../AngAtingSeachBarWIthDropDown';
 
-const formatDateToLocal = (dateString) => {
-  if (!dateString) return '';
-  const date = new Date(dateString);
+
+
+
+
+
+
+//----------------------------------------date format fix--------------------------------------
+//pseudo: when edit, we have to get the FORMATTED String 00:z from backend to frontend BUT we have to convert that into input format (YYYY-MM-DDTHH:MM)
+
+// Helper: Convert ISO date to datetime-local input format (YYYY-MM-DDTHH:MM)
+//recieves string from backend then convert this into INPUT FIELDS para readable sa INPUT DATES
+const isoToInputDateTime = (isoStr) => {
+  if (!isoStr) return '';
+  const date = new Date(isoStr);
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
@@ -14,6 +25,32 @@ const formatDateToLocal = (dateString) => {
   const minutes = String(date.getMinutes()).padStart(2, '0');
   return `${year}-${month}-${day}T${hours}:${minutes}`;
 };
+
+//helper 2: since the input is in form of input format (YYYY-MM-DDTHH:MM) -> convert into roper zzz something idk
+const inputDateTimeToISO = (dateTimeString) => {
+  if (!dateTimeString) return null;
+  const date = new Date(dateTimeString);
+  return isNaN(date.getTime()) ? null : date.toISOString();
+};
+
+const formatDateToLocal = (dateTimeString) => {
+  if (!dateTimeString) return null;
+  const date = new Date(dateTimeString);
+  return date.toISOString();
+};
+
+
+
+
+
+//----------------------------------------date format fix--------------------------------------
+
+
+
+
+
+
+
 
 
 //note THIS IS WHAT WE SEND TO BACKEND.. ai prompt nio nalang. you have to match the  formData doon... formData lang naman. values
@@ -79,6 +116,13 @@ const OutPatientForm = ({ onSubmit }) => { //onSubmit yung function pano sinend 
 
   const [isDropdownVisible, setIsDropdownVisible] = useState(false)  //required for SearchBar
 
+  //--- patient image
+  const [selectedImages, setSelectedImages] = useState([]);
+  const [imagePreviews, setImagePreviews] = useState([]);
+  const [existingImages, setExistingImages] = useState([]);
+  const [modalOpen, setModalOpen] = useState(false);
+
+
   const [formData, setFormData] = useState({
     has_philhealth: false,
     case_number: '',
@@ -95,7 +139,7 @@ const OutPatientForm = ({ onSubmit }) => { //onSubmit yung function pano sinend 
     civil_status: '',
     nationality: '',
     religion: '',
-    attending_physician_id: '',
+    attending_physician: '',
     visit_type: 'New',
     consultation_datetime: '',
     referred_by: '',
@@ -105,9 +149,8 @@ const OutPatientForm = ({ onSubmit }) => { //onSubmit yung function pano sinend 
     emergency_contact_name: '',
     emergency_contact_phone: '',
     is_active: 'Active',
-    // entry_date is auto, code is auto
     notes: '',
-    diagnosed_by_id: '',
+    diagnosed_by: '',
     height: '',
     weight: '',
     blood_pressure: '',
@@ -124,6 +167,19 @@ const OutPatientForm = ({ onSubmit }) => { //onSubmit yung function pano sinend 
   });
   const [loading, setLoading] = useState(true);
 
+
+  useEffect(() => {
+    if (formData.note_type !== "Nurse") {
+      setFormData((prev) => ({
+        ...prev,
+        data: "",
+        action: "",
+        response: ""
+      }));
+    }
+  }, [formData.note_type]);
+
+
   useEffect(() => {
     const fetchPatient = async () => {
       try {
@@ -137,7 +193,7 @@ const OutPatientForm = ({ onSubmit }) => { //onSubmit yung function pano sinend 
             hmo: data.hmo || '',
             name: data.name,
             status: data.status,
-            admission_date: formatDateToLocal(data.admission_date),
+            admission_date: isoToInputDateTime(data.admission_date),
             current_condition: data.current_condition,
             date_of_birth: data.date_of_birth?.split('T')[0] || '',
             address: data.address || '',
@@ -145,18 +201,18 @@ const OutPatientForm = ({ onSubmit }) => { //onSubmit yung function pano sinend 
             civil_status: data.civil_status || '',
             nationality: data.nationality || '',
             religion: data.religion || '',
-            attending_physician_id: data.attending_physician_id || '',
+            attending_physician: data.attending_physician_id || '',
             visit_type: data.visit_type || 'New',
-            consultation_datetime: formatDateToLocal(data.consultation_datetime),
+            consultation_datetime: isoToInputDateTime(data.consultation_datetime),
             referred_by: data.referred_by || '',
-            next_consultation_date: formatDateToLocal(data.next_consultation_date),
-            discharge_date: formatDateToLocal(data.discharge_date),
+            next_consultation_date: isoToInputDateTime(data.next_consultation_date),
+            discharge_date: isoToInputDateTime(data.discharge_date),
             phone: data.phone || '',
             emergency_contact_name: data.emergency_contact_name || '',
             emergency_contact_phone: data.emergency_contact_phone || '',
             is_active: data.is_active,
             notes: data.notes || '',
-            diagnosed_by_id: data.diagnosed_by_id || '',
+            diagnosed_by: data.diagnosed_by_id || '',
             height: data.height || '',
             weight: data.weight || '',
             blood_pressure: data.blood_pressure || '',
@@ -171,6 +227,9 @@ const OutPatientForm = ({ onSubmit }) => { //onSubmit yung function pano sinend 
             diagnosis: data.diagnosis || '',
             treatment: data.treatment || '',
           });
+
+          const imageResponse = await getPatientImagesAPI(id);
+          setExistingImages(imageResponse.data || []);
         }
       } catch (err) {
         console.error('Failed to load patient data.', err);
@@ -181,12 +240,39 @@ const OutPatientForm = ({ onSubmit }) => { //onSubmit yung function pano sinend 
     fetchPatient();
   }, [id]);
 
+  const formatNumber = (value) => {
+    if (!value) return '';
+    const num = parseFloat(value);
+    return isNaN(num) ? '' : num.toFixed(2);
+  };
+
+
+  const handleImageChange = (e) => {
+    const files = Array.from(e.target.files);
+    setSelectedImages(files);
+
+    const previews = files.map(file => ({
+      file,
+      preview: URL.createObjectURL(file)
+    }));
+    setImagePreviews(previews);
+  };
+
+  //"""When you use URL.createObjectURL() to preview images, the browser creates a temporary reference to the file in memory. If you don’t clean this up, those references remain in memory even after the component unmounts"""
+  //-chatG
+  useEffect(() => {
+    return () => {
+      imagePreviews.forEach(preview => URL.revokeObjectURL(preview.preview));
+    };
+  }, [imagePreviews]);
+
+
   const handleSelected = (filteredItem) => {
     console.log(filteredItem.id)
     setIsDropdownVisible(false)
     // setSearchTerm(filteredItem.code)
-    setSearchTerm(String(filteredItem.id));   
-    setFormData(prev => ({ ...prev, attending_physician_id: item.id }));
+    setSearchTerm(String(filteredItem.id));
+    setFormData(prev => ({ ...prev, attending_physician: filteredItem.id }));
 
   }
   //handleSelectedDiagnosedBy
@@ -194,8 +280,8 @@ const OutPatientForm = ({ onSubmit }) => { //onSubmit yung function pano sinend 
     console.log(filteredItem.id)
     setIsDropdownVisible(false)
     // setSearchTerm(filteredItem.code)
-    setSearchTermDiagnosedBy(String(filteredItem.id));   
-    setFormData(prev => ({ ...prev, diagnosed_by_id: item.id }));
+    setSearchTermDiagnosedBy(String(filteredItem.id));
+    setFormData(prev => ({ ...prev, diagnosed_by: filteredItem.id }));
 
   }
   const handleChange = (e) => {
@@ -203,32 +289,117 @@ const OutPatientForm = ({ onSubmit }) => { //onSubmit yung function pano sinend 
     setFormData((prev) => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
+      [name]: type === 'number' ? formatNumber(value) : value
     }));
   };
 
-  const handleSubmit = (e) => {
-  e.preventDefault();
-  // Build a payload that replaces "" with null for date/required fields
-  const payload = { ...formData };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  // List all date‐time fields (and any required char fields that must be null)
-  ['admission_date','discharge_date','consultation_datetime','next_consultation_date']
-    .forEach(key => {
-      if (!payload[key]) payload[key] = null;
+    let payload = { ...formData };
+
+    // Validate hospital_case_number
+    if (!payload.hospital_case_number) {
+      alert("Hospital Case Number is required.");
+      return;
+    }
+
+
+
+    // // Validate ICD code
+    // if (payload.icd_code && !isValidICDCode(payload.icd_code)) {
+    //   alert('Please enter a valid ICD-10 code (e.g., J45.9).');
+    //   return;
+    // }
+
+    // Format datetime fields
+    payload.admission_date = inputDateTimeToISO(payload.admission_date);
+    payload.discharge_date = inputDateTimeToISO(payload.discharge_date);
+    payload.consultation_datetime = inputDateTimeToISO(payload.consultation_datetime);
+    payload.next_consultation_date = inputDateTimeToISO(payload.next_consultation_date);
+
+    // Format numeric fields
+    const numericFields = ["height", "weight", "pulse_rate", "respiratory_rate", "temperature"];
+    numericFields.forEach((field) => {
+      payload[field] = formatNumber(payload[field]);
     });
 
-  // If hospital_case_number is optional, allow null instead of ""
-  if (!payload.hospital_case_number) {
-    payload.hospital_case_number = null;
-  }
+    // Replace empty strings with null for nullable fields
+    ['admission_date', 'discharge_date', 'consultation_datetime', 'next_consultation_date']
+      .forEach(key => {
+        if (!payload[key]) payload[key] = null;
+      });
 
-  if (id) {
-    onSubmit(id, payload);
-  } else {
-    onSubmit(payload);
-  }
-};
 
+    try {
+      let patientId;
+      if (id) {
+        await onSubmit(id, payload);
+        console.log(payload)
+        patientId = id;
+      } else {
+        const response = await onSubmit(payload);
+        patientId = response.data.id
+      }
+
+
+      //then upload images if any
+      if (selectedImages.length > 0 && patientId) {
+        const formData = new FormData();
+
+        // Append each file to FormData
+        selectedImages.forEach((file) => {
+          formData.append('file', file);
+        });
+
+        // Include patient ID
+        formData.append('patient', patientId);
+
+        // Upload images
+        await uploadPatientImageAPI(formData);
+
+        // Reset image selection
+        setSelectedImages([]);
+        setImagePreviews([]);
+      }
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      alert('Failed to save patient or upload images');
+    }
+
+
+  };
+
+
+
+  //all renders use this, some file are image some files actual files,,,,,
+  function FilePreview({ url }) {
+    const isImage = /\.(jpe?g|png|gif|webp)$/i.test(url);
+
+    return (
+      <div className={styles.filePreviewContainer}>
+        {isImage ? (
+          <a href={`http://localhost:8000${url}`} target="_blank" rel="noopener noreferrer">
+            <img
+              src={`http://localhost:8000${url}`}
+              alt="Preview"
+              className={styles.filePreviewImage}
+            />
+          </a>
+
+        ) : (
+          <a
+            href={`http://localhost:8000${url}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.fileLink}
+          >
+            {url.split("/").pop()}
+          </a>
+        )}
+      </div>
+    );
+  }
 
   if (loading) return <div>Loading…</div>;
 
@@ -272,6 +443,16 @@ const OutPatientForm = ({ onSubmit }) => { //onSubmit yung function pano sinend 
             name="hmo"
             value={formData.hmo}
             onChange={handleChange}
+          />
+        </label>
+        <label className={styles.label}>
+          Hospital Case Number
+          <input
+            type="text"
+            name="hospital_case_number"
+            value={formData.hospital_case_number}
+            onChange={handleChange}
+            required
           />
         </label>
 
@@ -539,6 +720,7 @@ const OutPatientForm = ({ onSubmit }) => { //onSubmit yung function pano sinend 
             name="blood_pressure"
             value={formData.blood_pressure}
             onChange={handleChange}
+            placeholder="input 120/80"
           />
         </label>
         <label className={styles.label}>
@@ -628,6 +810,96 @@ const OutPatientForm = ({ onSubmit }) => { //onSubmit yung function pano sinend 
             onChange={handleChange}
           />
         </label>
+
+
+
+
+
+        {/* Image Upload Section */}
+        <div className={styles.imageUploadSection}>
+          <label className={styles.label}>
+            Upload Patient Images
+            <input
+              type="file"
+              name="patientImages"
+              multiple
+              accept="image/*,.pdf"
+              onChange={handleImageChange}
+            />
+          </label>
+
+          {/* New Image Previews */}
+          {imagePreviews.length > 0 && (
+            <div className={styles.imagePreviewContainer}>
+              <h3>New Images to Upload:</h3>
+              <div className={styles.imagePreviewGrid}>
+                {imagePreviews.map((preview, index) => (
+                  <div key={index} className={styles.imagePreview}>
+                    {preview.file.type.startsWith('image/') ? (
+                      <img src={preview.preview} alt={`Preview ${index}`} />
+                    ) : (
+                      <div className={styles.fileIcon}>
+                        {preview.file.name.split('.').pop().toUpperCase()} File
+                      </div>
+                    )}
+                    <p>{preview.file.name}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Existing Images (Edit Mode Only) */}
+          {id && existingImages.length > 0 && (
+            <div
+              className={styles.firstImageContainer}
+              onClick={() => setModalOpen(true)}
+            >
+              <img
+                src={
+                  existingImages[0].file.startsWith('http')
+                    ? existingImages[0].file
+                    : `http://localhost:8000${existingImages[0].file}`
+                }
+                alt="Patient"
+                className={styles.firstImage}
+              />
+              <div className={styles.viewAllIconContainer}>
+                VIEW
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Modal for all images */}
+        {modalOpen && (
+          <div className={styles.modalOverlay} onClick={() => setModalOpen(false)}>
+            <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
+              <button
+                className={styles.closeButton}
+                onClick={() => setModalOpen(false)}
+              >
+                ×
+              </button>
+              <div className={styles.imageGrid}>
+                {existingImages.map(img => (
+                  <img
+                    key={img.id}
+                    src={
+                      img.file.startsWith('http')
+                        ? img.file
+                        : `http://localhost:8000${img.file}`
+                    }
+                    alt="Patient"
+                    className={styles.gridImage}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+
 
         <button type="submit" className={styles.submitButton}>
           {id ? 'Save Changes' : 'Add Patient'}

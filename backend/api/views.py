@@ -6,11 +6,11 @@ from django.db import transaction
 from django.db.models import Q
 from django.contrib.auth.models import Group, Permission
 
-from .serializers import ClinicalNoteSerializer, GroupPermissionUpdateSerializer, GroupSerializer, PatientHistorySerializer, UserImageSerializer, UserSerializer, PatientSerializer, UserLogSerializer, BillingCreateSerializer, ServiceSerializer, PatientServiceSerializer, LaboratoryResultSerializer, LabResultFileSerializer, BillingItemSerializer, BillingSerializer, BillingSerializerNoList, Billing_PatientInfo_Serializer, LabResultFileGroupSerializer, LabResultFileInGroup, LabResultFileInGroupSerializer, RoomWithBedInfoSerializer, BedAssignmentSerializer, UserCreateSerializer
+from .serializers import ClinicalNoteSerializer, GroupPermissionUpdateSerializer, GroupSerializer, PatientHistorySerializer, PatientImageSerializer, UserImageSerializer, UserSerializer, PatientSerializer, UserLogSerializer, BillingCreateSerializer, ServiceSerializer, PatientServiceSerializer, LaboratoryResultSerializer, LabResultFileSerializer, BillingItemSerializer, BillingSerializer, BillingSerializerNoList, Billing_PatientInfo_Serializer, LabResultFileGroupSerializer, LabResultFileInGroup, LabResultFileInGroupSerializer, RoomWithBedInfoSerializer, BedAssignmentSerializer, UserCreateSerializer
 from django.contrib.auth.hashers import make_password
 
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from .models import ClinicalNote, User, LabResultFileGroup, LabResultFileInGroup ,Patient, UserLog, Billing, BillingItem, BillingOperatorLog, PatientService, Service, LaboratoryResult, LabResultFile, Bed, BedAssignment, Room
+from .models import ClinicalNote, PatientImage, User, LabResultFileGroup, LabResultFileInGroup ,Patient, UserLog, Billing, BillingItem, BillingOperatorLog, PatientService, Service, LaboratoryResult, LabResultFile, Bed, BedAssignment, Room
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -161,30 +161,113 @@ def patient_list(request):
 # CLINICAL NOTES # CLINICAL NOTES# CLINICAL NOTES# CLINICAL NOTES# CLINICAL NOTES# CLINICAL NOTES
 @api_view(['GET'])
 @permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist])
+def get_patient_history_by_case(request, case_number):
+    """
+    Return all historical snapshots for the patient who ever had the given case_number,
+    including original_case_number on each entry.
+    """
+    # Find all history rows for that case_number (old or new), newest first
+    history_qs = Patient.history.filter(case_number=case_number).order_by('-history_date')
+    if not history_qs.exists():
+        return Response(
+            {"detail": f"No patient history found for case '{case_number}'."},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    serializer = PatientHistorySerializer(history_qs, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+
+@api_view(['GET'])
+@permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist])
 def get_clinical_notes_by_code(request, case_number):
 
     # Retrieve all clinical notes for a patient identified by its case_number.
     
-    notes = ClinicalNote.objects.filter(patient__case_number=case_number)
+    # Look in historical records for any patient change matching the old case number
+    hist = Patient.history.filter(case_number=case_number).order_by('-history_date').first()
+    if not hist:
+        return Response(
+            {"detail": "No patient ever had case number '%s'." % case_number},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    patient_id = hist.id
+    # Now fetch notes by the consistent patient ID
+    notes = ClinicalNote.objects.filter(patient_id=patient_id).order_by('-created_at')
     serializer = ClinicalNoteSerializer(notes, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+
+
+
 @api_view(['POST'])
 @permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist])
-def create_clinical_note(request, case_number):
+def create_clinical_note(request, pk, case_number):
+    """
+    #GOAL IS store the case number to clinical note's column feature. BUT also storing the patient's ID as FOREIGN VALUE
+    """
+
+
+
+    #1 to 2 step is just VERIFICATION IF THE case_Number is in the history of that patient MODEL;
     
-    #POST  a new clinical note for the patient identified by case_number.
-    #Expected JSON body matches ClinicalNoteSerializer fields (excluding patient).
-    
-    patient = get_object_or_404(Patient, case_number=case_number)
+    # 1) Fetch the patient
+    patient = get_object_or_404(Patient, id=pk)
+
+    # 2) Verify case_number exists in any historical snapshot this patient
+    history_model = Patient.history.model
+
+    exists_in_history = history_model.objects.filter(
+        id=patient.id,
+        case_number=case_number
+    ).exists()
+    if not exists_in_history:
+        return Response(
+            {"detail": f"Case number '{case_number}' not found in patient history."},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    #CREATING DATA... base case is done
+# 3) Prepare note data set patient and case number
     data = request.data.copy()
     data['patient'] = patient.id
+    data['case_number_patient'] = case_number
 
+    # 4) Validate & save
     serializer = ClinicalNoteSerializer(data=data)
     serializer.is_valid(raise_exception=True)
     serializer.save()
+
     return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+@api_view(['GET'])
+@permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist])
+def get_clinical_notes_by_case_number(request, case_number):
+    #notes/history/<str:case_number>
+
+
+
+    #SINCE CASE NUMBER IS UNIQUE, we can saerch the PATIENT HISTORY using that.... if any matched on it GET THAT ID!
+    history_model = Patient.history.model
+    historical_patient = history_model.objects.filter(case_number=case_number).order_by('-history_date').first()
+
+    if not historical_patient:
+        return Response({"detail": f"Case number '{case_number}' not found in patient history."},
+                        status=status.HTTP_404_NOT_FOUND)
+
+    #the fethced id
+    patient_id = historical_patient.id
+
+    notes = ClinicalNote.objects.filter(patient_id=patient_id, case_number_patient=case_number)
+    serializer = ClinicalNoteSerializer(notes, many=True)
+
+    return Response(serializer.data)
+
+
 
 
 @api_view(['GET'])
@@ -1491,6 +1574,64 @@ def upload_user_image(request, user_id):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
+
+
+
+
+
+
+
+
+@api_view(['POST'])
+@permission_classes([IsAdmin | IsDoctor])
+def patientImageupload(request):
+    #  -F "patient=123" \
+    #  -F "file=@/path/to/image.jpg" \
+    #  -F "description=Patient X-ray"
+    # Use MultiPartParser and FormParser
+    patient_id = request.data.get('patient')
+    try:
+        patient = Patient.objects.get(id=patient_id)
+    except (Patient.DoesNotExist, ValidationError):
+        return Response(
+            {"error": "Invalid patient ID"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # Pass raw request.data to the serializer
+    serializer = PatientImageSerializer(data=request.data, context={'request': request})
+
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_patient_images(request, patient_id):
+    """
+    Fetch all images for a specific patient by ID
+    URL: /api/patient-images/<patient_id>/
+    """
+    try:
+        # Validate patient exists
+        patient = get_object_or_404(Patient, id=patient_id)
+        
+        # Get all images for this patient
+        images = PatientImage.objects.filter(patient=patient).order_by('-uploaded_at')
+                                     
+        
+        # Serialize and return
+        serializer = PatientImageSerializer(images, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+        
+    except ValidationError:
+        return Response(
+            {"error": "Invalid patient ID format"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])

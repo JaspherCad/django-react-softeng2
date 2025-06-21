@@ -6,6 +6,11 @@ import { addPatientAPI, editPatientAPI, listOfPatientAPI } from '../../api/axios
 import OutPatientForm from './OutPatientForm';
 import InPatientForm from './InPatientForm';
 import PatientHistory from './PatientHistory';
+import PatientHistoryCaseCode from './PatientHistoryCaseCode';
+
+
+
+
 const PAGE_SIZE = 2;
 
 
@@ -24,7 +29,7 @@ const Patients = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
-
+  const [selectedMedicalHistory, setSelectedMedicalHistory] = useState();
 
   //FETCH (READ) the patient data
   const fetchPatient = async () => {
@@ -65,7 +70,7 @@ const Patients = () => {
 
       //fetch patient
       await fetchPatient()
-      navigate('/patients');
+      return response
     } catch (error) {
       console.error(error)
     }
@@ -78,7 +83,6 @@ const Patients = () => {
       const response = await editPatientAPI(id, updatedFOrmData)
       //fetch patient
       await fetchPatient()
-      navigate('/patients');
     } catch (error) {
       console.error(error)
     }
@@ -120,8 +124,10 @@ const Patients = () => {
       {/* to avoid data staleness(being outdated) dont use selectedPatient, for consistency DO call another ApI */}
       <Route path="outpatient/edit/:id" element={<OutPatientForm onSubmit={handleEditPatient} loading={loading} errorMsg={errorMsg} />} />
       <Route path="inpatient/edit/:id" element={<InPatientForm onSubmit={handleEditPatient} loading={loading} errorMsg={errorMsg} />} />
-      <Route path="history/:id" element={<PatientHistory  />} />
+      <Route path="history/:id" element={<PatientHistory setSelectedMedicalHistory={setSelectedMedicalHistory}  />} />
 
+      <Route path="history/:patientid/casecode/:caseCode" element={<PatientHistoryCaseCode setSelectedMedicalHistory={setSelectedMedicalHistory}  />} />
+      
 
 
     </Routes>

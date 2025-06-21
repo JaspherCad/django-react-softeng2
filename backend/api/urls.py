@@ -32,6 +32,8 @@ urlpatterns = [
     # sEarch function for patient
     path('patients/search', views.search_patients, name='search_billings'),
     path('users/search', views.search_users, name='search_users'),
+    path('patient-image-upload', views.patientImageupload, name='patient-image-upload'),
+    path('patient-images/<int:patient_id>', views.get_patient_images, name='get_patient_images'),
 
 
 
@@ -125,12 +127,56 @@ urlpatterns = [
 
 
     #NOTES
-    path('notes/<str:case_number>', views.get_clinical_notes_by_code, name='get_notes_by_code'),
+    path('notes/<str:case_number>', views.get_patient_history_by_case, name='get_notes_by_code'),
     
     path('notes/all-notes-patientid/<int:patient_id>', views.get_clinical_notes_by_patient, name='get_notes_by_patient'),
 
+    #LOGIC, existing na kasi si case number before we put here...
 
-    path('notes/<str:case_number>/create', views.create_clinical_note, name='create_clinical_note'),
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    #step 1:
+    # http://127.0.0.1:8000/api/patients/1/notes/4678NEW/create
+
+# {
+#   "author": 1,
+#   "note_type": "Doctor",
+#   "note_date": "2025-06-18T07:30:00Z",
+#   "focus_problem": "22222 HAHAHA",
+#   "progress_notes": "No swelling, dressing changed",
+#   "orders": "Monitor site q2h",
+#   "content": "Patient resting comfortably.",
+#   "medication": "",
+#   "dose_frequency": ""
+# }
+
+    #step 2: fetch http://127.0.0.1:8000/api/notes/history/4678NEW
+
+
+    #WORKING! 1
+    path('patients/<int:pk>/notes/<str:case_number>/create', views.create_clinical_note, name='create_clinical_note'),
+
+
+    #WORKING! 2
+    path('notes/history/<str:case_number>', views.get_clinical_notes_by_case_number, name='get_clinical_notes_by_case_number'),
+
+
+
+
+    
 
 
 ]   
