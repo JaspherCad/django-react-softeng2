@@ -3,6 +3,14 @@ import { Routes, Route, useNavigate } from 'react-router-dom';
 import PatientList from './PatientList';
 import PatientForm from './PatientForm';
 import { addPatientAPI, editPatientAPI, listOfPatientAPI } from '../../api/axios';
+import OutPatientForm from './OutPatientForm';
+import InPatientForm from './InPatientForm';
+import PatientHistory from './PatientHistory';
+import PatientHistoryCaseCode from './PatientHistoryCaseCode';
+
+
+
+
 const PAGE_SIZE = 2;
 
 
@@ -21,7 +29,7 @@ const Patients = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
-
+  const [selectedMedicalHistory, setSelectedMedicalHistory] = useState();
 
   //FETCH (READ) the patient data
   const fetchPatient = async () => {
@@ -57,11 +65,12 @@ const Patients = () => {
   const handleAddPatient = async (newPatientData) => {
     try {
       //call the api then recall fetch patient await
+      console.log(newPatientData)
       const response = await addPatientAPI(newPatientData);
 
       //fetch patient
       await fetchPatient()
-      navigate('/patients');
+      return response
     } catch (error) {
       console.error(error)
     }
@@ -74,7 +83,6 @@ const Patients = () => {
       const response = await editPatientAPI(id, updatedFOrmData)
       //fetch patient
       await fetchPatient()
-      navigate('/patients');
     } catch (error) {
       console.error(error)
     }
@@ -107,9 +115,20 @@ const Patients = () => {
             PAGE_SIZE={PAGE_SIZE}
 
         />} />
-      <Route path="add" element={<PatientForm onSubmit={handleAddPatient} loading={loading} errorMsg={errorMsg} />} />
+
+
+      {/* SEPERATE THE TWO FORM AS PER REQUEST BY DESGINER idk */}
+      <Route path="outpatient/add" element={<OutPatientForm onSubmit={handleAddPatient} loading={loading} errorMsg={errorMsg} />} />
+      <Route path="inpatient/add" element={<InPatientForm onSubmit={handleAddPatient} loading={loading} errorMsg={errorMsg} />} />
+
       {/* to avoid data staleness(being outdated) dont use selectedPatient, for consistency DO call another ApI */}
-      <Route path="edit/:id" element={<PatientForm onSubmit={handleEditPatient} loading={loading} errorMsg={errorMsg} />} />
+      <Route path="outpatient/edit/:id" element={<OutPatientForm onSubmit={handleEditPatient} loading={loading} errorMsg={errorMsg} />} />
+      <Route path="inpatient/edit/:id" element={<InPatientForm onSubmit={handleEditPatient} loading={loading} errorMsg={errorMsg} />} />
+      <Route path="history/:id" element={<PatientHistory setSelectedMedicalHistory={setSelectedMedicalHistory}  />} />
+
+      <Route path="history/:patientid/casecode/:caseCode" element={<PatientHistoryCaseCode setSelectedMedicalHistory={setSelectedMedicalHistory}  />} />
+      
+
 
     </Routes>
   );

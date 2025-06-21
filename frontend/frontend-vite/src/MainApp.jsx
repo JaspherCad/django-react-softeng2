@@ -13,6 +13,7 @@ import Laboratory from './components/Laboratory';
 import InPatientRoom from './components/InPatientRoom';
 
 import TellerDashboard from './components/DashBoardTeller';
+import UserManagement from './components/UserManagement/UserManagement';
 
 // Protected Route Component
 const ProtectedRoute = () => {
@@ -101,6 +102,9 @@ const MainApp = () => {
           <Route path="/billing/*" element={<Billing />} />
           <Route path="/laboratory/*" element={<Laboratory />} />
           <Route path="/InPatientRoom/*" element={<InPatientRoom />} />
+
+          <Route path="/Admin" element={<UserManagement />} />
+
 
 
 

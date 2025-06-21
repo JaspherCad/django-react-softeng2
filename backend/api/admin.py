@@ -1,9 +1,10 @@
 from django.contrib import admin
-from .models import BillingItem
-
+from .models import BillingItem, UserImage
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.contrib.auth.forms import UserCreationForm, UserChangeForm
 from .models import (
     User, Patient, MedicalHistory, Service, PatientService,
-    Billing, LaboratoryResult, LabResultFile, ClinicalNote, UserLog, Payment, LabResultFileInGroup, LabResultFileGroup, Room, BedAssignment, Bed
+    Billing, LaboratoryResult, LabResultFile, ClinicalNote, UserLog, Payment, LabResultFileInGroup, LabResultFileGroup, Room, BedAssignment, Bed, User, PatientImage
 )
 
 admin.site.register(User)
@@ -19,10 +20,14 @@ admin.site.register(UserLog)
 admin.site.register(Payment)
 admin.site.register(LabResultFileGroup)
 admin.site.register(LabResultFileInGroup)
+admin.site.register(UserImage)
 
 admin.site.register(Room)
 admin.site.register(Bed)
 admin.site.register(BedAssignment)
+
+admin.site.register(PatientImage)
+
 
 
 
@@ -32,7 +37,56 @@ admin.site.register(BedAssignment)
 class BillingItemAdmin(admin.ModelAdmin):
     list_display = ('billing', 'service_availed', 'quantity', 'subtotal')
 
+class CustomUserCreationForm(UserCreationForm):
+    class Meta:
+        model = User
+        fields = ('user_id', 'role', 'department')
 
+    def save(self, commit=True):
+        # Use your CustomUserManager.create_user()
+        user = self._meta.model.objects.create_user(
+            user_id=self.cleaned_data['user_id'],
+            password=self.cleaned_data['password1'],
+            role=self.cleaned_data['role'],
+            department=self.cleaned_data['department'],
+            is_active=self.cleaned_data.get('is_active', True),
+            is_staff=self.cleaned_data.get('is_staff', False)
+        )
+        return user
+
+
+class CustomUserChangeForm(UserChangeForm):
+    class Meta:
+        model = User
+        fields = '__all__'
+
+
+class UserAdmin(BaseUserAdmin):
+    form = CustomUserChangeForm
+    add_form = CustomUserCreationForm
+
+    list_display = ('user_id', 'role', 'department', 'is_staff', 'is_superuser')
+    fieldsets = (
+        (None, {'fields': ('user_id', 'password')}),
+        ('Personal Info', {'fields': ('role', 'department')}),
+        ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
+        ('Important Dates', {'fields': ('last_login', 'date_joined')}),
+    )
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': ('user_id', 'password1', 'password2', 'role', 'department', 'is_staff', 'is_active'),
+        }),
+    )
+
+    # Use your CustomUserManager.save() to ensure group assignment
+    def save_model(self, request, obj, form, change):
+        if not change:  # Creating new user
+            obj.set_password(obj.password)  # Hash password
+        else:  # Updating user
+            if 'password' in form.changed_data:
+                obj.set_password(obj.password)  # Hash password if changed
+        super().save_model(request, obj, form, change)
 
 #     admin.add_logentry
 # admin.change_logentry

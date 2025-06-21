@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import styles from './Patients.module.css';
 import { useNavigate, useParams } from 'react-router-dom'
+import { SearchPatientsApi } from '../../api/axios';
+import SearchBar from '../AngAtingSeachBarWIthDropDown';
 //EACH PATIENT PER .MAP() has this
 //     name: '',
 //     date_of_birth: '',
@@ -31,11 +33,32 @@ const PatientList = ({
 
   const navigate = useNavigate()
   // const [selectedPatient, setSelectedPatient] = useState(null); //move to upper state so we can reuse for edit, specific views, etc
-  const [showModal, setShowModal] = useState(false);
+
+
+
+
+
+
+
+
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showAdmitModal, setShowAdmitModal] = useState(false);
+  const [admitStep, setAdmitStep] = useState(null); // 'existing' or 'new'
+
+  const [searchTerm, setSearchTerm] = useState(''); //required for SearchBar
+  const [isDropdownVisible, setIsDropdownVisible] = useState(false)  //required for SearchBar
+
+
+
+  const [seletecExistingPatient, setSeletecExistingPatient] = useState(null); // 'existing' or 'new'
+
+
+
+
   console.log(patients)
   const handleRowClick = (patient) => {
     setSelectedPatient(patient); //send this info to parent
-    setShowModal(true);
+    setShowDetailsModal(true);
   };
 
 
@@ -59,10 +82,40 @@ const PatientList = ({
     return <div className={styles.error}>{errorMsg}</div>;
   }
 
-  const closeModal = () => {
-    setShowModal(false);
+  const handleAdmitClick = () => {
+    setAdmitStep(null);
+    setShowAdmitModal(true);
+  };
+
+  const choosePatientType = (type) => {
+    setAdmitStep(type);
+  };
+
+  const navigateForm = (formType) => {
+    // formType: 'inpatient' or 'outpatient'
+    // for existing vs new, you might pass patient id or not
+    console.log(`navigating to ${formType}`)
+    navigate('#');
+  };
+
+
+  const closeAdmitModal = () => {
+    setShowAdmitModal(false);
+    setAdmitStep(null);
+  };
+
+  const closeDetailsModal = () => {
+    setShowDetailsModal(false);
     setSelectedPatient(null);
   };
+
+  const handleSelectedItem = (selectedPatient) => {
+    console.log(selectedPatient.id)
+    setSearchTerm(selectedPatient.code)
+    setSeletecExistingPatient(selectedPatient)
+    setIsDropdownVisible(false)
+  }
+
 
   const handleEditClick = (patient, e) => {
     e.stopPropagation(); // Prevent row click when clicking button
@@ -74,7 +127,10 @@ const PatientList = ({
     <div className={styles.patientManagement}>
       <div className={styles.container}>
         <div className={styles.tableContent}>
-          <h2>Patient Records</h2>
+          <h2>Patient Recordzs</h2>
+          <button className={styles.btnPrimary} onClick={handleAdmitClick}>
+            Admit New Patient
+          </button>
           <table className={styles.table}>
             <thead>
               <tr>
@@ -82,7 +138,7 @@ const PatientList = ({
                 <th>Name</th>
                 <th>Admission</th>
                 <th>Status</th>
-                <th>Phone</th>
+                <th>case_number</th>
                 <th colSpan="2">Action</th>
               </tr>
             </thead>
@@ -98,15 +154,8 @@ const PatientList = ({
                     <td data-label="Name">{patient.name}</td>
                     <td data-label="Admission_Date">{patient.admission_date}</td>
                     <td data-label="Status">{patient.status}</td>
-                    <td data-label="Phone">{patient.phone}</td>
-                    <td data-label="Edit">
-                      <button
-                        className={styles.btnEdit}
-                        onClick={(e) => handleEditClick(patient, e)} //STOPS row click when clicking button
-                      >
-                        <i className="fa fa-pencil"></i>Edit
-                      </button>
-                    </td>
+                    <td data-label="case_number">{patient.case_number}</td>
+
                     <td data-label="Delete">
                       <button
                         className={styles.btnTrash}
@@ -167,12 +216,12 @@ const PatientList = ({
 
       {/* Patient Details Modal */}
       {/* WHERE SELECTED PATIENT FROM?????? the PARENT.. CRUD AND ALL UTILITY IS OVER THER>>> */}
-      {showModal && selectedPatient && (
-        <div className={styles.modalOverlay} onClick={closeModal}>
+      {showDetailsModal && selectedPatient && (
+        <div className={styles.modalOverlay} onClick={closeDetailsModal}>
           <div className={styles.modal} onClick={e => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <h2>Patient Details</h2>
-              <button className={styles.closeButton} onClick={closeModal}>&times;</button>
+              <button className={styles.closeButton} onClick={closeDetailsModal}>&times;</button>
             </div>
             <div className={styles.modalContent}>
               <div className={styles.patientDetail}>
@@ -211,6 +260,102 @@ const PatientList = ({
               <div className={styles.patientDetail}>
                 <strong>Active Status:</strong> {selectedPatient.is_active}
               </div>
+
+
+              <div className={styles.patientDetail}>
+                <strong>VIEW MEDICAL HISTORY</strong>
+                <button
+                  className={styles.historyBtn}         
+                  onClick={() => navigate(`/patients/history/${selectedPatient.id}`)}
+                >
+                  VIEW&nbsp;MEDICAL&nbsp;HISTORY
+                </button>
+
+              </div>
+
+            </div>
+          </div>
+        </div>
+      )}
+
+
+
+
+      {/* Admit Modal: Step 1 choose existing/new, Step 2 choose form and (if existing) search patient */}
+      {showAdmitModal && (
+        <div className={styles.modalOverlay} onClick={closeAdmitModal}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h2>Admit Patient</h2>
+              <button className={styles.closeButton} onClick={closeAdmitModal}>&times;</button>
+            </div>
+            <div className={styles.modalContent}>
+
+
+
+
+
+              {!admitStep ? (
+                <>
+                  <button className={styles.btnOption} onClick={() => choosePatientType('existing')}>
+                    Existing Patient
+                  </button>
+                  <button className={styles.btnOption} onClick={() => choosePatientType('new')}>
+                    New Patient
+                  </button>
+                </>
+              ) : (
+                <>
+                  {admitStep === 'existing' && (
+                    <SearchBar
+                      // data={dummyBillingData}
+                      placeholder={"IDKsss"}
+                      searchApi={SearchPatientsApi}
+                      // accept the argument passed by the SearchBar component (item) when onSelectSuggestion is invoked
+                      //to accept *-*
+                      onSelectSuggestion={(filtered) => handleSelectedItem(filtered)}
+                      suggestedOutput={['code', 'name']}
+                      searchTerm={searchTerm}
+                      setSearchTerm={setSearchTerm}
+                      isDropdownVisible={isDropdownVisible}
+                      setIsDropdownVisible={setIsDropdownVisible}
+                      maxDropdownHeight="500px"
+
+                    />
+                  )}
+
+
+
+
+                  <p>Choose form type:</p>
+                  <button
+                    className={styles.btnOption}
+                    onClick={() => {
+                      const url = admitStep === 'existing'
+                        ? `inpatient/edit/${seletecExistingPatient.id}`
+                        : `inpatient/add`
+                      navigate(url);
+                      closeAdmitModal();
+                    }}
+                  >
+                    Inpatient
+                  </button>
+
+
+                  <button
+                    className={styles.btnOption}
+                    onClick={() => {
+                      const url = admitStep === 'existing'
+                        ? `outpatient/edit/${seletecExistingPatient.id}`
+                        : `outpatient/add`;
+                      navigate(url);
+                      closeAdmitModal();
+                    }}
+                  >
+                    Outpatient
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -218,5 +363,6 @@ const PatientList = ({
     </div>
   );
 };
+
 
 export default PatientList; 

@@ -2,8 +2,10 @@
 import React, { useState, useEffect } from 'react';
 import styles from './TransactionsList.module.css';
 import { FaSort, FaSortUp, FaSortDown, FaRegFilePdf, FaRegFileExcel } from 'react-icons/fa';
-import { listOfBillingsAPI } from '../../api/axios'; // Import your API function
+import { getBillingByID, listOfBillingsAPI, SearchBillingsApi } from '../../api/axios'; // Import your API function
 import TransactionDetailsModal from './TransactionDetailsModal';
+import SearchBar from '../AngAtingSeachBarWIthDropDown';
+import { useNavigate } from 'react-router-dom';
 
 const formatDate = (dateString) => {
   const date = new Date(dateString);
@@ -32,7 +34,10 @@ const TransactionsList = () => {
   //multiSelect => use SET coz of uniqueness (DSA)
   const [selectedCodes, setSelectedCodes] = useState(new Set());
   const [selectAll, setSelectAll] = useState(false);
-
+  const [searchTerm, setSearchTerm] = useState(''); //required for SearchBar
+  const [isDropdownVisible, setIsDropdownVisible] = useState(false)  //required for SearchBar
+  const [selectedItem, setSelectedItem] = useState()
+  const navigate = useNavigate();
   const [filters, setFilters] = useState({
     sortBy: 'date_created',
     sortOrder: 'desc',
@@ -159,7 +164,7 @@ const TransactionsList = () => {
     //build csv content
     // (H) "Billing ID,Patient Name,Date,Status,Amount,Created By"
 
-      //LOOPED
+    //LOOPED
     // (R) "TX123,John Doe,2025-06-08,Completed,150.00,Admin" /n
     // (R) "TX124,Jane Smith,2025-06-07,Pending,200.00,Teller" /n
 
@@ -226,6 +231,31 @@ const TransactionsList = () => {
     }
   };
 
+
+
+  const handleSelectedItem = async (filteredId) => {
+    console.log(filteredId.code)
+    //http://localhost:3000/billing/billing_items_of_billing/5H3X9NAJ
+    navigate(`/billing/billing_items_of_billing/${filteredId.code}`);
+    // //call the api thru id here
+    // try {
+    //   setLoading(true)
+    //   const response = await getBillingByID(filteredId.code);
+
+    //   console.log(response.data);
+    //   setLoading(false);
+    //   // navigate(`/billing_items_of_billing/${response.data?.code}`);
+    //   console.log(response.data?.code)
+
+
+    // } catch (error) {
+    //   console.error(error)
+    // } finally {
+    //   setLoading(false)
+    // }
+  }
+
+
   const handleConfirm = () => {
     console.log('Selected billing codes:', Array.from(selectedCodes));
   };
@@ -245,12 +275,20 @@ const TransactionsList = () => {
 
         <div className={styles.controls}>
           <div className={styles.searchGroup}>
-            <input
-              type="text"
-              placeholder="Search by patient name..."
-              value={filters.search}
-              onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-              className={styles.searchInput}
+            <SearchBar
+              // data={dummyBillingData}
+              placeholder={"IDKsss"}
+              searchApi={SearchBillingsApi}
+              // accept the argument passed by the SearchBar component (item) when onSelectSuggestion is invoked
+              //to accept *-*
+              onSelectSuggestion={(filtered) => handleSelectedItem(filtered)}
+              suggestedOutput={['code', 'patient']}
+              searchTerm={searchTerm}
+              setSearchTerm={setSearchTerm}
+              isDropdownVisible={isDropdownVisible}
+              setIsDropdownVisible={setIsDropdownVisible}
+              maxDropdownHeight="500px"
+
             />
           </div>
 

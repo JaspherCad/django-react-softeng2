@@ -11,7 +11,7 @@ from django.db.models import F
 from django.db import models
 import shortuuid
 from shortuuid.django_fields import ShortUUIDField
-
+from simple_history.models import HistoricalRecords
 
 def generate_billing_code():
     #8-character random, URL-safe, no confusing chars I 1 0 0
@@ -38,6 +38,17 @@ def generate_laboratoryresult_code():
     ).random(length=6)
 
 
+
+
+# def user_image_upload_path(instance, filename):
+#     return f'user_images/{instance.user.user_id}/{filename}'
+
+def patient_image_upload_path(instance, filename):
+   
+    return f'patient_images/patient_{instance.patient.id}/{filename}'
+
+
+
 # Custom User Manager
 class CustomUserManager(BaseUserManager):
     #wait. this is boiler plate ng django no need to overThink
@@ -55,6 +66,9 @@ class CustomUserManager(BaseUserManager):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         return self.create_user(user_id, password, **extra_fields)
+
+#update file upload
+
 
 # Custom User Model
 class User(AbstractBaseUser, PermissionsMixin):
@@ -75,6 +89,15 @@ class User(AbstractBaseUser, PermissionsMixin):
     
     #this is where the actual user creation is happening
     objects = CustomUserManager()
+
+
+    # personal Information --- update.
+    first_name = models.CharField(max_length=30, blank=True, null=True)
+    last_name  = models.CharField(max_length=30, blank=True, null=True)
+    email      = models.EmailField(blank=True, null=True)
+    phone      = models.CharField(max_length=20, blank=True, null=True)
+    date_joined = models.DateTimeField(default=timezone.now)
+
     
     USERNAME_FIELD = 'user_id'
     #USERNAME_FIELD = 'user_id' so if i said this, then the username field is changed to user_id?
@@ -86,8 +109,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     def save(self, *args, **kwargs):
         """Automatically add to appropriate group based on role"""
         super().save(*args, **kwargs)
-        group, _ = Group.objects.get_or_create(name=self.role)
-        self.groups.add(group)
+        if self.role:
+            group, _ = Group.objects.get_or_create(name=self.role)
+            self.groups.add(group)
 
 
 
@@ -118,6 +142,50 @@ class Patient(models.Model):
         ('Inactive', 'Inactive'),
         ('Deleted', 'Deleted'),
     ]
+
+
+    CIVIL_STATUS_CHOICES = [
+        ('Single', 'Single'),
+        ('Married', 'Married'),
+        ('Widowed', 'Widowed'),
+        ('Divorced', 'Divorced'),
+        ('Separated', 'Separated')
+    ]
+    
+    VISIT_TYPE_CHOICES = [
+        ('New', 'New'),
+        ('Follow-up', 'Follow-up')
+    ]
+
+
+
+    # Insurance & Case Information
+    has_philhealth = models.BooleanField(default=False)
+    case_number = models.CharField(
+        unique=True,
+        db_index=True,
+        null=True,
+        blank=False,
+        default=None,
+        max_length=255
+    )
+
+    hospital_case_number = models.CharField(
+        null=True,
+        blank=False,
+        default=None,
+        max_length=255
+    )
+
+
+    has_hmo = models.BooleanField(default=False)
+    hmo = models.CharField(
+        null=True,
+        blank=True,
+        max_length=255
+     
+    )
+
 #save state save state save state save state!   #   $   % anti cntrl z
     code = ShortUUIDField(
         length=5,
@@ -132,20 +200,65 @@ class Patient(models.Model):
     #Essential Fields for Emergency Admission
     name = models.CharField(max_length=255)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES)
-    admission_date = models.DateField()  
+    admission_date = models.DateTimeField(null=True, blank=True)
+    
+
     current_condition = models.TextField()
 
     # Optional Fields (Can Be Added Later)
-    date_of_birth = models.DateField(null=True, blank=True)
+    date_of_birth = models.DateField(null=True, blank=True) 
     address = models.CharField(max_length=255, null=True, blank=True)
-    discharge_date = models.DateField(null=True, blank=True)
+    occupation = models.CharField(max_length=100, null=True, blank=True)
+    civil_status = models.CharField(max_length=20, choices=CIVIL_STATUS_CHOICES, null=True, blank=True)
+    nationality = models.CharField(max_length=100, null=True, blank=True)
+    religion = models.CharField(max_length=100, null=True, blank=True)
+
+
+
+    # Consultation Info
+    attending_physician = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name='patients'
+    )
+    visit_type = models.CharField(max_length=20, null=True, blank=True, choices=[
+        ('New', 'New'), ('Follow-up', 'Follow-up')
+    ])
+    consultation_datetime = models.DateTimeField(null=True, blank=True)
+    referred_by = models.CharField(max_length=255, null=True, blank=True)
+    next_consultation_date = models.DateTimeField(null=True, blank=True)
+
+
+    discharge_date = models.DateTimeField(null=True, blank=True)
     phone = models.CharField(max_length=15, blank=True, null=True)
-    email = models.EmailField(blank=True, null=True)
+    # email = models.EmailField(blank=True, null=True)
     emergency_contact_name = models.CharField(max_length=255, blank=True, null=True)
     emergency_contact_phone = models.CharField(max_length=15, blank=True, null=True)
     is_active = models.CharField(max_length=10, choices=IS_ACTIVE_CHOICES, default='Active')
 
 
+
+    #MEDICAL INFORMATION: should be sepeareted as MedicalHistory.. but merge as one for now.
+    entry_date = models.DateTimeField(auto_now_add=True)
+    notes = models.TextField()
+    diagnosed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+
+
+    height = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    weight = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    blood_pressure = models.CharField(max_length=20, null=True, blank=True)
+    pulse_rate = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    respiratory_rate = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    temperature = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    physical_examination = models.TextField(null=True, blank=True)
+    main_complaint = models.TextField(null=True, blank=True)
+    present_illness = models.TextField(null=True, blank=True)
+    clinical_findings = models.TextField(null=True, blank=True)
+    icd_code = models.CharField(max_length=20, null=True, blank=True)
+    diagnosis = models.TextField(null=True, blank=True)
+    treatment = models.TextField(null=True, blank=True)
+
+
+    #UPDATE! tracks historical record PER event. u know push get patch etc
+    history = HistoricalRecords()
 
     def deactivate_patient(self):
         self.is_active = 'Inactive'
@@ -160,9 +273,7 @@ class MedicalHistory(models.Model):
     #WHY CASCADE????
     # It's particularly useful when the related objects (like medical histories) don't make sense without their parent object (the patient). For example, a  record without a  would lack crucial context and likely cause errors or confusion in your application.
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='medical_histories')
-    entry_date = models.DateField(auto_now_add=True)
-    notes = models.TextField()
-    diagnosed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    
 
     def __str__(self):
         return f"{self.patient.name} - {self.entry_date}"
@@ -329,7 +440,28 @@ class BillingOperatorLog(models.Model):
 
 
 
+class PatientImage(models.Model):
+    
+    patient = models.ForeignKey(
+        Patient,
+        on_delete=models.CASCADE,
+        related_name='images'
+    )
+    file = models.FileField(
+        upload_to=patient_image_upload_path,
+        validators=[validate_file_extension]  
+    )
+    description = models.TextField(blank=True)
+    uploaded_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='uploaded_patient_images'
+    )
+    uploaded_at = models.DateTimeField(auto_now_add=True)
 
+    def __str__(self):
+        return f"Image {self.id} for Patient {self.patient.id}"
 
 
 
@@ -381,6 +513,30 @@ class LabResultFile(models.Model):
 
 
 
+def user_image_upload_path(instance, filename):
+    return f'user_images/{instance.user.user_id}/{filename}'
+
+class UserImage(models.Model):
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='images'
+    )
+    file = models.FileField(
+        upload_to=user_image_upload_path,
+        validators=[validate_file_extension]  
+    )
+    description = models.TextField(blank=True)
+    uploaded_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='uploaded_user_images'
+    )
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Image {self.id} for {self.user.user_id}"
 
 
 
@@ -737,15 +893,89 @@ class ClinicalNote(models.Model):
     NOTE_TYPES = [
         ('Doctor', 'Doctor Note'),
         ('Nurse', 'Nurse Note'),
-        ('General', 'General Note')
+        ('General', 'General Note'),
+        ('Medication', 'Medication Note'),
     ]
+
     
+    #save satate
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='clinical_notes')
-    author = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
-    note_type = models.CharField(max_length=20, choices=NOTE_TYPES)
-    content = models.TextField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+
+    #ClinicalNote.objects.filter(patient__case_number='CN-20250617-001') to FILTER the notes to patient 
+
+    author = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, help_text="Who created this note"
+    )
+
+    note_type = models.CharField(
+        max_length=120,
+        choices=NOTE_TYPES,
+        null=True,
+        blank=True
+    )
+
+    #date/shift additional
+    # date/shift additional
+    note_date = models.DateTimeField(
+        default=timezone.now,
+        null=True,
+        blank=True,
+        help_text="Date/time for this note (can represent shift)"
+    )
+
+    focus_problem = models.TextField(
+        null=True,
+        blank=True,
+        help_text="Primary problem or focus of this note"
+    )
+    progress_notes = models.TextField(
+        null=True,
+        blank=True,
+        help_text="Progress since last note"
+    )
+    orders = models.TextField(
+        null=True,
+        blank=True,
+        help_text="Any new orders (labs, imaging, meds, etc.)"
+    )
+    content = models.TextField(
+        null=True,
+        blank=True,
+        help_text="General narrative (if applicable)"
+    )
+
+
+    case_number_patient = models.TextField(
+        null=True,
+        blank=True,
+        help_text="General narrative (if applicable)"
+    )
+
+
+        # Medication‑specific fields
+    medication = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+        help_text="Medication name (for Medication notes)"
+    )
+    dose_frequency = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True,
+        help_text="e.g. 'Once daily', '2x per day'"
+    )
+
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        null=True,
+        blank=True
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        null=True,
+        blank=True
+    )
 
     def __str__(self):
         return f"{self.patient.name} - {self.note_type}"

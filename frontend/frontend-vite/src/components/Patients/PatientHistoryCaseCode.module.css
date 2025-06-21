@@ -1,0 +1,196 @@
+/* --- toggle bar ------------------------------------------------ */
+.toggleBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.5rem 0 1rem;
+}
+
+
+.toggleBtn {
+  padding: 0.35rem 0.9rem;
+  border: 1px solid var(--gray-300, #d0d5dd);
+  background: #f9fafb;
+  border-radius: 9999px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 120ms ease;
+}
+
+.toggleBtn:hover {
+  background: #eef0f3;
+}
+
+.activeToggle {
+  background: var(--primary-600, #2563eb);
+  color: #fff;
+  border-color: var(--primary-600, #2563eb);
+}
+
+/* --- note card tweaks ------------------------------------------ */
+.historyCard {
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  border-radius: 0.5rem;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
+  line-height: 1.35;
+}
+.noteHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.6rem;
+}
+.noteTypeBadge {
+  font-weight: 600;
+  font-size: 0.75rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 0.375rem;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+/* colour-coded badges */
+.badgeDoctor     { background: #0284c7; }
+.badgeNurse      { background: #22c55e; }
+.badgeGeneral    { background: #6b7280; }
+.badgeMedication { background: #ef4444; }
+
+.noteDate {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+/* Modal Overlay */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+/* Modal Content Container */
+.modalContent {
+  position: relative;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  width: 90%;
+  max-width: 600px;
+  padding: 24px;
+  overflow-y: auto;
+  max-height: 90vh;
+}
+
+/* Close Button */
+.closeBtn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  color: #555;
+  transition: color 0.2s ease;
+}
+
+.closeBtn:hover {
+  color: #000;
+}
+
+/* Form Error Message */
+.formError {
+  margin-bottom: 16px;
+  padding: 12px;
+  background-color: #ffe6e6;
+  color: #a00;
+  border: 1px solid #f5c2c2;
+  border-radius: 4px;
+}
+
+/* Form Group Wrapper */
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 16px;
+}
+
+.formGroup label {
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.formGroup input,
+.formGroup select,
+.formGroup textarea {
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.formGroup textarea {
+  min-height: 80px;
+}
+
+/* Modal Action Buttons */
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+/* Primary Button */
+.primaryBtn {
+  padding: 10px 18px;
+  border: none;
+  border-radius: 4px;
+  background-color: #007bff;
+  color: #fff;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.primaryBtn:hover {
+  background-color: #0056b3;
+}
+
+/* Secondary Button */
+.secondaryBtn {
+  padding: 10px 18px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #f5f5f5;
+  color: #333;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.secondaryBtn:hover {
+  background-color: #e0e0e0;
+}

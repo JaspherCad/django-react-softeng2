@@ -271,6 +271,8 @@ export const addBillingItemApi = async (billingData, billingId) => {
   }
 };
 
+
+
 export const editBillingItemApi = async (billingCode, billingItemId, billingData) => {
   try {
     const response = await axiosInstance.put(`/billings/${billingCode}/items/${billingItemId}/edit`,
@@ -292,6 +294,19 @@ export const editBillingItemApi = async (billingCode, billingItemId, billingData
 export const SearchBillingsApi = async (searchTerm) => {
   try {
     const response = await axiosInstance.get('/billings/search', {
+      params: { q: searchTerm }
+    }
+
+    );
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const SearchHospitalUserApi = async (searchTerm) => {
+  try {
+    const response = await axiosInstance.get('/users/search', {
       params: { q: searchTerm }
     }
 
@@ -345,7 +360,16 @@ export const SearchServicesApi = async (searchTerm) => {
   }
 };
 
+//uploadPatientImageAPI
 
+export const getPatientImagesAPI = async (patientId) => {
+  try {
+    const response = await axiosInstance.get(`patient-images/${patientId}`);
+    return response
+  } catch (error) {
+    console.error("Failed to fetch patient images:", error);
+  }
+};
 export const listOfBillingsAPI = async (page = 1, pageSize = 10) => {
   try {
     const response = await axiosInstance.get('billings/list/v2', {
@@ -456,9 +480,49 @@ export const addLabRecordsToPatient = async (patientId, labData) => {
   }
 };
 
+
+
+
+
+
+export const createClinicalNoteAPI = async (patientId,  case_number, newNoteData) => {
+  try {
+    const response = await axiosInstance.post(`/patients/${patientId}/notes/${case_number}/create`,
+      newNoteData
+    );
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+
+
+
 export const addLabFilesToLaboratory = async (labId, labFiles) => {
   try {
     const response = await axiosInstance.post(`/laboratory/files/group/${labId}`,
+      labFiles,
+      {
+        headers: {
+
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+
+
+
+
+export const uploadPatientImageAPI = async (labFiles) => {
+  try {
+    const response = await axiosInstance.post(`/patient-image-upload`,
       labFiles,
       {
         headers: {
@@ -501,6 +565,46 @@ export const fetchLab = async (labId) => {
   try {
     const response = await axiosInstance.get(`/laboratory/get-laboratory/${labId}`);
     return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+
+
+//http://127.0.0.1:8000/api/notes/history/4678NEW
+export const fetchClinicalNotesByCodeAPI = async (code) => {
+  try {
+    const response = await axiosInstance.get(`/notes/history/${code}`);
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const FetchUsersAPI = async () => {
+  try {
+    const response = await axiosInstance.get(`/users/list`);
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const FetchUsersRolesAPI = async () => {
+  try {
+    const response = await axiosInstance.get(`/users/roles`);
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+
+export const fetchPatientHistoryAPI = async (labId) => {
+  try {
+    const response = await axiosInstance.get(`/patients/${labId}/history`);
+    return response;
   } catch (error) {
     throw error;
   }
