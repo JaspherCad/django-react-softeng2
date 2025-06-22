@@ -19,6 +19,21 @@ urlpatterns = [
     path('protected', views.protected_view, name='test-protected-view'),
     path('doctor', views.doctorOnly, name='test-doctor-view'),
 
+
+    # User Management
+    path('users', views.user_list, name='user-list'),
+    path('groups', views.role_group_list, name='role-group-list'),
+    path('users/<int:user_id>/assign-roles', views.update_user_groups, name='user-role-assign'),
+
+
+    # Password Recovery
+    path('forgot-password', views.forgot_password, name='forgot_password'),
+    path('verify-answers', views.verify_security_answers, name='verify_answers'),
+    path('reset-password', views.reset_password, name='reset_password'),
+    path('set-security-questions', views.set_security_questions, name='set_security_questions'),
+
+
+
     path('auth/check', views.auth_check, name='test-doctor-view'),
 
 
@@ -83,7 +98,7 @@ urlpatterns = [
     #TODO: finish this today the seach lab save state
     path('laboratory/search-laboratory', views.search_labId, name='search_labId'),
 
-
+#SAVE STATE 
     path('laboratory/files/group/<int:labId>', views.create_laboratory_file_group, name='create-lab-file-group'),
 
     path('laboratory/files/group/<int:group_id>/', views.get_laboratory_file_group, name='get-lab-file-group'),

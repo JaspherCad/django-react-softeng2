@@ -5,7 +5,7 @@ import styles from "./PatientHistoryCaseCode.module.css";
 import PatientDataView from "./PatientDataView";
 import PatientHistoryModal from "./PatientHistoryModal";
 
-const NOTE_TYPES = ["All", "Doctor", "Nurse", "General", "Medication"];
+const NOTE_TYPES = ["All", "Doctor", "Nurse", "General", "Medication", "Laboratories"];
 
 export default function PatientHistoryCaseCode() {
     const { patientid, caseCode, historyid } = useParams();
@@ -35,7 +35,7 @@ export default function PatientHistoryCaseCode() {
         dose_frequency: "",
 
         //nurse notes specifically for DAT
-        dar: "",
+        data: "",
         action: "",
         response: ""
 
@@ -105,7 +105,7 @@ export default function PatientHistoryCaseCode() {
             };
 
             if (formData.note_type === "Nurse") {
-                payloadData.progress_notes = `Data: ${payloadData.data}\nAction: ${payloadData.action}\nResponse: ${payloadData.response}`;
+                payload.progress_notes = `Data: ${payload.data}\nAction: ${payload.action}\nResponse: ${payload.response}`;
 
             }
 
@@ -184,6 +184,13 @@ export default function PatientHistoryCaseCode() {
 
                 {/* GENERAL HISTORY MODAL */}
                 {filter === "General" && patientInformation && (
+                    
+                            <PatientDataView patientData={patientInformation} />
+                       
+                )}
+
+                {/* GENERAL HISTORY MODAL */}
+                {filter === "Laboratories" && (
                     
                             <PatientDataView patientData={patientInformation} />
                        

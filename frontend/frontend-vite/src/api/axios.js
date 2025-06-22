@@ -404,6 +404,15 @@ export const getBillingByID = async (id) => {
   }
 };
 
+export const forgotPassword = async (user_id_obj) => {
+  try {
+    const response = await axiosInstance.post(`/forgot-password`, user_id_obj);
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
 export const getBillingByACTUALIDandNotCODE = async (id) => {
   try {
     const response = await axiosInstance.get(`/billings/actualid/${id}`);
@@ -523,6 +532,25 @@ export const addLabFilesToLaboratory = async (labId, labFiles) => {
 export const uploadPatientImageAPI = async (labFiles) => {
   try {
     const response = await axiosInstance.post(`/patient-image-upload`,
+      labFiles,
+      {
+        headers: {
+
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+
+
+export const uploadUSERSADMINImageAPI = async (userid, labFiles) => {
+  try {
+    const response = await axiosInstance.post(`/user/${userid}/upload-image`,
       labFiles,
       {
         headers: {

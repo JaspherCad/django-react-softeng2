@@ -1,0 +1,118 @@
+.backdrop {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: #fff;
+  border-radius: 8px;
+  padding: 24px;
+  width: 90%;
+  max-width: 600px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  max-height: 90%;
+  overflow: auto;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+}
+
+.section {
+  margin-bottom: 24px;
+}
+
+.sectionHeader {
+  color: #28a745;
+  border-bottom: 2px solid #28a745;
+  padding-bottom: 6px;
+  margin-bottom: 12px;
+}
+
+.splitFields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.field {
+  margin-bottom: 16px;
+}
+
+.label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.required {
+  color: red;
+}
+
+.input,
+.textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.errorInput {
+  border-color: #dc3545;
+}
+
+.error {
+  color: #dc3545;
+  font-size: 0.875rem;
+  margin-top: 4px;
+}
+
+.previewWrapper {
+  margin-top: 12px;
+  text-align: center;
+}
+
+.previewImage {
+  max-width: 150px;
+  border-radius: 4px;
+}
+
+.buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+.cancel {
+  background: #6c757d;
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.submit {
+  background: #28a745;
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+}

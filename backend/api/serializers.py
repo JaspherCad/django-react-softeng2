@@ -1,14 +1,27 @@
 from rest_framework import serializers
-from .models import ClinicalNote, PatientImage, User, Patient, LaboratoryResult, LabResultFile, UserImage, UserLog, Service, PatientService, Billing, BillingItem, LabResultFileInGroup, LabResultFileGroup, Bed, Room, BedAssignment, MedicalHistory
+from .models import ClinicalNote, PatientImage, User, Patient, LaboratoryResult, LabResultFile, UserImage, UserLog, Service, PatientService, Billing, BillingItem, LabResultFileInGroup, LabResultFileGroup, Bed, Room, BedAssignment, MedicalHistory, UserSecurityQuestion
 
 class UserSerializer(serializers.ModelSerializer):
+    groups = serializers.SerializerMethodField()
+    images = serializers.SerializerMethodField()
+
     class Meta:
         model = User
-        fields = ["id", "first_name","last_name","user_id", "password", "role", "department", "is_active", "is_staff"]
+        fields = ["id", "first_name","last_name","user_id", "groups","password", "role", "department", "is_active", "is_staff", "address", "birthdate","images"
+]
         extra_kwargs = {
             "password": {"write_only": True}, 
             'is_staff': {'read_only': True}
         }
+
+    #battery included functions : IDK man thats why I hate django too many unknowns
+    def get_groups(self, obj):
+        from .serializers import GroupSerializer  
+        return GroupSerializer(obj.groups.all(), many=True).data
+
+    def get_images(self, obj):
+        images = obj.images.all()
+        return UserImageSerializer(images, many=True, context=self.context).data
 
     # def create(self, validated_data):
     #     # Use the create_user method from your CustomUserManager
@@ -23,29 +36,86 @@ class UserSerializer(serializers.ModelSerializer):
     #     return user
 
     def create(self, validated_data):
-        #force is_staff=True for Admin, Doctor, Teller
-        role = validated_data.get('role')
-        if role in ['Admin', 'Doctor', 'Teller', 'Nurse', 'Receptionist']:
-            validated_data['is_staff'] = True
+        password = validated_data.pop('password', None)
+        
+        user = User.objects.create_user(
+            user_id=validated_data['user_id'],
+            role=validated_data['role'],
+            department=validated_data['department'],
+            is_active=validated_data.get('is_active', True),
+            first_name=validated_data.get('first_name'),
+            last_name=validated_data.get('last_name'),
+            email=validated_data.get('email'),
+            phone=validated_data.get('phone'),
+            address=validated_data.get('address'),
+            birthdate=validated_data.get('birthdate')
+        )
+        
+        if password:
+            user.set_password(password)
+            user.save(update_fields=['password'])
+        
+        self._set_is_staff(user)
+        
+        return user
 
-        return User.objects.create_user(**validated_data)
     
     def update(self, instance, validated_data):
-        # Handle updating the user instance
         instance.user_id = validated_data.get('user_id', instance.user_id)
         instance.role = validated_data.get('role', instance.role)
         instance.department = validated_data.get('department', instance.department)
         instance.is_active = validated_data.get('is_active', instance.is_active)
-        instance.is_staff = validated_data.get('is_staff', instance.is_staff)
-
-        # Handle password update
+        instance.first_name = validated_data.get('first_name', instance.first_name)
+        instance.last_name = validated_data.get('last_name', instance.last_name)
+        instance.email = validated_data.get('email', instance.email)
+        instance.phone = validated_data.get('phone', instance.phone)
+        instance.address = validated_data.get('address', instance.address)
+        instance.birthdate = validated_data.get('birthdate', instance.birthdate)
+        
         password = validated_data.get('password', None)
         if password:
             instance.set_password(password)
 
         instance.save()
+
+        self._set_is_staff(instance)
+
+        self._update_user_groups(instance)
+
         return instance
     
+    def _set_is_staff(self, user):
+        """Set is_staff flag based on role"""
+        if user.role in ['Admin', 'Doctor', 'Teller', 'Nurse', 'Receptionist']:
+            user.is_staff = True
+        else:
+            user.is_staff = False
+
+    def _update_user_groups(self, user):
+        user.groups.clear()
+        
+        if user.role:
+            group, _ = Group.objects.get_or_create(name=user.role)
+            user.groups.add(group)  
+    
+
+class UserSecurityQuestionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserSecurityQuestion
+        fields = ['id', 'question', 'answer']
+        extra_kwargs = {
+            'answer': {'write_only': True}
+        }
+
+class PasswordResetSerializer(serializers.Serializer):
+    user_id = serializers.CharField()
+    new_password = serializers.CharField(write_only=True)
+    confirm_password = serializers.CharField(write_only=True)
+
+    def validate(self, data):
+        if data['new_password'] != data['confirm_password']:
+            raise serializers.ValidationError("Passwords do not match.")
+        return data
 
 class ClinicalNoteSerializer(serializers.ModelSerializer):
     
@@ -403,7 +473,8 @@ class BillingSerializer(serializers.ModelSerializer):
 
 
 class UserImageSerializer(serializers.ModelSerializer):
-    uploaded_by = UserSerializer(read_only=True)
+    uploaded_by = serializers.PrimaryKeyRelatedField(read_only=True)
+    file = serializers.SerializerMethodField() 
 
     class Meta:
         model = UserImage
@@ -413,6 +484,11 @@ class UserImageSerializer(serializers.ModelSerializer):
             'file': {'required': True},
             'description': {'required': False}
         }
+    def get_file(self, obj):
+        request = self.context.get('request')
+        if obj.file:
+            return request.build_absolute_uri(obj.file.url) if request else obj.file.url
+        return None
 
         
 class BillingSerializerNoList(serializers.ModelSerializer):

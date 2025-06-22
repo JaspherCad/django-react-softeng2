@@ -26,13 +26,14 @@ const isoToInputDateTime = (isoStr) => {
   return `${year}-${month}-${day}T${hours}:${minutes}`;
 };
 
-//helper 2: since the input is in form of input format (YYYY-MM-DDTHH:MM) -> convert into roper zzz something idk
+//helper 2: since the input is in form of input format (YYYY-MM-DDTHH:MM) -> convert into Proper zzz something ISO
 const inputDateTimeToISO = (dateTimeString) => {
   if (!dateTimeString) return null;
   const date = new Date(dateTimeString);
   return isNaN(date.getTime()) ? null : date.toISOString();
 };
 
+//deprecated
 const formatDateToLocal = (dateTimeString) => {
   if (!dateTimeString) return null;
   const date = new Date(dateTimeString);

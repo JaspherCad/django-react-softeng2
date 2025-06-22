@@ -1,0 +1,92 @@
+.container {
+  padding: 2rem;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.header {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.actions {
+  display: flex;
+  justify-content: end;
+  margin-bottom: 1rem;
+}
+
+.updateButton {
+  background: #009688;
+  color: white;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.updateButton:hover {
+  background: #007a6b;
+}
+
+.detailCard {
+  background: #f9fafb;
+  padding: 2rem;
+  border-radius: 8px;
+  margin-top: 1rem;
+}
+
+.detailTitle {
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
+
+.titleUnderline {
+  border-color: #28a745;
+  margin: 0.5rem 0;
+}
+
+.infoGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+.imageContainer {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.profileImage {
+  width: 150px;
+  height: 150px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 2px solid #e5e7eb;
+}
+
+.infoSection {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.field {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 1;
+  margin-right: 0.3rem;
+}
+
+.loading, .error {
+  text-align: center;
+  padding: 2rem;
+  color: #6b7280;
+}
