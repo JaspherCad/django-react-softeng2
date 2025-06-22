@@ -1,19 +1,24 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
-import { fetchClinicalNotesByCodeAPI, createClinicalNoteAPI } from "../../api/axios";
+import { fetchClinicalNotesByCodeAPI, createClinicalNoteAPI, fetchPatientHistoryByIdAPI } from "../../api/axios";
 import styles from "./PatientHistoryCaseCode.module.css";
+import PatientDataView from "./PatientDataView";
+import PatientHistoryModal from "./PatientHistoryModal";
 
-const NOTE_TYPES = ["All", "Doctor", "Nurse", "General", "Medication"];
+const NOTE_TYPES = ["All", "Doctor", "Nurse", "General", "Medication", "Laboratories"];
 
 export default function PatientHistoryCaseCode() {
-    const { patientid, caseCode } = useParams();
+    const { patientid, caseCode, historyid } = useParams();
 
     const [notes, setNotes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [filter, setFilter] = useState("Doctor");
 
-    
+    const [patientInformation, setPatientInformation] = useState();
+
+
+
 
 
     //MODAL STATEAS
@@ -30,7 +35,7 @@ export default function PatientHistoryCaseCode() {
         dose_frequency: "",
 
         //nurse notes specifically for DAT
-        dar: "",
+        data: "",
         action: "",
         response: ""
 
@@ -49,6 +54,9 @@ export default function PatientHistoryCaseCode() {
             try {
                 setLoading(true);
                 const { data } = await fetchClinicalNotesByCodeAPI(caseCode);
+                const resultsPatientInfoABoutThatCode = await fetchPatientHistoryByIdAPI(patientid, historyid);
+                console.log(resultsPatientInfoABoutThatCode.data)
+                setPatientInformation(resultsPatientInfoABoutThatCode.data)
                 setNotes(data);
                 console.log(data)
             } catch {
@@ -57,7 +65,7 @@ export default function PatientHistoryCaseCode() {
                 setLoading(false);
             }
         })();
-    }, [caseCode]);
+    }, [caseCode, historyid]);
 
     /* ───────── memo-ised filtering ───────── */
     const filteredNotes = useMemo(
@@ -97,7 +105,7 @@ export default function PatientHistoryCaseCode() {
             };
 
             if (formData.note_type === "Nurse") {
-                payloadData.progress_notes = `Data: ${payloadData.data}\nAction: ${payloadData.action}\nResponse: ${payloadData.response}`;
+                payload.progress_notes = `Data: ${payload.data}\nAction: ${payload.action}\nResponse: ${payload.response}`;
 
             }
 
@@ -163,15 +171,30 @@ export default function PatientHistoryCaseCode() {
                         required
                     >
                         <option value="">Select type</option>
-                        {NOTE_TYPES.filter(type => type !== "All" && type !== "General")
+                        {NOTE_TYPES.filter(type => type !== "All")
                             .map(type => (
                                 <option key={type} value={type}>{type}</option>
                             ))}
                     </select>
 
 
-                    
+
                 </div>
+
+
+                {/* GENERAL HISTORY MODAL */}
+                {filter === "General" && patientInformation && (
+                    
+                            <PatientDataView patientData={patientInformation} />
+                       
+                )}
+
+                {/* GENERAL HISTORY MODAL */}
+                {filter === "Laboratories" && (
+                    
+                            <PatientDataView patientData={patientInformation} />
+                       
+                )}
 
                 {/* Notes list */}
                 {filteredNotes.length === 0 ? (
@@ -251,7 +274,6 @@ export default function PatientHistoryCaseCode() {
                                         ))}
                                 </select>
                             </div>
-
 
 
 

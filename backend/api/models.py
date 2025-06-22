@@ -98,7 +98,10 @@ class User(AbstractBaseUser, PermissionsMixin):
     phone      = models.CharField(max_length=20, blank=True, null=True)
     date_joined = models.DateTimeField(default=timezone.now)
 
+    has_security_questions = models.BooleanField(default=False)
     
+    address    = models.CharField(max_length=255, blank=True, null=True)
+    birthdate  = models.DateField(blank=True, null=True)
     USERNAME_FIELD = 'user_id'
     #USERNAME_FIELD = 'user_id' so if i said this, then the username field is changed to user_id?
     REQUIRED_FIELDS = ['role', 'department']
@@ -123,7 +126,17 @@ class User(AbstractBaseUser, PermissionsMixin):
 
 
 
+class UserSecurityQuestion(models.Model):
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='security_questions'
+    )
+    question = models.TextField()
+    answer = models.TextField()     
 
+    def __str__(self):
+        return f"Security question for {self.user.user_id}"
 
 
 

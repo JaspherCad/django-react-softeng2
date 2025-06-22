@@ -11,9 +11,18 @@ import Patients from './components/Patients';
 import Billing from './components/Billing'
 import Laboratory from './components/Laboratory';
 import InPatientRoom from './components/InPatientRoom';
+import AdminPage from './components/AdminPage';
+
 
 import TellerDashboard from './components/DashBoardTeller';
 import UserManagement from './components/UserManagement/UserManagement';
+import ForgotPassword from './components/ForgotPassword/ForgotPasswordLayout.jsx';
+import ForgotPasswordLayout from './components/ForgotPassword/ForgotPasswordLayout.jsx';
+import Step1EnterUserId from './components/ForgotPassword/Step1EnterUserId';
+import Step2SecurityQuestion from './components/ForgotPassword/Step2SecurityQuestion.jsx';
+import Step3ResetPassword from './components/ForgotPassword/Step3ResetPassword.jsx';
+import ForgotPasswordRoutes from './components/ForgotPassword/index.jsx';
+
 
 // Protected Route Component
 const ProtectedRoute = () => {
@@ -77,7 +86,13 @@ const MainApp = () => {
 
 
       {/* UNPROTECTED ROUTE */}
-      <Route path="/login" element={<Login />} />
+      <Route path="/login" element={<Login />} /> 
+      <Route path="/forgot-password/*" element={<ForgotPasswordRoutes />}/>
+          {/* <Route index element={<Navigate to="enter-id" replace />} />
+          <Route path="enter-id" element={<Step1EnterUserId />} />
+          <Route path="security-question" element={<Step2SecurityQuestion />} />
+          <Route path="reset" element={<Step3ResetPassword />} />
+        </Route> */}
       {/* UNPROTECTED ROUTE */}
 
 
@@ -103,7 +118,8 @@ const MainApp = () => {
           <Route path="/laboratory/*" element={<Laboratory />} />
           <Route path="/InPatientRoom/*" element={<InPatientRoom />} />
 
-          <Route path="/Admin" element={<UserManagement />} />
+          <Route path="/Admin/*" element={<AdminPage />} />
+
 
 
 

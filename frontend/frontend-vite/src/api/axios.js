@@ -404,6 +404,15 @@ export const getBillingByID = async (id) => {
   }
 };
 
+export const forgotPassword = async (user_id_obj) => {
+  try {
+    const response = await axiosInstance.post(`/forgot-password`, user_id_obj);
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
 export const getBillingByACTUALIDandNotCODE = async (id) => {
   try {
     const response = await axiosInstance.get(`/billings/actualid/${id}`);
@@ -539,6 +548,25 @@ export const uploadPatientImageAPI = async (labFiles) => {
 
 
 
+export const uploadUSERSADMINImageAPI = async (userid, labFiles) => {
+  try {
+    const response = await axiosInstance.post(`/user/${userid}/upload-image`,
+      labFiles,
+      {
+        headers: {
+
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+
+
 export const assignBed = async (patientID, bedID, billingID) => {
       //                PatientID   /  bedID   /   billingID
 
@@ -576,6 +604,16 @@ export const fetchLab = async (labId) => {
 export const fetchClinicalNotesByCodeAPI = async (code) => {
   try {
     const response = await axiosInstance.get(`/notes/history/${code}`);
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+
+export const fetchPatientHistoryByIdAPI  = async (patientId, historyId) => {
+  try {
+    const response = await axiosInstance.get(`/patients/${patientId}/history/id/${historyId}`);
     return response;
   } catch (error) {
     throw error;

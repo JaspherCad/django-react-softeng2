@@ -19,6 +19,21 @@ urlpatterns = [
     path('protected', views.protected_view, name='test-protected-view'),
     path('doctor', views.doctorOnly, name='test-doctor-view'),
 
+
+    # User Management
+    path('users', views.user_list, name='user-list'),
+    path('groups', views.role_group_list, name='role-group-list'),
+    path('users/<int:user_id>/assign-roles', views.update_user_groups, name='user-role-assign'),
+
+
+    # Password Recovery
+    path('forgot-password', views.forgot_password, name='forgot_password'),
+    path('verify-answers', views.verify_security_answers, name='verify_answers'),
+    path('reset-password', views.reset_password, name='reset_password'),
+    path('set-security-questions', views.set_security_questions, name='set_security_questions'),
+
+
+
     path('auth/check', views.auth_check, name='test-doctor-view'),
 
 
@@ -28,6 +43,8 @@ urlpatterns = [
     path('patients/<int:pk>', views.patient_details, name='patient_get_specific'),
     path('patients/update/<int:pk>', views.patient_update, name='patient_update'),
     path('patients/<int:pk>/history', views.patient_history, name='patient-history'),
+    path('patients/<int:pk>/history/id/<int:historyId>', views.patient_history_byId, name='patient-history'),
+
     path('patients/deactivate/<int:pk>', views.patient_deactivate, name='patient_deactivate'),
     # sEarch function for patient
     path('patients/search', views.search_patients, name='search_billings'),
@@ -78,10 +95,10 @@ urlpatterns = [
 
     #LAB RESULTS
     path('laboratory/add-patient-laboratory/patient-id/<str:pk>', views.create_laboratory_result_for_patient, name='create_laboratory_result_for_patient'),
-    #TODO: finish this today the seach lab
+    #TODO: finish this today the seach lab save state
     path('laboratory/search-laboratory', views.search_labId, name='search_labId'),
 
-
+#SAVE STATE 
     path('laboratory/files/group/<int:labId>', views.create_laboratory_file_group, name='create-lab-file-group'),
 
     path('laboratory/files/group/<int:group_id>/', views.get_laboratory_file_group, name='get-lab-file-group'),

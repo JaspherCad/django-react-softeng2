@@ -34,9 +34,14 @@ const AddLaboratory = ({
   addAttachmentRow,
   removeAttachmentRow,
   handleSubmit,
-  handleSelection
+  handleSelection,
+  patientIdFRomOutsideSOurce
 }) => {
-  const { labId } = useParams();
+  //patientIdFRomOutsideSOurce
+  const { labId: labIdFromUrl } = useParams();
+  // if the prop is present, use that; otherwise use the URL
+  const labId = patientIdFRomOutsideSOurce ?? labIdFromUrl;
+
   const isEditMode = mode === 'edit';
   const isViewMode = mode === 'view';
   const [isEditing, setIsEditing] = useState(isEditMode);
@@ -416,21 +421,21 @@ const AddLaboratory = ({
 
 
 
-        
+
 
         {/* Submit Button */}
-        
-        {labId? (<></>): 
-        (<div className="mt-6">
-          <button
-            type="submit"
-            className="w-full bg-green-600 text-black py-2 rounded hover:bg-green-700"
-            disabled={isViewMode && !isEditing}
-          >
-            {isViewMode ? 'Save Changes' : 'CREATE LAB'}
-          </button>
-        </div>)}
-        
+
+        {labId ? (<></>) :
+          (<div className="mt-6">
+            <button
+              type="submit"
+              className="w-full bg-green-600 text-black py-2 rounded hover:bg-green-700"
+              disabled={isViewMode && !isEditing}
+            >
+              {isViewMode ? 'Save Changes' : 'CREATE LAB'}
+            </button>
+          </div>)}
+
 
 
       </form>

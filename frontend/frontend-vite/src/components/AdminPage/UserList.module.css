@@ -1,0 +1,127 @@
+.container {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.header {
+  font-size: 1.875rem;
+  color: #1f2937;
+  margin-bottom: 1.5rem;
+  font-weight: 600;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.userGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.userCard {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  transition: transform 0.2s;
+}
+
+.userCard:hover {
+  transform: translateY(-4px);
+}
+
+.avatarWrapper {
+  padding: 1rem;
+  text-align: center;
+}
+
+.avatar {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 2px solid #e5e7eb;
+}
+
+.userInfo {
+  padding: 0 1.5rem 1.5rem;
+}
+
+.userName {
+  font-size: 1.25rem;
+  margin: 0.5rem 0;
+  color: #111827;
+}
+
+.userDetails {
+  margin-top: 0.75rem;
+  color: #4b5563;
+  font-size: 0.875rem;
+}
+
+.userDetails p {
+  margin: 0.25rem 0;
+}
+
+.userActions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.viewButton, .editButton {
+  flex: 1;
+  padding: 0.5rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.viewButton {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+.viewButton:hover {
+  background: #d1d5db;
+}
+
+.editButton {
+  background: #009688;
+  color: white;
+}
+
+.editButton:hover {
+  background: #007a6b;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+}
+
+.admin   { background: #dbeafe; color: #1e40af; }
+.doctor  { background: #fef08a; color: #ca8a04; }
+.nurse   { background: #f0abfc; color: #7e22ce; }
+.teller  { background: #f87171; color: #991b1b; }
+.receptionist { background: #7dd3fc; color: #0891b2; }
+
+.loading, .error {
+  text-align: center;
+  padding: 3rem;
+  font-size: 1.125rem;
+  color: #6b7280;
+}

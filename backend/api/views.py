@@ -5,12 +5,14 @@ from rest_framework import status
 from django.db import transaction
 from django.db.models import Q
 from django.contrib.auth.models import Group, Permission
-
+from django.core.cache import cache
+from django.utils.crypto import get_random_string
 from .serializers import ClinicalNoteSerializer, GroupPermissionUpdateSerializer, GroupSerializer, PatientHistorySerializer, PatientImageSerializer, UserImageSerializer, UserSerializer, PatientSerializer, UserLogSerializer, BillingCreateSerializer, ServiceSerializer, PatientServiceSerializer, LaboratoryResultSerializer, LabResultFileSerializer, BillingItemSerializer, BillingSerializer, BillingSerializerNoList, Billing_PatientInfo_Serializer, LabResultFileGroupSerializer, LabResultFileInGroup, LabResultFileInGroupSerializer, RoomWithBedInfoSerializer, BedAssignmentSerializer, UserCreateSerializer
 from django.contrib.auth.hashers import make_password
+import hashlib
 
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from .models import ClinicalNote, PatientImage, User, LabResultFileGroup, LabResultFileInGroup ,Patient, UserLog, Billing, BillingItem, BillingOperatorLog, PatientService, Service, LaboratoryResult, LabResultFile, Bed, BedAssignment, Room
+from .models import ClinicalNote, PatientImage, User, LabResultFileGroup, LabResultFileInGroup ,Patient, UserLog, Billing, BillingItem, BillingOperatorLog, PatientService, Service, LaboratoryResult, LabResultFile, Bed, BedAssignment, Room, UserSecurityQuestion
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -53,6 +55,8 @@ from rest_framework.exceptions import (
 # % FOR AUTHENTICATION IN FRONTEND % #
 ####################################################################
 
+def hash_answer(answer):
+    return hashlib.sha256(answer.lower().encode()).hexdigest()
 
 
 @api_view(['GET'])
@@ -417,6 +421,20 @@ def patient_history(request, pk):
                 {"error": "Something went wrong while fetching patient history", "details": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+@api_view(['GET'])
+@permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist])
+def patient_history_byId(request, pk, historyId):
+   
+    patient = get_object_or_404(Patient, pk=pk)
+
+    history_record = get_object_or_404(
+        patient.history.select_related('history_user'),
+        pk=historyId
+    )
+
+    serializer = PatientHistorySerializer(history_record)
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 
@@ -1902,7 +1920,51 @@ def about(request):
     return HttpResponse("This is the ABOUT page.")
     
 
+# @api_view(['GET'])
+# @permission_classes([IsAuthenticated | IsAdmin])
+# def user_list(request):
+#     users = User.objects.all().order_by('-date_joined')
+#     serializer = UserSerializer(users, many=True)
+#     return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated | IsAdmin])
+def role_group_list(request):
+    groups = Group.objects.all()
+    serializer = GroupSerializer(groups, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated | IsAdmin])
+def update_user_groups(request, user_id):
+    try:
+        user = User.objects.get(id=user_id)
+        group_ids = request.data.get('groups', [])
+        
+        # Clear existing groups
+        user.groups.clear()
+        
+        # Add new groups
+        for group_id in group_ids:
+            try:
+                group = Group.objects.get(id=group_id)
+                user.groups.add(group)
+            except Group.DoesNotExist:
+                continue
+        
+        user.save()
+        return Response(
+            {"status": "success", "message": "Roles updated"},
+            status=status.HTTP_200_OK
+        )
+    except User.DoesNotExist:
+        return Response(
+            {"error": "User not found"},
+            status=status.HTTP_404_NOT_FOUND
+        )
 #IDK BATTERY INCLUDED TO!
+
 
 class GroupListCreateView(generics.ListCreateAPIView):
     """
@@ -1997,9 +2059,29 @@ def user_list(request):
                       status=status.HTTP_403_FORBIDDEN)
     
     if request.method == 'GET':
-        users = User.objects.all().prefetch_related('groups')
-        serializer = UserSerializer(users, many=True)
-        return Response(serializer.data)
+
+
+        #1: go to DATABASE (orm) then FETCH all the object (IN OUR CASE PATIENT)
+        users_qs = User.objects.all().prefetch_related('groups').order_by('user_id')
+
+        paginator = PageNumberPagination()
+        paginator.page_size = 2      
+
+        #paginate queryset
+        page = paginator.paginate_queryset(users_qs, request)
+
+        #2: ok na dito... so we have to SERIALIZE the list_of_patient (PYTHON OBJECT)
+        #   into javascript object... how?? look below
+
+
+        #serialize paginated data
+        if page is not None:
+            serializer = UserSerializer(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
+
+        # Fallback (shouldn’t usually hit, but just in case)
+        serializer = UserSerializer(users_qs, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
     
 
 #USER CRAETION AT urls.py
@@ -2036,6 +2118,223 @@ def user_detail(request, pk):
         user.is_active = False
         user.save()
         return Response({"message": "User deactivated successfully"}, status=status.HTTP_204_NO_CONTENT)
+
+#---------------------- FORGOT PASSWORD -----------------------------
+
+
+# forgot-password
+
+# {
+#   "user_id": "USR-001"
+# }
+@api_view(['POST']) #GET??? coz we only sending QUESTIONS
+@permission_classes([AllowAny])
+def forgot_password(request):
+    user_id = request.data.get('user_id')
+    
+    try:
+        user = User.objects.get(user_id=user_id)
+        questions = user.security_questions.all()
+        
+        if not questions.exists():
+            return Response(
+                {"error": "No security questions set up for this account"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        #only the questions not the answers
+        question_data = [{"id": q.id, "question": q.question} for q in questions]
+        return Response({"questions": question_data})
+        
+    except User.DoesNotExist:
+        return Response(
+            {"error": "User not found"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
+
+# verify-answers (RAW TEXT)
+
+# {
+#   "user_id": "USR-001",
+#   "answers": {
+#     "1": "MyDogSpot",
+#     "2": "Blue"
+#   }
+# }
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def verify_security_answers(request):
+    #⚠️GOAL: Just to retrieve REFRESH PASSWORD TOKEN!
+    #⚠️CACHE: cache here is just backend stuffs so nandon lang sia for 5 min
+        #later we will use the RESET TOKEN as input sa next step    
+        #then verify that IF cachedToken === reset_token_from_input
+    user_id = request.data.get('user_id')
+    
+    # UPDATE 2.1: apply rate limiting
+    attempt_key = f'password_attempts_{user_id}'
+    attempts = cache.get(attempt_key, 0)
+    if attempts >= 3:
+        return Response(
+            #USER has to wait 5 mins since timeout below is 300
+            {"error": "Too many attempts. Please try again later."},
+            status=status.HTTP_429_TOO_MANY_REQUESTS
+        )
+    
+    # {question_id: question_answer}) //except questions_questions
+    answers = request.data.get('answers', {})
+
+    try:
+        user = User.objects.get(user_id=user_id)
+        for q_id, submitted_answer in answers.items():
+            try:
+                question = user.security_questions.get(id=q_id)
+                if hash_answer(submitted_answer) != question.answer:
+                    
+
+
+                    cache.set(attempt_key, attempts + 1, timeout=300)  
+                    return Response(
+                        {"error": "One or more answers are incorrect"},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                
+
+            except UserSecurityQuestion.DoesNotExist:
+                cache.set(attempt_key, attempts + 1, timeout=300)
+                return Response(
+                    {"error": "Invalid question ID"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        # if base cases passed....reset the failed attempts and generate the reset token.
+        cache.delete(attempt_key)
+        reset_token = get_random_string(64)
+        cache.set(f'reset_token_{user_id}', reset_token, timeout=500)  # 10-minute timeout
+
+        return Response({
+            "token": reset_token,
+            "message": "Answers verified. You can now reset your password."
+        })
+
+    except User.DoesNotExist:
+        return Response(
+            {"error": "User not found"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+
+# /api/reset-password
+# {
+#   "user_id": "USR-001",
+#   "new_password": "password1",
+#   "confirm_password": "password1",
+#   "reset_token": "abcdef1234567890"
+# }
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def reset_password(request):
+    user_id = request.data.get('user_id')
+    new_password = request.data.get('new_password')
+    confirm_password = request.data.get('confirm_password')
+    reset_token_from_input = request.data.get('reset_token')
+    
+    
+    #BASE CASES
+    if new_password != confirm_password:
+        return Response(
+            {"error": "Passwords do not match"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    try:
+        user = User.objects.get(user_id=user_id)
+        
+        #⚠️CACHE: cache here is just backend stuffs so nandon lang sia for 5 min
+        #later we will use the RESET TOKEN as input sa next step    
+        #then verify that IF cachedToken === reset_token_from_input
+
+        cached_token = cache.get(f'reset_token_{user_id}')
+        if not cached_token or cached_token != reset_token_from_input:
+            return Response(
+                {"error": "Invalid or expired token"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        #set_password(newpass)
+        user.set_password(new_password)
+        user.save(update_fields=['password'])
+        
+        #cleanup (sabi ni ai)
+        cache.delete(f'reset_token_{user_id}')
+        
+        return Response({
+            "message": "Password reset successfully"
+        })
+        
+    except User.DoesNotExist:
+        return Response(
+            {"error": "User not found"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+#RAW --> JSON
+# {
+#   "questions": [
+#     {
+#       "question": "What is the name of your favorite pet?",
+#       "answer": "Spot"
+#     },
+#     {
+#       "question": "What is your mother's maiden name?",
+#       "answer": "Smith"
+#     },
+#     {
+#       "question": "In what city were you born?",
+#       "answer": "Manila"
+#     }
+#   ]
+# }
+
+# {
+#   "questions": [
+#     {
+#       "question": "What is the name of your favorite pet?",
+#       "answer": "Spot"
+#     },
+#     {
+#       "question": "What is your mother's maiden name?",
+#       "answer": "Smith"
+#     },
+#     {
+#       "question": "In what city were you born?",
+#       "answer": "Manila"
+#     }
+#   ]
+# }
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def set_security_questions(request):
+    #revert back to 0 security questons restart from none
+    user = request.user
+    questions = request.data.get('questions', [])
+    
+    
+    user.security_questions.all().delete()
+    
+    for q in questions:
+        UserSecurityQuestion.objects.create(
+            user=user,
+            question=q['question'],
+            answer=hash_answer(q['answer']) 
+        )
+    
+    user.has_security_questions = True
+    user.save(update_fields=['has_security_questions'])
+    return Response({"message": "Security questions updated"})
+
+#---------------------- FORGOT PASSWORD -----------------------------
+
 
 
 

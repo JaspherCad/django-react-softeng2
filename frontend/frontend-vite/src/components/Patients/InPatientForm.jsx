@@ -26,13 +26,14 @@ const isoToInputDateTime = (isoStr) => {
   return `${year}-${month}-${day}T${hours}:${minutes}`;
 };
 
-//helper 2: since the input is in form of input format (YYYY-MM-DDTHH:MM) -> convert into roper zzz something idk
+//helper 2: since the input is in form of input format (YYYY-MM-DDTHH:MM) -> convert into Proper zzz something ISO
 const inputDateTimeToISO = (dateTimeString) => {
   if (!dateTimeString) return null;
   const date = new Date(dateTimeString);
   return isNaN(date.getTime()) ? null : date.toISOString();
 };
 
+//deprecated
 const formatDateToLocal = (dateTimeString) => {
   if (!dateTimeString) return null;
   const date = new Date(dateTimeString);
@@ -117,8 +118,13 @@ const InPatientForm = ({ onSubmit }) => { //onSubmit yung function pano sinend s
   const [isDropdownVisible, setIsDropdownVisible] = useState(false)  //required for SearchBar
 
   //--- patient image
+
+  //for uploadd
   const [selectedImages, setSelectedImages] = useState([]);
   const [imagePreviews, setImagePreviews] = useState([]);
+
+
+  //for fetching existing ofc...
   const [existingImages, setExistingImages] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
   const navigate = useNavigate();
@@ -186,6 +192,7 @@ const InPatientForm = ({ onSubmit }) => { //onSubmit yung function pano sinend s
       try {
         if (id) {
           const { data } = await patientDetailsAPI(id);
+          console.log(data)
           setFormData({
             has_philhealth: data.has_philhealth,
             case_number: data.case_number || '',
