@@ -1,0 +1,539 @@
+/* Main Layout */
+.mainContent {
+  padding-left: 280px;
+  min-height: 100vh;
+  background-color: #f9fafb;
+}
+
+/* Header */
+.header {
+  background: white;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 16px 32px;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  /* position: sticky;
+  top: 0;
+  z-index: 100; */
+}
+
+.headerContent {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pageTitle {
+  font-size: 24px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
+}
+
+.hospitalLogo {
+  display: flex;
+  align-items: center;
+}
+
+.logoImage {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+
+/* Form Container */
+.formContainer {
+  padding: 32px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.patientForm {
+  background: rgb(235, 235, 235);
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+}
+
+/* Form Sections */
+.formSection {
+  padding: 32px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.formSection:last-of-type {
+  border-bottom: none;
+}
+
+.sectionTitle {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 24px 0;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #059669;
+}
+
+.subsectionTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 16px 0;
+}
+
+.familySubsection {
+  margin-bottom: 32px;
+}
+
+.familySubsection:last-child {
+  margin-bottom: 0;
+}
+
+/* Form Grid */
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.formGrid:last-child {
+  margin-bottom: 0;
+}
+
+/* Form Groups */
+.formGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.formGroup.fullWidth {
+  grid-column: 1 / -1;
+}
+
+.formLabel {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.formInput {
+  padding: 12px 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #1f2937;
+  background-color: white;
+  transition: all 0.2s;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.formInput:focus {
+  outline: none;
+  border-color: #059669;
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1);
+  background-color: #f0fdf4;
+}
+
+.formInput:disabled,
+.formInput[readonly] {
+  background-color: #f3f4f6;
+  color: #6b7280;
+  cursor: not-allowed;
+}
+
+.formTextarea {
+  padding: 12px 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #1f2937;
+  background-color: white;
+  transition: all 0.2s;
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.formTextarea:focus {
+  outline: none;
+  border-color: #059669;
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1);
+  background-color: #f0fdf4;
+}
+
+/* Image Upload Section */
+.imageUploadSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.imagePreview {
+  width: 150px;
+  height: 200px;
+  border: 2px dashed #d1d5db;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background-color: #f9fafb;
+  transition: all 0.2s;
+}
+
+.imagePreview:hover {
+  border-color: #059669;
+  background-color: #f0fdf4;
+}
+
+.previewImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.imagePlaceholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: #6b7280;
+  text-align: center;
+}
+
+.imagePlaceholder span {
+  font-size: 32px;
+}
+
+.imagePlaceholder p {
+  font-size: 14px;
+  margin: 0;
+}
+
+.fileInput {
+  padding: 8px 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  background-color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.fileInput:hover {
+  border-color: #059669;
+  background-color: #f0fdf4;
+}
+
+/* Checkbox and Radio Groups */
+.checkboxGroup {
+  margin-bottom: 20px;
+}
+
+.radioGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.radioLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #374151;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 6px;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+}
+
+.radioLabel:hover {
+  background-color: #f0fdf4;
+  border-color: #d1fae5;
+}
+
+.radioLabel input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #059669;
+  cursor: pointer;
+}
+
+/* Form Actions */
+.formActions {
+  padding: 32px;
+  background-color: #f9fafb;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+}
+
+.submitButton {
+  background-color: #059669;
+  color: white;
+  border: none;
+  padding: 12px 32px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.submitButton:hover {
+  background-color: #047857;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(5, 150, 105, 0.2);
+}
+
+.submitButton:active {
+  transform: translateY(0);
+}
+
+.cancelButton {
+  background-color: white;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  padding: 12px 32px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cancelButton:hover {
+  background-color: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+/* Required Field Indicators */
+.formLabel::after {
+  content: " *";
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.formLabel:not([data-required])::after {
+  content: "";
+}
+
+/* Custom styling for required labels */
+.formGroup:has(.formInput:required) .formLabel::after,
+.formGroup:has(.formTextarea:required) .formLabel::after,
+.checkboxGroup:has(input:required) .formLabel::after {
+  content: " *";
+  color: #dc2626;
+  font-weight: 600;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .mainContent {
+    padding-left: 240px;
+  }
+
+  .formContainer {
+    padding: 24px;
+  }
+
+  .formSection {
+    padding: 24px;
+  }
+
+  .formGrid {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .mainContent {
+    padding-left: 0;
+  }
+
+  .header {
+    padding: 16px 24px;
+  }
+
+  .headerContent {
+    flex-direction: column;
+    gap: 16px;
+    align-items: flex-start;
+  }
+
+  .formContainer {
+    padding: 20px;
+  }
+
+  .formSection {
+    padding: 20px;
+  }
+
+  .formGrid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .radioGroup {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .formActions {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .submitButton,
+  .cancelButton {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .pageTitle {
+    font-size: 20px;
+  }
+
+  .sectionTitle {
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .formContainer {
+    padding: 16px;
+  }
+
+  .formSection {
+    padding: 16px;
+  }
+
+  .header {
+    padding: 16px;
+  }
+
+  .imageUploadSection {
+    align-items: stretch;
+  }
+
+  .imagePreview {
+    width: 100%;
+    max-width: 200px;
+    margin: 0 auto;
+  }
+
+  .radioGroup {
+    gap: 6px;
+  }
+
+  .radioLabel {
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .mainContent {
+    padding-left: 0;
+  }
+
+  .header {
+    box-shadow: none;
+    border-bottom: 2px solid #000;
+  }
+
+  .formActions {
+    display: none;
+  }
+
+  .patientForm {
+    box-shadow: none;
+    border: 1px solid #000;
+  }
+
+  .formSection {
+    border-bottom: 1px solid #000;
+  }
+
+  .sectionTitle {
+    border-bottom: 1px solid #000;
+  }
+}
+
+/* Focus and Accessibility */
+.formInput:focus-visible,
+.formTextarea:focus-visible,
+.fileInput:focus-visible {
+  outline: 2px solid #059669;
+  outline-offset: 2px;
+}
+
+.radioLabel:focus-within {
+  outline: 2px solid #059669;
+  outline-offset: 2px;
+}
+
+/* Loading States */
+.submitButton:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.submitButton:disabled:hover {
+  background-color: #9ca3af;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Error States */
+.formInput.error,
+.formTextarea.error {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+}
+
+.formInput.error:focus,
+.formTextarea.error:focus {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.2);
+}
+
+/* Success States */
+.formInput.success,
+.formTextarea.success {
+  border-color: #059669;
+  background-color: #f0fdf4;
+}
+
+/* Animation for form sections */
+.formSection {
+  animation: fadeInUp 0.3s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

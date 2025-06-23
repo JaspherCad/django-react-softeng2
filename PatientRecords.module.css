@@ -1,0 +1,419 @@
+/* PatientRecords.module.css */
+
+.container {
+  padding-left: 18rem;
+  min-height: 100vh;
+  background-color: #f9fafb;
+}
+
+.header {
+  background-color: white;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 1rem 2rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.headerContent {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.hospitalLogo {
+  display: flex;
+  align-items: center;
+}
+
+.logoImage {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+
+.content {
+  flex: 1;
+  padding: 2rem;
+}
+
+.topActions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  gap: 1.25rem;
+}
+
+.searchContainer {
+  position: relative;
+  flex: 1;
+  max-width: 28rem;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 2.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  background-color: white;
+  transition: all 0.2s;
+}
+
+.searchInput:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px #059669;
+  border-color: #059669;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  font-size: 1.125rem;
+}
+
+.addButton {
+  background-color: #059669;
+  color: white;
+  padding: 0.75rem 1.25rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.addButton:hover {
+  background-color: #047857;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.tableContainer {
+  background-color: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tableHeader {
+  background-color: #f9fafb;
+}
+
+.tableHeaderCell {
+  padding: 1rem 1.25rem;
+  text-align: left;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #059669;
+}
+
+.tableRow:hover {
+  background-color: #f9fafb;
+}
+
+.tableRow:not(:last-child) {
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.tableCell {
+  padding: 1rem 1.25rem;
+  font-size: 0.875rem;
+}
+
+.patientId {
+  font-weight: 600;
+  color: #111827;
+}
+
+.patientName {
+  font-weight: 500;
+  color: #111827;
+}
+
+.contactNumber {
+  color: #4b5563;
+  font-family: "Courier New", monospace;
+}
+
+.statusBadge {
+  display: inline-flex;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.statusAdmitted {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.statusDischarged {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.viewButton {
+  background-color: #3b82f6;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.viewButton:hover {
+  background-color: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.noRecords {
+  padding: 2.5rem 1.25rem;
+  text-align: center;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.paginationButton {
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: 1px solid;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.paginationButtonActive {
+  background-color: #059669;
+  color: white;
+  border-color: #059669;
+}
+
+.paginationButtonInactive {
+  background-color: white;
+  color: #374151;
+  border-color: #d1d5db;
+}
+
+.paginationButtonInactive:hover {
+  background-color: #f9fafb;
+}
+
+.paginationButtonDisabled {
+  background-color: #f3f4f6;
+  color: #9ca3af;
+  border-color: #e5e7eb;
+  cursor: not-allowed;
+}
+
+.pageNumber {
+  min-width: 2.5rem;
+}
+
+.recordsInfo {
+  text-align: center;
+  font-size: 0.875rem;
+  color: #4b5563;
+}
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 1rem;
+}
+
+.modal {
+  background-color: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  max-width: 28rem;
+  width: 100%;
+  transform: scale(1);
+  transition: all 0.3s;
+}
+
+.modalHeader {
+  padding: 1.5rem;
+}
+
+.modalHeaderContent {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.modalTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.closeButton {
+  color: #9ca3af;
+  font-size: 1.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.closeButton:hover {
+  color: #4b5563;
+}
+
+.modalDescription {
+  color: #4b5563;
+  margin-bottom: 1.5rem;
+}
+
+.optionsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.optionButton {
+  width: 100%;
+  padding: 1rem;
+  border: 2px solid;
+  border-radius: 0.5rem;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s;
+}
+
+.newPatientOption {
+  border-color: #bbf7d0;
+}
+
+.newPatientOption:hover {
+  border-color: #4ade80;
+  background-color: #f0fdf4;
+}
+
+.existingPatientOption {
+  border-color: #bfdbfe;
+}
+
+.existingPatientOption:hover {
+  border-color: #60a5fa;
+  background-color: #eff6ff;
+}
+
+.optionContent {
+  display: flex;
+  align-items: center;
+}
+
+.optionIcon {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 1rem;
+  transition: background-color 0.2s;
+}
+
+.newPatientIcon {
+  background-color: #dcfce7;
+}
+
+.newPatientOption:hover .newPatientIcon {
+  background-color: #bbf7d0;
+}
+
+.existingPatientIcon {
+  background-color: #dbeafe;
+}
+
+.existingPatientOption:hover .existingPatientIcon {
+  background-color: #bfdbfe;
+}
+
+.iconEmoji {
+  font-size: 1.25rem;
+}
+
+.newPatientEmoji {
+  color: #059669;
+}
+
+.existingPatientEmoji {
+  color: #3b82f6;
+}
+
+.optionTitle {
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 0.25rem;
+}
+
+.optionSubtitle {
+  font-size: 0.875rem;
+  color: #4b5563;
+}
+
+.modalFooter {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.cancelButton {
+  width: 100%;
+  padding: 0.5rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  background-color: #960513;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.cancelButton:hover {
+  background-color: #780421;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}

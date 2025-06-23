@@ -1,0 +1,166 @@
+.loginContainer {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(
+    135deg,
+    #5988c2 0%,
+    #426391 25%,
+    #224475 50%,
+    #12294a 100%
+  );
+  padding: 20px;
+}
+
+.loginCard {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0px 25px 50px -12px rgba(0, 0, 0, 0.25);
+  padding: 32px;
+  width: 100%;
+  max-width: 500px;
+}
+
+.logoSection {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.logoImageContainer {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.hospitalLogo {
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+  padding: 8px;
+}
+
+.hospitalNameSmall {
+  color: #10b981;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.systemTitle {
+  color: #374151;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.formContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.formLabel {
+  color: #374151;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.formInput {
+  width: 100%;
+  padding: 12px 16px;
+  background: #e5e7eb;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #374151;
+  transition: all 0.2s;
+}
+
+.formInput:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px #10b981;
+  border-color: transparent;
+}
+
+.passwordContainer {
+  position: relative;
+}
+
+.passwordToggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.loginButton {
+  width: 100%;
+  background: #059669;
+  color: white;
+  font-weight: 500;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  font-size: 14px;
+}
+
+.loginButton:hover {
+  background: #047857;
+}
+
+.loginButton:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px #10b981, 0 0 0 4px rgba(16, 185, 129, 0.1);
+}
+
+.loginButton:disabled {
+  background: #9ca3af;
+  opacity: 0.8;
+}
+
+.forgotPasswordContainer {
+  text-align: center;
+}
+
+.forgotPasswordLink {
+  color: #2563eb;
+  font-size: 14px;
+  font-weight: 500;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.forgotPasswordLink:hover {
+  color: #1d4ed8;
+}
+
+@media (max-width: 640px) {
+  .loginCard {
+    padding: 24px;
+    margin: 16px;
+  }
+
+  .hospitalTitle {
+    font-size: 18px;
+  }
+
+  .systemTitle {
+    font-size: 16px;
+  }
+}

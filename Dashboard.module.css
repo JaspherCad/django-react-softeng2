@@ -1,0 +1,138 @@
+.mainDashboardContent {
+  padding-left: 280px;
+}
+.header {
+  background: white;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 16px 32px;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+.headerContent {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pageTitle {
+  font-size: 24px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.hospitalLogo {
+  display: flex;
+  align-items: center;
+}
+
+.logoImage {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+
+/* Dashboard Content */
+.dashboardContent {
+  flex: 1;
+  padding: 10px;
+  overflow-y: auto;
+}
+
+.dashboardGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+  margin-bottom: 40px;
+}
+
+.dashboardCard {
+  background: white;
+  border-radius: 12px;
+  margin: 20px;
+  padding: 24px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+  border: 1px solid #e5e7eb;
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.cardTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.cardIcon {
+  font-size: 24px;
+  opacity: 0.7;
+}
+
+.cardNumber {
+  font-size: 32px;
+  font-weight: 700;
+  color: #059669;
+  margin-bottom: 4px;
+}
+
+.cardSubtext {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .mainContent {
+    margin-left: 240px;
+  }
+
+  .dashboardContent {
+    padding: 24px;
+  }
+
+  .header {
+    padding: 16px 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .mainContent {
+    margin-left: 0;
+  }
+
+  .dashboardGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .headerContent {
+    flex-direction: column;
+    gap: 16px;
+    align-items: flex-start;
+  }
+
+  .dashboardContent {
+    padding: 20px;
+  }
+
+  .pageTitle {
+    font-size: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboardContent {
+    padding: 16px;
+  }
+
+  .dashboardCard {
+    padding: 20px;
+  }
+
+  .header {
+    padding: 16px;
+  }
+}
