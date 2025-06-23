@@ -6,7 +6,7 @@ const formatDate = (dateStr) => {
     return new Date(dateStr).toLocaleString();
 };
 
-const PatientHistoryModal = ({ note }) => {
+const PatientHistoryModal = ({ note, handleView }) => {
     if (!note) return <div className={styles.message}>No record selected.</div>;
 
     return (

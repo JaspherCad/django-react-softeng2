@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { fetchClinicalNotesByCodeAPI, createClinicalNoteAPI, fetchPatientHistoryByIdAPI } from "../../api/axios";
 import styles from "./PatientHistoryCaseCode.module.css";
 import PatientDataView from "./PatientDataView";
@@ -17,6 +17,7 @@ export default function PatientHistoryCaseCode() {
 
     const [patientInformation, setPatientInformation] = useState();
 
+    const navigate = useNavigate();
 
 
 
@@ -184,17 +185,26 @@ export default function PatientHistoryCaseCode() {
 
                 {/* GENERAL HISTORY MODAL */}
                 {filter === "General" && patientInformation && (
-                    
-                            <PatientDataView patientData={patientInformation} />
-                       
+
+                    <PatientDataView patientData={patientInformation} />
+
                 )}
 
                 {/* GENERAL HISTORY MODAL */}
+                {/* GENERAL HISTORY MODAL */}
                 {filter === "Laboratories" && (
-                    
-                            <PatientDataView patientData={patientInformation} />
-                       
+                    <>
+                        <div className={styles.labRedirect}>
+                            <button
+                                className={styles.secondaryBtn}
+                                onClick={() => navigate(`/laboratory/labId/${patientInformation.id}`)}
+                            >
+                                Go to Laboratory Tab
+                            </button>
+                        </div>
+                    </>
                 )}
+
 
                 {/* Notes list */}
                 {filteredNotes.length === 0 ? (

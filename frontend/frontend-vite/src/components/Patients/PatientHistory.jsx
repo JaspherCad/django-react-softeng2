@@ -15,6 +15,12 @@ const PatientHistory = ({ setSelectedMedicalHistory }) => {
   const [selectedNote, setSelectedNote] = useState(null);
 
 
+
+
+  //admitting modal
+  const [showAdmitModal, setShowAdmitModal] = useState(false);
+  const [admitStep, setAdmitStep] = useState(null); // 'inpatient' or 'outpatient'
+
   /* ───────── fetch once per patient ───────── */
   useEffect(() => {
     (async () => {
@@ -52,13 +58,30 @@ const PatientHistory = ({ setSelectedMedicalHistory }) => {
   const closeModal = () => setSelectedNote(null);
 
 
+  const handleAddRecordClick = () => {
+    setShowAdmitModal(true);
+  };
+
+  const chooseFormType = (type) => {
+    setAdmitStep(type);
+    navigate(`/patients/${type}/edit/${id}`);
+    setShowAdmitModal(false);
+  };
+
+  const closeAdmitModal = () => {
+    setShowAdmitModal(false);
+    setAdmitStep(null);
+  };
+
   if (loading) return <div className={styles.loading}>Loading history…</div>;
   if (error) return <div className={styles.error}>{error}</div>;
 
   return (
     <div className={styles.patientManagement}>
-      <h2>Medical History for Patient #{id}</h2>
-      <div className={styles.tableContent}>
+      <h2>Medical History for Patiesnt #{id}</h2>
+      <button className={styles.btnAddRecord} onClick={handleAddRecordClick}>
+        Add Record
+      </button>      <div className={styles.tableContent}>
         <table className={styles.table}>
           <thead>
             <tr>
@@ -94,7 +117,7 @@ const PatientHistory = ({ setSelectedMedicalHistory }) => {
                       className={styles.viewBtn}
                       onClick={() => handleView(note)}
                     >
-                      VIEW
+                      VIEWs
                     </button>
                   </td>
                 </tr>
@@ -104,6 +127,69 @@ const PatientHistory = ({ setSelectedMedicalHistory }) => {
         </table>
       </div>
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      {selectedNote && (
+        <div className={styles.modalOverlay} onClick={closeModal}>
+          <div
+            className={styles.modalContent}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button className={styles.closeButton} onClick={closeModal}>
+              &times;
+            </button>
+            <PatientHistoryModal note={selectedNote} handleView={handleView} />
+          </div>
+        </div>
+      )}
+
+      {/* Modal for selecting form type */}
+      {showAdmitModal && (
+        <div className={styles.modalOverlay} onClick={closeAdmitModal}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h2>Select Form Type</h2>
+              <button className={styles.closeButton} onClick={closeAdmitModal}>
+                &times;
+              </button>
+            </div>
+            <div className={styles.modalContent}>
+              <button
+                className={styles.btnOption}
+                onClick={() => chooseFormType('inpatient')}
+              >
+                Inpatient
+              </button>
+              <button
+                className={styles.btnOption}
+                onClick={() => chooseFormType('outpatient')}
+              >
+                Outpatient
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Existing modal for viewing note */}
       {selectedNote && (
         <div className={styles.modalOverlay} onClick={closeModal}>
           <div

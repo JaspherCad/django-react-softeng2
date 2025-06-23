@@ -40,6 +40,7 @@ const BillingItemsOfThatBill = ({ modalBillId, isModal = false }) => {
     try {
       const response = await getBillingByID(id);
       setBillData(response.data);
+
     } catch (err) {
       console.error('Error fetching billing by ID:', err);
       setError('Failed to load billing data.');
@@ -173,6 +174,37 @@ const BillingItemsOfThatBill = ({ modalBillId, isModal = false }) => {
     is_active: patientIsActive,
   } = patient;
 
+  const bedAssignments = items.filter(i => i.service_availed == null && i.bed_assignment);
+  const serviceItems = items.filter(i => i.service_availed != null);
+
+
+  // Merge bed assignments by bed ID, aggregating hours & subtotal
+  const bedMap = bedAssignments.reduce((acc, item) => {
+    const bedId = item.bed_assignment.bed.id;
+    const hours = item.bed_assignment.total_hours;
+    const cost = parseFloat(item.subtotal);
+    if (!acc[bedId]) {
+      acc[bedId] = {
+        ...item,
+        _agg_hours: hours,
+        _agg_subtotal: cost
+      };
+    } else {
+      acc[bedId]._agg_hours += hours;
+      acc[bedId]._agg_subtotal += cost;
+    }
+    return acc;
+  }, {});
+  const uniqueBedAssignments = Object.values(bedMap);
+
+
+
+
+
+
+
+
+
   return (
     <div className={styles.billingContainer}>
       {/*Bill Head*/}
@@ -299,6 +331,45 @@ const BillingItemsOfThatBill = ({ modalBillId, isModal = false }) => {
       </div>
 
 
+
+      {/* Bed Assignments Section */}
+      <h3>Bed Assignments</h3>
+      {bedAssignments.length === 0 && <p>No bed assignments.</p>}
+      {bedAssignments.map((item, idx) => (
+        <div key={item.id} className={styles.billingCard}>
+          <div className={styles.billingCardHeader} onClick={() => toggleExpand(idx)}>
+            <span>Bed {item.bed_assignment.bed.number} - {item.bed_assignment.total_hours} hrs</span>
+            <button onClick={(e) => { e.stopPropagation(); handleEditBillingItem(item.id); }}>Edit</button>
+          </div>
+          {expandedSet.has(idx) && (
+            <div className={styles.billingCardDetails}>
+              <p><strong>Room:</strong> {item.bed_assignment.bed.room.name}</p>
+              <p><strong>Hourly Rate:</strong> ₱{item.bed_assignment.bed.room.hourly_rate}</p>
+              <p><strong>Subtotal:</strong> ₱{parseFloat(item.subtotal).toFixed(2)}</p>
+            </div>
+          )}
+        </div>
+      ))}
+
+      {/* Service Items Section */}
+      <h3>Services Availed</h3>
+      {serviceItems.length === 0 && <p>No services availed.</p>}
+      {serviceItems.map((item, idx) => (
+        <div key={item.id} className={styles.billingCard}>
+          <div className={styles.billingCardHeader} onClick={() => toggleExpand(idx + bedAssignments.length)}>
+            <span>{item.service_name} × {item.quantity}</span>
+            <button onClick={(e) => { e.stopPropagation(); handleEditBillingItem(item.id); }}>Edit</button>
+          </div>
+          {expandedSet.has(idx + bedAssignments.length) && (
+            <div className={styles.billingCardDetails}>
+              <p><strong>Service ID:</strong> {item.service_availed}</p>
+              <p><strong>Unit Price:</strong> ₱{(item.subtotal / item.quantity).toFixed(2)}</p>
+              <p><strong>Subtotal:</strong> ₱{parseFloat(item.subtotal).toFixed(2)}</p>
+            </div>
+          )}
+        </div>
+      ))}
+
       {isModalOpen && <BillingItemsModal
         closeModal={closeModal}
         billingItem={selectedBillingItem}
@@ -331,88 +402,7 @@ const BillingItemsOfThatBill = ({ modalBillId, isModal = false }) => {
 
 
       {/*Billing Items List */}
-      <div className={styles.billingItemsList}>
-        <h3>Billing Items</h3>
-        {items.length === 0 && (
-          <p className={styles.noItems}>No billing items available.</p>
-        )}
-        {items.map((item, idx) => {
-          const isExpanded = expandedSet.has(idx);
-          return (
-            <div
-              key={item.id}
-              className={`${styles.billingCard} ${isExpanded ? styles.expanded : ''
-                }`}
-              onClick={() => toggleExpand(idx)}
-            >
-
-
-
-
-
-
-
-
-              {/* CARD HEADER */}
-              <div className={styles.billingCardHeader}>
-                <div className={styles.cardSummary}>
-                  <span className={styles.serviceText}>
-                    {item.service_name} (₱
-                    {parseFloat(item.subtotal).toFixed(2)})
-                  </span>
-                  <span className={styles.quantityText}>
-                    × {item.quantity}
-                  </span>
-                </div>
-
-                <button
-                  className={styles.editButton}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    // setIsModalOpen(true);
-                    handleEditBillingItem(item.id, service_id)
-                  }}
-                >
-                  EDIT
-                </button>
-              </div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-              {/*EXPANDED DETAILS */}
-              {isExpanded && (
-                <div className={styles.billingCardDetails}>
-                  <div>
-                    <strong>Billing_item ID:</strong> {item.id}
-                  </div>
-                  <div>
-                    <strong>Service Availed ID:</strong> {item.service_availed}
-                  </div>
-                  <div>
-                    <strong>Service Name:</strong> {item.service_name}
-                  </div>
-                  <div>
-                    <strong>Quantity:</strong> {item.quantity}
-                  </div>
-                  <div>
-                    <strong>Subtotal:</strong> ₱{parseFloat(item.subtotal).toFixed(2)}
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+      
     </div>
   );
 };

@@ -12,6 +12,8 @@ import Billing from './components/Billing'
 import Laboratory from './components/Laboratory';
 import InPatientRoom from './components/InPatientRoom';
 import AdminPage from './components/AdminPage';
+import ReportPage from './components/Reports';
+
 
 
 import TellerDashboard from './components/DashBoardTeller';
@@ -119,6 +121,8 @@ const MainApp = () => {
           <Route path="/InPatientRoom/*" element={<InPatientRoom />} />
 
           <Route path="/Admin/*" element={<AdminPage />} />
+          <Route path="/Reports/*" element={<ReportPage />} />
+
 
 
 

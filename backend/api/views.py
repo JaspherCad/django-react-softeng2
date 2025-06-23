@@ -1,5 +1,7 @@
 from django.utils import timezone
 import json
+from datetime import datetime, time
+
 from rest_framework import generics
 from rest_framework import status
 from django.db import transaction
@@ -21,6 +23,7 @@ from django.shortcuts import get_object_or_404
 from .permissions import IsTeller, IsAdmin, IsDoctor, IsNurse, IsReceptionist  # Use the subclass
 from rest_framework.pagination import PageNumberPagination
 
+
 from rest_framework.exceptions import (
     APIException,
     AuthenticationFailed,
@@ -29,6 +32,9 @@ from rest_framework.exceptions import (
     NotFound
 )
 
+
+from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.decorators import parser_classes
 
 # WHEN TO USE PREFETCH
 # Use prefetch_related when accessing related objects (many-to-many or reverse foreign key relationships) to optimize database queries.
@@ -136,6 +142,8 @@ def patient_list(request):
                 {"error": "Something went wrong while fetching patients", "details": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
 
 
 
@@ -336,8 +344,6 @@ def patient_create(request):
 #   "is_active": "Active"
 # }
 
-
-
 @api_view(['GET'])
 @permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist])
 def patient_details(request, pk):
@@ -353,7 +359,7 @@ def patient_details(request, pk):
                 user=request.user,
                 action="VIEW",
                 details={
-                    "message": "Viewed patient details",
+                    "message": "1Viewed patient details",
                     "patient_id": patient_detail.id,
                     "patient_name": patient_detail.name
                 }
@@ -364,7 +370,6 @@ def patient_details(request, pk):
             return Response({'error': 'Patient not found'}, status=status.HTTP_404_NOT_FOUND)
         
        
-
 @api_view(['PUT'])
 @permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist])
 def patient_update(request, pk):
@@ -398,7 +403,6 @@ def patient_update(request, pk):
         
 
 
-
 @api_view(['GET'])
 @permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist])
 def patient_history(request, pk):
@@ -409,6 +413,22 @@ def patient_history(request, pk):
             
             serializer = PatientHistorySerializer(history_records, many=True)
             
+
+
+            log_action(
+                    user=request.user,
+                    action="VIEW",
+                    details={
+                        "message": "Updated patient details RENZ",
+                        "patient_id": patient.id,
+                        "patient_name": patient.name,
+                        "updated_fields": list(request.data.keys())
+                    }
+            )
+
+
+
+
             return Response(serializer.data, status=status.HTTP_200_OK)
         
         except Patient.DoesNotExist:
@@ -435,7 +455,6 @@ def patient_history_byId(request, pk, historyId):
 
     serializer = PatientHistorySerializer(history_record)
     return Response(serializer.data, status=status.HTTP_200_OK)
-
 
 
 @api_view(['PUT'])
@@ -839,7 +858,6 @@ def search_service(request):
      
 
 
-
 @api_view(['GET'])
 @permission_classes([IsAdmin | IsAuthenticated])
 def search_patients(request):
@@ -866,7 +884,6 @@ def search_patients(request):
             {"error": "Something went wrong while searching patients", "details": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
-
 
 
 
@@ -1279,6 +1296,71 @@ def create_laboratory_result_for_patient(request, pk):
 
 
 
+
+
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def generate_report(request):
+    if request.method == "GET":
+        try:
+            # Extract date range from query parameters
+            start_date_str = request.GET.get('start_date')
+            end_date_str = request.GET.get('end_date')
+
+            if not start_date_str or not end_date_str:
+                return Response(
+                    {"error": "Both 'start_date' and 'end_date' parameters are required."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Validate date format
+            try:
+                start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
+                end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
+            except ValueError:
+                return Response(
+                    {"error": "Invalid date format. Use YYYY-MM-DD."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            if start_date > end_date:
+                return Response(
+                    {"error": "Start date must be less than or equal to end date."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Include the full day for both dates
+            start_datetime = datetime.combine(start_date, time.min)
+            end_datetime = datetime.combine(end_date, time.max)
+
+            # Query patients admitted within the date range
+            patients = Patient.objects.filter(
+                admission_date__range=(start_datetime, end_datetime)
+            ).order_by('-admission_date')
+
+            # Serialize all matching patients
+            serializer = PatientSerializer(patients, many=True)
+
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response(
+                {"error": "Something went wrong while generating the report.", "details": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+
+
+
+
+
+
+
+
+
 #Laboratory Views
 @api_view(['POST'])
 @permission_classes([IsAdmin | IsDoctor])
@@ -1378,7 +1460,7 @@ def create_laboratory_file_result_for_laboratory_class(request, pk):
 
 
 
-
+#ORDER MATTERS!
 @api_view(['GET'])
 @permission_classes([IsAdmin | IsAuthenticated])
 def search_labId(request):
@@ -1407,7 +1489,6 @@ def search_labId(request):
             {"error": "Something went wrong while searching patients", "details": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
-
 
 
 
@@ -1537,8 +1618,7 @@ def get_laboratory_file_group(request, group_id):
 
 # views.py
 
-from rest_framework.parsers import MultiPartParser, FormParser
-from rest_framework.decorators import parser_classes
+
 
 @api_view(['POST'])
 @permission_classes([IsAdmin | IsDoctor])
@@ -1599,7 +1679,6 @@ def upload_user_image(request, user_id):
 
 
 
-
 @api_view(['POST'])
 @permission_classes([IsAdmin | IsDoctor])
 def patientImageupload(request):
@@ -1624,7 +1703,6 @@ def patientImageupload(request):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -1935,6 +2013,9 @@ def role_group_list(request):
     serializer = GroupSerializer(groups, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
+
+
+
 @api_view(['PATCH'])
 @permission_classes([IsAuthenticated | IsAdmin])
 def update_user_groups(request, user_id):
@@ -2036,11 +2117,16 @@ def log_action(user: User, action: str, details: dict):
         action (str): The type of action (e.g., 'CREATE', 'UPDATE', 'DELETE').
         details (dict): Additional context about the action.
     """
-    UserLog.objects.create(
-        user=user,
-        action=action,
-        details=details
-    )
+    if user and user.is_authenticated:
+        try:
+            UserLog.objects.create(
+                user=user,
+                action=action,
+                details=details or {}
+            )
+        except Exception as e:
+            # Fail gracefully if logging fails
+            print(f"Failed to create log: {e}")
 
 ####################################################################
 # % ADMIN PANEL % #

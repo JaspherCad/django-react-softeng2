@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import BillingItem, UserImage
+from .models import BillingItem, UserActionLog, UserImage
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.forms import UserCreationForm, UserChangeForm
 from .models import (
@@ -87,6 +87,19 @@ class UserAdmin(BaseUserAdmin):
             if 'password' in form.changed_data:
                 obj.set_password(obj.password)  # Hash password if changed
         super().save_model(request, obj, form, change)
+
+
+
+
+
+@admin.register(UserActionLog)
+class UserActionLogAdmin(admin.ModelAdmin):
+    list_display = ['timestamp', 'user', 'action_type', 'content_type', 'object_repr', 'ip_address']
+    list_filter = ['action_type', 'content_type', 'user']
+    search_fields = ['object_repr', 'details']
+    readonly_fields = ['user', 'action_type', 'content_type', 'object_id', 'object_repr', 'details', 'ip_address', 'timestamp']
+
+
 
 #     admin.add_logentry
 # admin.change_logentry
