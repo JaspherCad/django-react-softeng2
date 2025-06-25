@@ -134,6 +134,12 @@ class PatientSerializer(serializers.ModelSerializer):
         model = Patient
         fields = '__all__'
 
+    def validate(self, data):
+        for field in ["height", "weight", "pulse_rate", "respiratory_rate"]:
+            if data.get(field) == "":
+                data[field] = None
+        return data
+
 
 class PatientImageSerializer(serializers.ModelSerializer):
     class Meta:

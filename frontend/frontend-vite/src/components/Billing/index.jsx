@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 
-import { getBillingByID, SearchBillingsApi } from '../../api/axios';
+import { getBillingByID, SearchBillingsApi, SearchBillingsApiExcludingDischarged } from '../../api/axios';
 import SearchBar from '../AngAtingSeachBarWIthDropDown/index'
 import styles from './Billing.module.css';
 import BillingFormModal from './BillingFormModal';
@@ -10,6 +10,7 @@ import AddBillingModalV2 from './AddBillingModalV2.jsx';
 import BillingItems from './BillingItems.jsx';
 import BillingItemsOfThatBill from './BillingItems.jsx';
 import TransactionsList from './TransactionsList.jsx';
+import PatientBillings from './PatientBillings.jsx';
 const Billing = () => {
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true); // To manage loading state
@@ -163,8 +164,8 @@ const Billing = () => {
           <div className={styles.searchBarContainer}>
             <SearchBar
               data={dummyBillingData}
-              placeholder={"IDKsss"}
-              searchApi={SearchBillingsApi}
+              placeholder={"IDKsssss"}
+              searchApi={SearchBillingsApiExcludingDischarged}
               // accept the argument passed by the SearchBar component (item) when onSelectSuggestion is invoked
               //to accept *-*
               onSelectSuggestion={(filtered) => handleSelectedItem(filtered)}
@@ -255,6 +256,7 @@ const Billing = () => {
         {/* <Route path="edit/:id" element={<EditBillingForm />} /> */}
         <Route path="billing_items_of_billing/:billId" element={<BillingItemsOfThatBill />} />
         <Route path="lists_transactions" element={<TransactionsList />} />
+        <Route path="patient/:patientId" element={<PatientBillings />} />
       </Routes>
     </>
 

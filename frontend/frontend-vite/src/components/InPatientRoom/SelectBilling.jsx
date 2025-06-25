@@ -3,7 +3,7 @@ import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import styles from './SelectBilling.module.css'
 import SearchBar from "../AngAtingSeachBarWIthDropDown";
-import { SearchBillingsApi } from '../../api/axios';
+import { SearchBillingsApi, SearchBillingsApiAdmittedOnly } from '../../api/axios';
 
 export default function SelectBilling({selectedBilling, setSelectedBilling}) {
   const [billing, setBilling] = useState(null)
@@ -41,7 +41,7 @@ export default function SelectBilling({selectedBilling, setSelectedBilling}) {
 
       <SearchBar
         placeholder={"Search Billings"}
-        searchApi={SearchBillingsApi}
+        searchApi={SearchBillingsApiAdmittedOnly}
         // accept the argument passed by the SearchBar component (item) when onSelectSuggestion is trigered
         //to accept throw temp function 
         onSelectSuggestion={(filtered) => onSelect(filtered)}

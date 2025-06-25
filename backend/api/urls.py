@@ -48,8 +48,18 @@ urlpatterns = [
 
 
     path('patients/deactivate/<int:pk>', views.patient_deactivate, name='patient_deactivate'),
+
+
     # sEarch function for patient
-    path('patients/search', views.search_patients, name='search_billings'),
+    path('patients/search', views.search_patients, name='search_patients'),
+
+    path('patients_that_are_not_discharged/search', views.search_patients_that_are_not_discharged, name='search_patients_that_are_not_discharged'),
+    
+    path('patients_admitted_only/search', views.search_patients_admitted_only, name='search_patients_admitted_only'),
+
+
+
+
     path('users/search', views.search_users, name='search_users'),
     path('patient-image-upload', views.patientImageupload, name='patient-image-upload'),
     path('patient-images/<int:patient_id>', views.get_patient_images, name='get_patient_images'),
@@ -73,8 +83,14 @@ urlpatterns = [
 
     path('billings/list', views.get_bills, name='billing_list'),
     path('billings/list/v2', views.get_bills_with_bill_items, name='billing_list'),
+
     path('billings/id/<str:pk>', views.get_bills_by_id_with_bill_items, name='billing_by_id'), #THIS IS CODE!!
     path('billings/actualid/<str:pk>', views.get_bills_by_ACTUAL_id_with_bill_items, name='billing_by_actual_id'),
+
+    #get patient's billings
+    path('billings/patient/<int:patient_id>', views.get_bills_by_patient, name='billing_by_patient'),
+
+    
 
 
                                 #id of that BILLING
@@ -89,8 +105,13 @@ urlpatterns = [
 
     #GET /api/billings/search?q=john
     path('billings/search', views.search_billings, name='search_billings'),
-    
 
+    path('billings_admittedOnly/search', views.search_billings_admitted_only, name='search_billings'),
+
+    path('billings_exclud_discharged/search', views.search_billings_exclud_discharged, name='search_billings'),
+
+    
+#search_billings_exclud_discharged
 
     
     #Billing_Items
