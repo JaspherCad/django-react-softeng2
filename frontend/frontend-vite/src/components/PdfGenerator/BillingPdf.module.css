@@ -1,0 +1,77 @@
+.page {
+  padding: 30px;
+  font-family: Helvetica, sans-serif;
+  font-size: 10px;
+}
+
+.header {
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.title {
+  font-size: 18px;
+  margin-bottom: 5px;
+}
+
+.subtitle {
+  font-size: 12px;
+  color: #555;
+}
+
+.section {
+  margin-bottom: 15px;
+}
+
+.table {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 15px;
+}
+
+.tableRow {
+  display: flex;
+  flex-direction: row;
+  border-bottom: 1px solid #ccc;
+  padding-bottom: 5px;
+  padding-top: 5px;
+}
+
+.tableCell {
+  flex: 1;
+  padding-right: 5px;
+}
+
+.bold {
+  font-weight: bold;
+}
+
+.total {
+  font-size: 14px;
+  font-weight: bold;
+  text-align: right;
+}
+
+.footer {
+  margin-top: 30px;
+  text-align: center;
+  color: #666;
+}
+
+.statusBadge-paid {
+  background-color: #e6ffe6;
+  padding: 5px;
+  border-radius: 5px;
+  text-align: center;
+  width: 80px;
+  align-self: flex-start;
+}
+
+.statusBadge-unpaid {
+  background-color: #ffebee;
+  padding: 5px;
+  border-radius: 5px;
+  text-align: center;
+  width: 80px;
+  align-self: flex-start;
+}

@@ -1,0 +1,198 @@
+/* src/components/admin/UserManagement.module.css */
+.container {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.searchBar input {
+  padding: 0.5rem 1rem;
+  border-radius: 25px;
+  border: 1px solid #ccc;
+  width: 300px;
+  font-size: 1rem;
+}
+
+.card {
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.createUserCard {
+  margin-bottom: 2rem;
+}
+
+.userTableContainer {
+  overflow-x: auto;
+}
+
+.userTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.userTable th,
+.userTable td {
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.userTable th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+}
+
+.statusBadge {
+  padding: 0.3rem 0.7rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.statusBadge.active {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.statusBadge.inactive {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.statusBadge.staff {
+  background-color: #cce5ff;
+  color: #004085;
+}
+
+.statusBadge.non-staff {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.actionButtons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btnPrimary,
+.btnEdit,
+.btnToggle,
+.btnDelete,
+.btnCancel,
+.btnSave {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.btnPrimary {
+  background-color: #007bff;
+  color: white;
+}
+
+.btnEdit {
+  background-color: #6c757d;
+  color: white;
+}
+
+.btnToggle {
+  background-color: #28a745;
+  color: white;
+}
+
+.btnDelete {
+  background-color: #dc3545;
+  color: white;
+}
+
+.btnCancel {
+  background-color: #6c757d;
+  color: white;
+}
+
+.btnSave {
+  background-color: #007bff;
+  color: white;
+}
+
+.btnPrimary:hover,
+.btnEdit:hover,
+.btnToggle:hover,
+.btnDelete:hover,
+.btnCancel:hover,
+.btnSave:hover {
+  opacity: 0.9;
+}
+
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modalContent {
+  background: white;
+  padding: 2rem;
+  border-radius: 10px;
+  width: 100%;
+  max-width: 500px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.toggleSwitch {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.toggleSwitch input {
+  transform: scale(1.5);
+}
+
+.formGroup {
+  margin-bottom: 1.5rem;
+}
+
+.formGroup label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.formGroup select,
+.formGroup input[type="text"],
+.formGroup input[type="email"] {
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  font-size: 1rem;
+}
+
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 1rem;
+}

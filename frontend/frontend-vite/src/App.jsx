@@ -9,7 +9,7 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <div>
-          <MainApp />
+          <MainApp /> {/* return routes -> route */}
         </div>
       </AuthProvider>
     </BrowserRouter>

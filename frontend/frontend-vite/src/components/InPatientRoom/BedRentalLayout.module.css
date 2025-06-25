@@ -1,0 +1,49 @@
+/* src/pages/BedRental/BedRentalLayout.module.css */
+.layout {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  padding: 1rem 0;
+  border-bottom: 1px solid #ddd;
+}
+
+.back {
+  margin-right: 2rem;
+  text-decoration: none;
+  color: #007bff;
+}
+
+.steps {
+  display: flex;
+  gap: 1.5rem;
+  font-weight: 500;
+}
+
+.step {
+  padding-bottom: 0.25rem;
+  position: relative;
+  color: #666;
+}
+
+.stepActive {
+  color: #000;
+}
+
+.stepActive::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: #007bff;
+  border-radius: 2px;
+}
+
+.content {
+  padding: 2rem 0;
+}

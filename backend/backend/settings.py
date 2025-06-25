@@ -39,11 +39,13 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 3
 }
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    "ACCESS_TOKEN_LIFETIME": timedelta(seconds=999999),
+    "REFRESH_TOKEN_LIFETIME": timedelta(seconds=99999999),
 }
 
 # Application definition
@@ -59,6 +61,8 @@ INSTALLED_APPS = [
     "rest_framework",
     "corsheaders",
     'django_extensions',
+    'django_q',
+    'simple_history',
     
 ]
 # Specify the custom user model
@@ -67,14 +71,48 @@ AUTH_USER_MODEL = 'api.User'
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware", #taas mo to
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "corsheaders.middleware.CorsMiddleware",
+    'api.middleware.ThreadLocalUserMiddleware',
+    # 'api.middleware.ActionLoggerMiddleware',
 
+    'simple_history.middleware.HistoryRequestMiddleware',
+
+    
 ]
+
+Q_CLUSTER = { # 1 MINUTE TEST
+    'name': 'bed_billing',
+    'workers': 1,
+    'timeout': 60,  # 1 MINUTE TEST 60 / 60 SA RETRY DIN
+    'retry': 60,
+    'save_limit': 250,
+    'sync': False,
+    'catch_up': False,
+    # REDIS ERROR : tell Django‑Q to use your default DATABASES backend as the broker
+    'orm': 'default',
+
+    
+}
+
+
+# Q_CLUSTER = { 
+#     'name': 'bed_billing',
+#     'workers': 1,
+#     'timeout': 3600,  # 1 hour
+#     'retry': 7200,
+#     'save_limit': 250,
+#     'sync': False,
+#     'catch_up': False,
+#     # REDIS ERROR : tell Django‑Q to use your default DATABASES backend as the broker
+#     'orm': 'default',
+
+    
+# }
 
 ROOT_URLCONF = "backend.urls"
 
@@ -153,4 +191,26 @@ STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 CORS_ALLOW_ALL_ORIGINS = True
-CORS_ALLOWS_CREDENTIALS = True
+CORS_ALLOW_CREDENTIALS = True  # Note the spelling correction
+
+
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]

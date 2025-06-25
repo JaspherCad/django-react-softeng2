@@ -10,26 +10,29 @@ const Navbar = () => {
   const location = useLocation();
   //the state if tru show the sideBar and overlay
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  
+
   //CREATE MOBILE APPLICATION
-    //create a BUTTONS (X and HAMBURGER) where if clicked,
-      //toggle the isMobileMenuOpen where if true show the sideBar and overlay
-      //else hide the sideBar and overlay
+  //create a BUTTONS (X and HAMBURGER) where if clicked,
+  //toggle the isMobileMenuOpen where if true show the sideBar and overlay
+  //else hide the sideBar and overlay
 
 
 
   const navigationConfig = {
-    Admin: [ //use array for us to to .map() functions
-      { to: "/dashboard", label: "Dashboard" },
-      { to: "/patient-records", label: "Patient Records" },
-      { to: "/add-records", label: "Add Records" },
-      { to: "/add-users", label: "Add Users" },
-      { to: "/user-logs", label: "User Logs" },
-      { to: "/reports", label: "Reports" },
-      { to: "/help", label: "Help" },
-      { to: "/about", label: "About" }
+    Admin: [
+      { to: "/dashboard", label: "Dashboard", icon: <i className="fas fa-home"></i> },
+      { to: "/patients", label: "View Patients", icon: <i className="fas fa-users"></i> },
+      { to: "/patients/add", label: "Add Patient", icon: <i className="fas fa-user-plus"></i> },
+      { to: "/add-users", label: "Add Users", icon: <i className="fas fa-users-cog"></i> },
+      { to: "/user-logs", label: "User Logs", icon: <i className="fas fa-file-alt"></i> },
+      { to: "/reports", label: "Reports", icon: <i className="fas fa-chart-bar"></i> },
+      { to: "/help", label: "Help", icon: <i className="fas fa-question-circle"></i> },
+      { to: "/about", label: "About", icon: <i className="fas fa-info-circle"></i> }
+    ],
+    Teller: [
+      { to: "/", label: "Billing", icon: <i className="fas fa-money-bill"></i> },
+      { to: "/Dashboard", label: "Services", icon: <i className="fas fa-boxes"></i> }
     ]
-    // ... other role configurations
   };
 
   const handleLogout = () => {
@@ -47,21 +50,21 @@ const Navbar = () => {
     console.log(isMobileMenuOpen);
   };
 
-    
+
 
   return (
     <>
-    <button 
+      <button
         className={styles.mobileMenuButton}
         onClick={toggleMobileMenu}
-    >
-      
+      >
+
         <span className={styles.hamburger}>vParts</span>
-    </button>
+      </button>
 
-    {/* <div className={`${styles.sidebar} ${isMobileMenuOpen ? styles.sidebarOpen : ''}`}> */}
+      {/* <div className={`${styles.sidebar} ${isMobileMenuOpen ? styles.sidebarOpen : ''}`}> */}
 
-      <div className={`${styles.sidebar} ${isMobileMenuOpen ? styles.sidebarOpen:'' }`}>
+      <div className={`${styles.sidebar} ${isMobileMenuOpen ? styles.sidebarOpen : ''}`}>
         <div className={styles.sidebarHeader}>
           <img src={hospitalLogo} alt="Hospital Logo" className={styles.logo} />
           <h2 style={{ fontSize: '1.2rem', margin: 0 }}>ACDMH</h2>
@@ -71,19 +74,19 @@ const Navbar = () => {
           <ul className={styles.navList}>
             {getNavLinks().map((link, index) => (
               <li key={index} className={styles.navItem}>
-                {/* a href or LINK.. we do LINK */}
                 <Link
                   to={link.to}
-                  className={`${styles.navLink} ${
-                    location.pathname === link.to ? styles.active : ''
-                  }`}
+                  className={`${styles.navLink} ${location.pathname === link.to ? styles.active : ''}`}
+                  onClick={() => setIsMobileMenuOpen(false)}
                 >
+                  <span className={styles.icon}>{link.icon}as</span>
                   {link.label}
                 </Link>
               </li>
             ))}
           </ul>
         </nav>
+
 
         {user && (
           <div className={styles.sidebarFooter}>
@@ -100,7 +103,7 @@ const Navbar = () => {
         )}
       </div>
     </>
-    
+
   );
 };
 
