@@ -68,23 +68,13 @@ def hash_answer(answer):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def auth_check(request):
-    """
-    Returns the authenticated user's information.
-    Expected response:
-      {
-          "name": <user identifier or full name>,
-          "role": <user role>
-      }
-      AGAIN... FRONTEND PURPOSES
-    """
+    
     if not request.user.is_authenticated:
         raise AuthenticationFailed('Authentication credentials were not provided.')
-    
-    user = request.user 
-    return Response({
-        "user_id": user.user_id,  
-        "role": user.role,
-    })
+
+    serializer = UserSerializer(request.user, context={'request': request})
+    return Response(serializer.data)
+
 
 ####################################################################
 # % FOR AUTHENTICATION IN FRONTEND % #
@@ -125,16 +115,21 @@ def patient_list(request):
                 serialized_list_of_patient = PatientSerializer(page, many=True)
                 return paginator.get_paginated_response(serialized_list_of_patient.data)
 
-
             
-
-            
-            # Log the action (automatic sa triggers)
-            
-
             
             #basecase// if pagination fails ()=> return normal querySet
-            serializer = BillingSerializerNoList(list_of_patient_query, many=True)
+            serializer = PatientSerializer(list_of_patient_query, many=True)
+
+            # Log the action (automatic sa triggers)
+            log_action(
+                user=request.user,
+                action="VIEW",
+                details={
+                    "message": "Viewed a patient list:",
+                    
+                }
+            )
+
             return Response(serializer.data, status=status.HTTP_200_OK)
         
         except Exception as e:
@@ -187,6 +182,16 @@ def get_patient_history_by_case(request, case_number):
         )
 
     serializer = PatientHistorySerializer(history_qs, many=True)
+
+    log_action(
+                user=request.user,
+                action="VIEW",
+                details={
+                    "message": "Viewed a patient history:"
+                    
+                }
+            )
+    
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -208,7 +213,18 @@ def get_clinical_notes_by_code(request, case_number):
     patient_id = hist.id
     # Now fetch notes by the consistent patient ID
     notes = ClinicalNote.objects.filter(patient_id=patient_id).order_by('-created_at')
+    
     serializer = ClinicalNoteSerializer(notes, many=True)
+
+    log_action(
+                user=request.user,
+                action="VIEW",
+                details={
+                    "message": "Viewed a clinical note:",
+                   
+                }
+            )
+
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -253,6 +269,16 @@ def create_clinical_note(request, pk, case_number):
     serializer.is_valid(raise_exception=True)
     serializer.save()
 
+    log_action(
+                user=request.user,
+                action="CREATE",
+                details={
+                    "message": "Created a clinical note:",
+                    "patient_id": patient.id,
+                    "patient_name": patient.name
+                }
+            )
+
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
@@ -275,7 +301,17 @@ def get_clinical_notes_by_case_number(request, case_number):
     patient_id = historical_patient.id
 
     notes = ClinicalNote.objects.filter(patient_id=patient_id, case_number_patient=case_number)
+    
     serializer = ClinicalNoteSerializer(notes, many=True)
+
+    log_action(
+                user=request.user,
+                action="VIEW",
+                details={
+                    "message": "Viewed a clinical note:",
+                    
+                }
+            )
 
     return Response(serializer.data)
 
@@ -287,6 +323,17 @@ def get_clinical_notes_by_case_number(request, case_number):
 def get_clinical_notes_by_patient(request, patient_id):
     notes = ClinicalNote.objects.filter(patient_id=patient_id)
     serializer = ClinicalNoteSerializer(notes, many=True)
+
+    log_action(
+                user=request.user,
+                action="VIEW",
+                details={
+                    "message": "Viewed a clinical note:",
+                    "patient_id": patient_id,
+                    
+                }
+            )
+
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -316,7 +363,6 @@ def patient_create(request):
                 details={
                     "message": "Created a new patient:",
                     "patient_id": patient.id,
-                    "patient_name": patient.name
                 }
             )
 
@@ -454,6 +500,17 @@ def patient_history_byId(request, pk, historyId):
     )
 
     serializer = PatientHistorySerializer(history_record)
+
+    log_action(
+                user=request.user,
+                action="VIEW",
+                details={
+                    "message": "Viewed a patient history:",
+                    "patient_id": patient.id,
+                    "patient_name": patient.name
+                }
+            )
+
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -467,6 +524,17 @@ def patient_deactivate(request, pk):
             return Response({"message": "Patient is already inactive."}, status=status.HTTP_400_BAD_REQUEST)
 
         patient.deactivate_patient()
+
+        log_action(
+                user=request.user,
+                action="VIEW",
+                details={
+                    "message": "Created a new patient:",
+                    "patient_id": patient.id,
+                    "patient_name": patient.name
+                }
+            )
+
         return Response({"message": f"Patient {patient.name} has been deactivated."}, status=status.HTTP_200_OK)
 
         
@@ -494,20 +562,229 @@ def patient_deactivate(request, pk):
 def get_user_logs(request):
     
     if request.method == "GET":
+        page_size = request.GET.get('page_size', 10) 
+        start_date_str = request.GET.get('start_date')
+        end_date_str = request.GET.get('end_date')
+
+
+        if not start_date_str or not end_date_str:
+                return Response(
+                    {"error": "Both 'start_date' and 'end_date' parameters are required."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        try:
+                start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
+                end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
+        except ValueError:
+            return Response(
+                {"error": "Invalid date format. Use YYYY-MM-DD."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if start_date > end_date:
+                return Response(
+                    {"error": "Start date must be less than or equal to end date."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        #CURRENTLY HERE WE HAVE 
+            # 2025-06-24 00:00:00
+            # 2025-06-26 00:00:00 so combine min max
+                #to get inclusiion 0 to 23:99:99
+        
+        start_datetime = datetime.combine(start_date, time.min)
+        
+        end_datetime = datetime.combine(end_date, time.max)
+        
+
+        
+
 
         if not request.user.is_authenticated:
             return Response({"error": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
 
 
         #request.user.id
-        current_user_log = UserLog.objects.filter(user=request.user).order_by('-timestamp')
+        current_user_log = UserLog.objects.filter(
+                timestamp__range=(start_datetime, end_datetime)
+        ).order_by('-timestamp')
+
+        paginator = PageNumberPagination()
+        paginator.page_size = page_size
+
+        page = paginator.paginate_queryset(current_user_log, request)
+
+        if page is not None:
+            serializer = UserLogSerializer(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
 
         #send to backend by serializing first
         serializer = UserLogSerializer(current_user_log, many=True)
 
+        log_action(
+                user=request.user,
+                action="VIEW",
+                details={
+                    "message": "VIEWED a userlogs:"
+                }
+            )
+
         return Response(serializer.data, status=status.HTTP_200_OK)
 
         
+
+
+@api_view(['GET'])
+#/<int:pk>
+def get_user_logs_by_id(request, pk):
+    
+    if request.method == "GET":
+        page_size = request.GET.get('page_size', 10) 
+        start_date_str = request.GET.get('start_date')
+        end_date_str = request.GET.get('end_date')
+
+
+        if not start_date_str or not end_date_str:
+                return Response(
+                    {"error": "Both 'start_date' and 'end_date' parameters are required."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        try:
+                start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
+                end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
+        except ValueError:
+            return Response(
+                {"error": "Invalid date format. Use YYYY-MM-DD."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if start_date > end_date:
+                return Response(
+                    {"error": "Start date must be less than or equal to end date."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        #CURRENTLY HERE WE HAVE 
+            # 2025-06-24 00:00:00
+            # 2025-06-26 00:00:00 so combine min max
+                #to get inclusiion 0 to 23:99:99
+        
+        start_datetime = datetime.combine(start_date, time.min)
+        
+        end_datetime = datetime.combine(end_date, time.max)
+        
+
+        
+
+
+        if not request.user.is_authenticated:
+            return Response({"error": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
+
+
+        #request.user.id
+        current_user_log = UserLog.objects.filter(
+                user=pk,
+                timestamp__range=(start_datetime, end_datetime)
+        ).order_by('-timestamp')
+
+        paginator = PageNumberPagination()
+        paginator.page_size = page_size
+
+        page = paginator.paginate_queryset(current_user_log, request)
+
+        if page is not None:
+            serializer = UserLogSerializer(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
+
+        #send to backend by serializing first
+        serializer = UserLogSerializer(current_user_log, many=True)
+
+        log_action(
+                user=request.user,
+                action="VIEW",
+                details={
+                    "message": "VIEWED a userlogs:"
+                }
+            )
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    
+
+@api_view(['GET'])
+#/<int:pk>
+def get_user_logs_all(request):
+    
+    if request.method == "GET":
+        page_size = request.GET.get('page_size', 10) 
+        start_date_str = request.GET.get('start_date')
+        end_date_str = request.GET.get('end_date')
+
+
+        if not start_date_str or not end_date_str:
+                return Response(
+                    {"error": "Both 'start_date' and 'end_date' parameters are required."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        try:
+                start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
+                end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
+        except ValueError:
+            return Response(
+                {"error": "Invalid date format. Use YYYY-MM-DD."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if start_date > end_date:
+                return Response(
+                    {"error": "Start date must be less than or equal to end date."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        #CURRENTLY HERE WE HAVE 
+            # 2025-06-24 00:00:00
+            # 2025-06-26 00:00:00 so combine min max
+                #to get inclusiion 0 to 23:99:99
+        
+        start_datetime = datetime.combine(start_date, time.min)
+        
+        end_datetime = datetime.combine(end_date, time.max)
+        
+
+        
+
+
+        if not request.user.is_authenticated:
+            return Response({"error": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
+
+
+        #request.user.id
+        current_user_log = UserLog.objects.filter(
+                timestamp__range=(start_datetime, end_datetime)
+        ).order_by('-timestamp')
+
+        paginator = PageNumberPagination()
+        paginator.page_size = page_size
+
+        page = paginator.paginate_queryset(current_user_log, request)
+
+        if page is not None:
+            serializer = UserLogSerializer(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
+
+        #send to backend by serializing first
+        serializer = UserLogSerializer(current_user_log, many=True)
+
+        log_action(
+                user=request.user,
+                action="VIEW",
+                details={
+                    "message": "VIEWED a userlogs:"
+                }
+            )
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
     
 ####################################################################
 # % USERLOG VIEWS % #
@@ -664,6 +941,15 @@ def update_billing(request, pk):
         action="Bill Updated"
     )
 
+    log_action(
+                user=request.user,
+                action="UPDATE",
+                details={
+                    "message": "Updated a billing item:",
+                    "billing_id": pk,
+                }
+            )
+
     return Response(serializer.data)
 
 
@@ -745,8 +1031,18 @@ def edit_bill_item(request, billing_pk, item_pk):
     billing_item.service_availed = patient_service
     # PS: quantity and subtotal on BillingItem are recalculated in BillingItem.save()
     billing_item.save()
-
+    
     serializer = BillingItemSerializer(billing_item)
+
+    log_action(
+                user=request.user,
+                action="UPDATE",
+                details={
+                    "message": "Edited a billing item:",
+                    "billing_item": billing_item.id,
+                }
+            )
+    
     return Response(serializer.data, status=status.HTTP_200_OK)
     
 
@@ -766,6 +1062,16 @@ def get_bill_item(request, billing_pk, item_pk):
 
     # 3) Serialize and return
     serializer = BillingItemSerializer(billing_item)
+
+    log_action(
+                user=request.user,
+                action="VIEW",
+                details={
+                    "message": "Viewed a bill item:",
+                    "billing": billing.id,
+                }
+            )
+    
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -841,9 +1147,9 @@ def search_service(request):
         services = Service.objects.filter(
             Q(name__icontains=query)
         )[:10] 
-
+        
         serializer = ServiceSerializer(services, many=True)
-
+        
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     except Exception as e:
@@ -876,6 +1182,16 @@ def search_patients(request):
         )[:5] 
         serializer = PatientSerializer(bills, many=True)
         print(serializer.data)
+
+        log_action(
+                user=request.user,
+                action="VIEW",
+                details={
+                    "message": "Searched a patient:",
+                    "query": query,
+                }
+            )
+        
         return Response(serializer.data, status=status.HTTP_200_OK)
     except Exception as e:
         print(e)
@@ -902,6 +1218,16 @@ def search_users(request):
             Q(department__icontains=q)
         )[:5]
         serializer = UserSerializer(qs, many=True)
+
+        log_action(
+                user=request.user,
+                action="VIEW",
+                details={
+                    "message": "Searched a user:",
+                    "query": q
+                }
+            )
+        
         return Response(serializer.data, status=status.HTTP_200_OK)
     except Exception as e:
         return Response(
@@ -943,6 +1269,17 @@ def search_billings(request):
         )[:20]  # Limit to 20 results
         serializer = BillingSerializerNoList(bills, many=True)
         print(serializer.data)
+
+        log_action(
+                user=request.user,
+                action="VIEW",
+                details={
+                    "message": "Searched a billing:",
+                    "query": query
+
+                }
+            )
+
         return Response(serializer.data, status=status.HTTP_200_OK)
     except Exception as e:
         print(e)
@@ -964,6 +1301,15 @@ def get_billing_item(request, pk):
         billing_item = BillingItem.objects.filter(id=pk).first()
 
         serialized_billing_item = BillingItemSerializer(billing_item)
+
+        log_action(
+                user=request.user,
+                action="VIEW",
+                details={
+                    "message": "Viewed a billing item:",
+                    "billingId": pk,
+                }
+            )
 
         return Response(serialized_billing_item.data, status=status.HTTP_200_OK)
         
@@ -1004,6 +1350,15 @@ def get_bills(request):
             
         #basecase// if pagination fails ()=> return normal querySet
         serializer = BillingSerializerNoList(queryset, many=True)
+
+        log_action(
+                user=request.user,
+                action="VIEW",
+                details={
+                    "message": "Viewed list of bills:"
+                }
+            )
+        
         return Response(serializer.data, status=status.HTTP_200_OK)
                             #   /api/billings/list
                             #   /api/billings/list?page=2   
@@ -1053,6 +1408,16 @@ def get_bills_with_bill_items(request):
         #basecase// if pagination fails ()=> return normal querySet
 
         serializer = BillingSerializer(bills_queryset, many=True)
+
+        log_action(
+                user=request.user,
+                action="VIEW",
+                details={
+                    "message": "Viewed bills:"
+                
+                }
+            )
+        
         return Response(serializer.data, status=status.HTTP_200_OK)
     except Exception as e:
         return Response(
@@ -1089,6 +1454,15 @@ def get_bills_by_id_with_bill_items(request, pk):
 
         # If found, serialize and return.
         serializer = Billing_PatientInfo_Serializer(bill)
+
+        log_action(
+                user=request.user,
+                action="VIEW",
+                details={
+                    "message": "Viewed bills:"
+                }
+            )
+        
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     except Exception as e:
@@ -1130,6 +1504,15 @@ def get_bills_by_ACTUAL_id_with_bill_items(request, pk):
 
         # If found, serialize and return.
         serializer = Billing_PatientInfo_Serializer(bill)
+
+        log_action(
+                user=request.user,
+                action="VIEW",
+                details={
+                    "message": "Viewed bills:"
+                }
+            )
+        
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     except Exception as e:
@@ -1153,6 +1536,16 @@ def create_bills(request):
         #if valid save
         if serializer.is_valid():
             billing = serializer.save()
+
+            log_action(
+                user=request.user,
+                action="CREATE",
+                details={
+                    "message": "Created a bill:"
+                   
+                }
+            )
+
             return Response(BillingSerializerNoList(billing).data, status=status.HTTP_201_CREATED)
         #outside if return FALSE statements
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -1284,6 +1677,17 @@ def create_laboratory_result_for_patient(request, pk):
         if serializer.is_valid():
             lab_result = serializer.save(performed_by=request.user)
             return Response(LaboratoryResultSerializer(lab_result).data, status=status.HTTP_201_CREATED)
+        
+        log_action(
+                user=request.user,
+                action="CREATE",
+                details={
+                    "message": "Created a laboratory result:",
+                    "patient_id": patient.id,
+                    "patient_name": patient.name
+                }
+            )
+        
         #outside if return FALSE statements
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -1305,9 +1709,9 @@ def create_laboratory_result_for_patient(request, pk):
 def generate_report(request):
     if request.method == "GET":
         try:
-            # Extract date range from query parameters
             start_date_str = request.GET.get('start_date')
             end_date_str = request.GET.get('end_date')
+            page_size = request.GET.get('page_size', 10)  
 
             if not start_date_str or not end_date_str:
                 return Response(
@@ -1315,7 +1719,6 @@ def generate_report(request):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            # Validate date format
             try:
                 start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
                 end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
@@ -1336,12 +1739,35 @@ def generate_report(request):
             end_datetime = datetime.combine(end_date, time.max)
 
             # Query patients admitted within the date range
-            patients = Patient.objects.filter(
+            queryset = Patient.objects.filter(
                 admission_date__range=(start_datetime, end_datetime)
             ).order_by('-admission_date')
 
-            # Serialize all matching patients
-            serializer = PatientSerializer(patients, many=True)
+            #update pagination
+                #initialize paginator
+                #page size
+                
+                #paginate query pasok mo q sa pagination
+            paginator = PageNumberPagination()
+            paginator.page_size = page_size 
+
+            page = paginator.paginate_queryset(queryset, request)
+            if page is not None:
+                serializer = PatientSerializer(page, many=True)
+                return paginator.get_paginated_response(serializer.data)
+
+            # Fallback (shouldn’t normally happen)
+            serializer = PatientSerializer(queryset, many=True)
+            
+
+
+            log_action(
+                user=request.user,
+                action="CREATE",
+                details={
+                    "message": "Generated a report:",
+                }
+            )
 
             return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -1437,6 +1863,15 @@ def create_laboratory_file_result_for_laboratory_class(request, pk):
             for serializer in valid_serializers:
                 instance = serializer.save(result=lab_result, uploaded_by=request.user)
                 results.append(LabResultFileSerializer(instance, context={'request': request}).data)
+
+        log_action(
+                user=request.user,
+                action="CREATE",
+                details={
+                    "message": "Created a laboratory file result:",
+                   
+                }
+            )
         
         return Response(results, status=status.HTTP_201_CREATED)
 
@@ -1480,6 +1915,14 @@ def search_labId(request):
 
         serializer = LaboratoryResultSerializer(laboratory, many=True)
 
+        log_action(
+                user=request.user,
+                action="VIEW",
+                details={
+                    "message": "Viewed a laboratory result:"
+                }
+            )
+
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     except Exception as e:
@@ -1513,6 +1956,14 @@ def get_laboratory_by_id(request, pk):
         #     'performed_by': str(lab_result.performed_by),
         #     'status': 'success'
         # }
+
+        log_action(
+                user=request.user,
+                action="VIEW",
+                details={
+                    "message": "Viewed a laboratory:"
+                }
+            )
         
         return Response(lab_serializer.data, status=status.HTTP_200_OK)
         
@@ -1581,6 +2032,14 @@ def create_laboratory_file_group(request, labId):
                 )
                 group_files.append(lab_file)
 
+        log_action(
+                user=request.user,
+                action="CREATE",
+                details={
+                    "message": "Created a laboratory file:"
+                }
+            )
+
         return Response({
             "group": LabResultFileGroupSerializer(group).data,
             "files": LabResultFileInGroupSerializer(group_files, many=True).data
@@ -1606,6 +2065,14 @@ def get_laboratory_file_group(request, group_id):
 
         # Serialize the group with its files
         serializer = LabResultFileGroupSerializer(group)
+
+        log_action(
+                user=request.user,
+                action="VIEW",
+                details={
+                    "message": "Viewed a laboratory file:"
+                }
+            )
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -1664,6 +2131,14 @@ def upload_user_image(request, user_id):
                 instance = serializer.save(user=user, uploaded_by=request.user)
                 results.append(UserImageSerializer(instance).data)
 
+        log_action(
+                user=request.user,
+                action="CREATE",
+                details={
+                    "message": "Uploaded a user image:"
+                }
+            )        
+
         return Response(results, status=status.HTTP_201_CREATED)
 
     except Exception as e:
@@ -1701,6 +2176,14 @@ def patientImageupload(request):
     if serializer.is_valid():
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+    log_action(
+                user=request.user,
+                action="CREATE",
+                details={
+                    "message": "Uploaded a patient image:"
+                }
+            )
 
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -1721,6 +2204,17 @@ def get_patient_images(request, patient_id):
         
         # Serialize and return
         serializer = PatientImageSerializer(images, many=True)
+
+        log_action(
+                user=request.user,
+                action="VIEW",
+                details={
+                    "message": "Viewed a patient image:",
+                    "patient_id": patient.id,
+                    "patient_name": patient.name
+                }
+            )
+        
         return Response(serializer.data, status=status.HTTP_200_OK)
         
     except ValidationError:
@@ -1791,6 +2285,15 @@ def assign_bed(request, patient_id, bed_id, billing_id):
     bed.is_occupied = True
     bed.save()
 
+    log_action(
+                user=request.user,
+                action="CREATE",
+                details={
+                    "message": "Assigned a bed:",
+                    "patient_id": patient.id,
+                    "patient_name": patient.name
+                }
+            )
 
     return Response({
         "id": assignment.id,
@@ -1852,6 +2355,16 @@ def discharge_patient(request, patient_id):
         bed.is_occupied = False
         bed.save()
 
+        log_action(
+                user=request.user,
+                action="UPDATE",
+                details={
+                    "message": "Discharged a patient:",
+                    "patient_id": patient.id,
+                    "patient_name": patient.name
+                }
+            )
+
         return Response({
             "message": "Patient discharged successfully",
             "final_hours": assignment.get_current_hours() - assignment.total_hours,
@@ -1906,6 +2419,15 @@ def discharge_patient(request, patient_id):
 def room_bed_list(request):
     rooms = Room.objects.prefetch_related('bed_set').all()
     serializer = RoomWithBedInfoSerializer(rooms, many=True)
+
+    log_action(
+                user=request.user,
+                action="VIEW",
+                details={
+                    "message": "Viewed room bed list:"
+                }
+            )
+    
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -1936,6 +2458,15 @@ def bed_assignment_list(request):
 
     #all
     serializer = BedAssignmentSerializer(qs, many=True)
+
+    log_action(
+                user=request.user,
+                action="VIEW",
+                details={
+                    "message": "Viewed bed assignment list:"
+                }
+            )
+    
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -2011,6 +2542,15 @@ def about(request):
 def role_group_list(request):
     groups = Group.objects.all()
     serializer = GroupSerializer(groups, many=True)
+
+    log_action(
+                user=request.user,
+                action="VIEW",
+                details={
+                    "message": "Viewed role group list:"
+                }
+            )
+    
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -2035,6 +2575,15 @@ def update_user_groups(request, user_id):
                 continue
         
         user.save()
+
+        log_action(
+                user=request.user,
+                action="UPDATE",
+                details={
+                    "message": "Updated user groups:"
+                }
+            )
+        
         return Response(
             {"status": "success", "message": "Roles updated"},
             status=status.HTTP_200_OK
@@ -2109,14 +2658,7 @@ def doctorOnly(request):
 
 
 def log_action(user: User, action: str, details: dict):
-    """
-    Logs an action performed by a user.
     
-    Args:
-        user (User): The user performing the action.
-        action (str): The type of action (e.g., 'CREATE', 'UPDATE', 'DELETE').
-        details (dict): Additional context about the action.
-    """
     if user and user.is_authenticated:
         try:
             UserLog.objects.create(

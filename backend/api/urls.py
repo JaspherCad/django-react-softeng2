@@ -58,7 +58,10 @@ urlpatterns = [
 
 
     #User Logs
-    path('userlogs', views.get_user_logs, name='user_userlog'),
+    path('userlogs/', views.get_user_logs, name='user_userlog'),
+    path('userlogs/<int:pk>/', views.get_user_logs_by_id, name='user_userlog_by_id'),
+    path('userlogs/all', views.get_user_logs_all, name='user_userlog_all'),
+
 
 
     #billing

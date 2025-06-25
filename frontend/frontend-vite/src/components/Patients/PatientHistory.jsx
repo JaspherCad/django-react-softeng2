@@ -1,25 +1,61 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { fetchPatientHistoryAPI } from '../../api/axios';
 import styles from './Patients.module.css';
 import PatientHistoryModal from './PatientHistoryModal';
+import '@fortawesome/fontawesome-free/css/all.min.css';
 
 const PatientHistory = ({ setSelectedMedicalHistory }) => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const [selectedNote, setSelectedNote] = useState(null);
+  //if isReportMode, replace the ADD RECORD to PRINT CSV. that's all
+  const isReportMode = location.pathname.endsWith('/reports');
 
-
-
-
-  //admitting modal
+  // admitting modal => shows step after clicking ADD RECORD.. kumbaga same as PATIENT ADMITTING sa /patient/add
   const [showAdmitModal, setShowAdmitModal] = useState(false);
-  const [admitStep, setAdmitStep] = useState(null); // 'inpatient' or 'outpatient'
+  const [admitStep, setAdmitStep] = useState(null);
+
+
+  //copy paste REPORTS/patient-report
+  const handlePrintCSV = () => {
+    if (!history.length) return;
+    
+    // const headers = ['Case Number', 'Record Type', 'Date', 'Patient Name', 'Patient ID']; MANUAL TO AUTOMATED S ABABA
+
+    const headers = Object.keys(history[0]);
+    const rows = history.map(note => 
+    headers.map(key => {
+      const val = key === 'note_date' || key === 'history_date'
+        ? new Date(note[key]).toLocaleDateString()
+        : note[key];
+      return `"${val || ''}"`;
+    })
+  );
+
+
+    // Generate CSV content
+    const csvContent = [headers, ...rows]
+      .map(row => row.map(val => `"${val || ''}"`).join(','))
+      .join('\r\n');
+
+    // Create and trigger download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `patient_${id}_history_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
   /* ───────── fetch once per patient ───────── */
   useEffect(() => {
@@ -28,7 +64,7 @@ const PatientHistory = ({ setSelectedMedicalHistory }) => {
         setLoading(true);
         const { data } = await fetchPatientHistoryAPI(id);
         setHistory(data);
-        console.log(data)
+        console.log('Patient history data:', data);
       } catch (err) {
         console.error(err);
         setError('Failed to load history');
@@ -38,25 +74,16 @@ const PatientHistory = ({ setSelectedMedicalHistory }) => {
     })();
   }, [id]);
 
-
-
-
   const handleView = (note) => {
-
     setSelectedMedicalHistory(note);
-    console.log(note.case_number)
     navigate(`/patients/history/${id}/casecode/${note.case_number}/historyId/${note.history_id}`);
-
   };
 
   const handleSeeMore = (note) => {
     setSelectedNote(note);
-    console.log(note)
-
-  }
+  };
 
   const closeModal = () => setSelectedNote(null);
-
 
   const handleAddRecordClick = () => {
     setShowAdmitModal(true);
@@ -76,22 +103,50 @@ const PatientHistory = ({ setSelectedMedicalHistory }) => {
   if (loading) return <div className={styles.loading}>Loading history…</div>;
   if (error) return <div className={styles.error}>{error}</div>;
 
+  // Extract patient details from first history entry (assuming consistent data)
+  const patient = history.length > 0 ? history[0] : {};
+  
   return (
     <div className={styles.patientManagement}>
-      <h2>Medical History for Patiesnt #{id}</h2>
-      <button className={styles.btnAddRecord} onClick={handleAddRecordClick}>
-        Add Record
-      </button>      <div className={styles.tableContent}>
+      {/* Patient Header */}      <div className={styles.headerRow}>
+        <h2>Viewing Patient #{patient.code}</h2>
+        {isReportMode ? (
+          <button 
+            className={styles.btnAdd} 
+            onClick={handlePrintCSV}
+          >
+            <i className="fas fa-file-csv"></i> Print CSV
+          </button>
+        ) : (
+          <button 
+            className={styles.btnAdd} 
+            onClick={handleAddRecordClick}
+          >
+            <i className="fas fa-pencil-alt"></i> Add Record
+          </button>
+        )}
+      </div>
+      
+      <div className={styles.patientInfo}>
+        <div>
+          <p><strong>Name:</strong> {patient.name}</p>
+          <p><strong>Birth date:</strong> {new Date(patient.date_of_birth).toLocaleDateString()}</p>
+          <p><strong>Patient ID:</strong> #{patient.code}</p>
+        </div>
+      </div>
+
+      {/* Medical History Table */}
+      <div className={styles.tableContent}>
         <table className={styles.table}>
           <thead>
             <tr>
+              <th>Case Number</th>
               <th>Record Type</th>
-              <th>Case #</th>
               <th>Date</th>
+              
               <th>Action</th>
             </tr>
           </thead>
-
           <tbody>
             {history.length === 0 ? (
               <tr>
@@ -106,18 +161,21 @@ const PatientHistory = ({ setSelectedMedicalHistory }) => {
                   className={styles.tableRow}
                   onClick={() => handleSeeMore(note)}
                 >
-                  <td>{note.status}</td>
                   <td>{note.case_number}</td>
+                  <td>{note.type_of_admission}</td>
                   <td>
                     {new Date(note.note_date || note.history_date)
                       .toLocaleDateString()}
                   </td>
                   <td>
                     <button
-                      className={styles.viewBtn}
-                      onClick={() => handleView(note)}
+                      className={styles.btnView}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleView(note);
+                      }}
                     >
-                      VIEWs
+                      View
                     </button>
                   </td>
                 </tr>
@@ -127,26 +185,7 @@ const PatientHistory = ({ setSelectedMedicalHistory }) => {
         </table>
       </div>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+      {/* Modals */}
       {selectedNote && (
         <div className={styles.modalOverlay} onClick={closeModal}>
           <div
@@ -161,7 +200,6 @@ const PatientHistory = ({ setSelectedMedicalHistory }) => {
         </div>
       )}
 
-      {/* Modal for selecting form type */}
       {showAdmitModal && (
         <div className={styles.modalOverlay} onClick={closeAdmitModal}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
@@ -185,21 +223,6 @@ const PatientHistory = ({ setSelectedMedicalHistory }) => {
                 Outpatient
               </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Existing modal for viewing note */}
-      {selectedNote && (
-        <div className={styles.modalOverlay} onClick={closeModal}>
-          <div
-            className={styles.modalContent}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button className={styles.closeButton} onClick={closeModal}>
-              &times;
-            </button>
-            <PatientHistoryModal note={selectedNote} handleView={handleView} />
           </div>
         </div>
       )}

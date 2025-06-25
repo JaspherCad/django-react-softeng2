@@ -390,15 +390,17 @@ export const getPatientImagesAPI = async (patientId) => {
 
 
 
-export const getPatientReportAPI = async (startDate, endDate) => {
+export const getPatientReportAPI = async (startDate, endDate, page = 1, pageSize = 10) => {
   try {
     // we pass dates as query params
-    const response = await axiosInstance.get('patients/report/', {
-      params: {
-        start_date: startDate,  
-        end_date: endDate        
-      }
-    });
+    const response = await axiosInstance.get(`patients/report/`, {
+    params: {
+      start_date: startDate,
+      end_date: endDate,
+      page,
+      page_size: pageSize
+    }
+  });
     return response;
   } catch (error) {
     console.error("Failed to fetch patient report:", error);

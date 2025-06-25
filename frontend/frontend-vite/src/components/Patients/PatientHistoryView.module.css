@@ -10,7 +10,7 @@
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 
-h2 {
+.historyContainer h2 {
   font-size: 1.6rem;
   margin-bottom: 1.5rem;
   text-align: center;
