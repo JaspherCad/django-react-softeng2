@@ -302,7 +302,7 @@ class Patient(models.Model):
     next_consultation_date = models.DateTimeField(null=True, blank=True)
 
 
-    discharge_date = models.DateTimeField(null=True, blank=True)
+    discharge_date = models.DateTimeField(null=True, blank=True, default=None)
     total_days = models.CharField(max_length=255, null=True, blank=True)
 
 
@@ -322,22 +322,21 @@ class Patient(models.Model):
 
     #MEDICAL INFORMATION: should be sepeareted as MedicalHistory.. but merge as one for now.
     entry_date = models.DateTimeField(auto_now_add=True)
-    notes = models.TextField()
 
 
-    height = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
-    weight = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
-    blood_pressure = models.CharField(max_length=20, null=True, blank=True)
-    pulse_rate = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
-    respiratory_rate = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
-    temperature = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
-    physical_examination = models.TextField(null=True, blank=True)
-    main_complaint = models.TextField(null=True, blank=True)
-    present_illness = models.TextField(null=True, blank=True)
-    clinical_findings = models.TextField(null=True, blank=True)
-    icd_code = models.CharField(max_length=20, null=True, blank=True)
-    diagnosis = models.TextField(null=True, blank=True)
-    treatment = models.TextField(null=True, blank=True)
+    height = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, default=None)
+    weight = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, default=None)
+    blood_pressure = models.CharField(max_length=20, null=True, blank=True, default=None)
+    pulse_rate = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, default=None)
+    respiratory_rate = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, default=None)
+    temperature = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, default=None)
+    physical_examination = models.TextField(null=True, blank=True, default=None)
+    main_complaint = models.TextField(null=True, blank=True, default=None)
+    present_illness = models.TextField(null=True, blank=True, default=None)
+    clinical_findings = models.TextField(null=True, blank=True, default=None)
+    icd_code = models.CharField(max_length=20, null=True, blank=True, default=None)
+    diagnosis = models.TextField(null=True, blank=True, default=None)
+    treatment = models.TextField(null=True, blank=True, default=None)
 
 
     # New Fields

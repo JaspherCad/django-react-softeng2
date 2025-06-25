@@ -369,6 +369,10 @@ def patient_create(request):
             #fallback
             return Response(patient_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
+        except ValidationError as ve:
+            # Return structured validation errors
+            return Response(ve.detail, status=status.HTTP_400_BAD_REQUEST)
+        
         except Exception as e:
             return Response(
                 {"error": "Something went wrong while fetching patients", "details": str(e)},
@@ -443,9 +447,19 @@ def patient_update(request, pk):
             return Response(serializer.data, status=status.HTTP_200_OK)
             
 
-
-        except:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except ValidationError as ve:
+            # Return structured validation errors
+            return Response(ve.detail, status=status.HTTP_400_BAD_REQUEST)
+    
+        except Exception as e:
+            # Fallback for unexpected errors
+            return Response(
+                {
+                    "error": "Something went wrong while updating the patient",
+                    "details": str(e)
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
         
 
 
@@ -1167,7 +1181,7 @@ def search_service(request):
 @api_view(['GET'])
 @permission_classes([IsAdmin | IsAuthenticated])
 def search_patients(request):
-
+    #SAERCH ALL PATIENT REGARDLESS OF STATUS
     query = request.query_params.get('q', '').strip()
     if not query:
         
@@ -1200,8 +1214,76 @@ def search_patients(request):
             {"error": "Something went wrong while searching patients", "details": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+    
 
 
+@api_view(['GET'])
+@permission_classes([IsAdmin | IsAuthenticated])
+def search_patients_that_are_not_discharged(request):
+    #search_patients_that_are_not_discharged
+    query = request.query_params.get('q', '').strip()
+    if not query:
+        return Response([], status=status.HTTP_200_OK)
+    
+    try:
+        patients = Patient.objects.filter(
+            Q(code__icontains=query) |
+            Q(name__icontains=query)
+        ).exclude(status='Discharged')[:5]
+        
+        serializer = PatientSerializer(patients, many=True)
+        
+        log_action(
+            user=request.user,
+            action="VIEW",
+            details={
+                "message": "Searched patients (not discharged)",
+                "query": query,
+            }
+        )
+        
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"error": "Search failed", "details": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+
+
+@api_view(['GET'])
+@permission_classes([IsAdmin | IsAuthenticated])
+def search_patients_admitted_only(request):
+    #Search patients those are Admitted status
+    query = request.query_params.get('q', '').strip()
+    if not query:
+        return Response([], status=status.HTTP_200_OK)
+    
+    try:
+        patients = Patient.objects.filter(
+            Q(code__icontains=query) |
+            Q(name__icontains=query),
+            status='Admitted'
+        )[:5]
+        
+        serializer = PatientSerializer(patients, many=True)
+        
+        log_action(
+            user=request.user,
+            action="VIEW",
+            details={
+                "message": "Searched patients (admitted only)",
+                "query": query,
+            }
+        )
+        
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"error": "Search failed", "details": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 
 @api_view(['GET'])
@@ -1241,20 +1323,14 @@ def search_users(request):
 @api_view(['GET'])
 @permission_classes([IsAdmin | IsTeller])
 def search_billings(request):
-    """
-    Search billings using a query parameter 'q'. Returns up to 20 matched results.
     
-    Example request: GET /api/billings/search?q=john
-    """
     query = request.query_params.get('q', '').strip()
     if not query:
-        # If no search query is provided, you can return an empty list or all records.
-        # Here we choose to return an empty array.
+       
         return Response([], status=status.HTTP_200_OK)
     
     try:
-        # Use Q objects to search multiple fields.
-        # Adjust the fields and lookups as necessary:
+        # Q filtering
         
         bills = Billing.objects.filter(
             Q(patient__name__icontains=query) |
@@ -1288,6 +1364,111 @@ def search_billings(request):
             {"error": "Something went wrong while searching bills", "details": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+
+
+
+
+@api_view(['GET'])
+@permission_classes([IsAdmin | IsTeller])
+def search_billings_admitted_only(request):
+    
+    query = request.query_params.get('q', '').strip()
+    if not query:
+       
+        return Response([], status=status.HTTP_200_OK)
+    
+    try:
+        # Q filtering
+        
+        bills = Billing.objects.filter(
+            Q(patient__name__icontains=query) |
+            Q(patient__code__icontains=query) |
+
+            Q(code__icontains=query) |
+
+            Q(status__icontains=query),
+            patient__status="Admitted"
+            
+            # You can add more fields here, e.g.:
+            # | Q(total_due__icontains=query)
+        )[:20]  # Limit to 20 results
+        serializer = BillingSerializerNoList(bills, many=True)
+        print(serializer.data)
+
+        log_action(
+                user=request.user,
+                action="VIEW",
+                details={
+                    "message": "Searched a billing:",
+                    "query": query
+
+                }
+            )
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+
+        return Response(
+            {"error": "Something went wrong while searching bills", "details": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+    
+
+
+@api_view(['GET'])
+@permission_classes([IsAdmin | IsTeller])
+def search_billings_exclud_discharged(request):
+    
+    query = request.query_params.get('q', '').strip()
+    if not query:
+       
+        return Response([], status=status.HTTP_200_OK)
+    
+    try:
+        # Q filtering
+        
+        bills = Billing.objects.filter(
+            (
+                Q(patient__name__icontains=query) |
+                Q(patient__code__icontains=query) |
+                Q(code__icontains=query) |
+                Q(status__icontains=query)
+            ) & ~Q(patient__status="Discharged")
+        )[:20]
+  
+        serializer = BillingSerializerNoList(bills, many=True)
+        print(serializer.data)
+
+        log_action(
+                user=request.user,
+                action="VIEW",
+                details={
+                    "message": "Searched a billing:",
+                    "query": query
+
+                }
+            )
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+
+        return Response(
+            {"error": "Something went wrong while searching bills", "details": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+    
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1425,6 +1606,59 @@ def get_bills_with_bill_items(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
     #develop
+
+
+#get_bills_by_patient
+
+@api_view(['GET'])
+@permission_classes([IsAdmin | IsTeller])
+def get_bills_by_patient(request, patient_id):
+    try:
+               
+
+        bill = Billing.objects.filter(patient=patient_id)
+
+
+        if not bill:
+            #get all existing Billing codes as return coz its confusing me.. id!=billing_code
+            available_codes = list(
+                Billing.objects
+                       .order_by('code')
+                       .values_list('code', flat=True)
+            )
+
+            return Response(
+                {
+                    "error": f"Billing record with code '{patient_id}' not found.",
+                    "available_codes": available_codes
+                },
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # If found, serialize and return.
+        serializer = BillingSerializer(bill, many=True)
+
+        log_action(
+                user=request.user,
+                action="VIEW",
+                details={
+                    "message": "Viewed bills:"
+                }
+            )
+        
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response(
+            {
+                "error": "Something went wrong while fetching bills.",
+                "details": str(e)
+            },
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+
 
 @api_view(['GET'])
 @permission_classes([IsAdmin | IsTeller])

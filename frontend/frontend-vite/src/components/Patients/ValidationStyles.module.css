@@ -1,0 +1,25 @@
+.errorText {
+  color: #d32f2f;
+  font-size: 0.8rem;
+  margin-top: 4px;
+  margin-bottom: 0;
+}
+
+.errorInput {
+  border-color: #d32f2f !important;
+  background-color: rgba(211, 47, 47, 0.05);
+}
+
+/* Add animation for better UX */
+@keyframes errorShake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-10px); }
+  40% { transform: translateX(10px); }
+  60% { transform: translateX(-5px); }
+  80% { transform: translateX(5px); }
+}
+
+.errorInput:focus {
+  animation: errorShake 0.5s;
+  box-shadow: 0 0 5px rgba(211, 47, 47, 0.5);
+}

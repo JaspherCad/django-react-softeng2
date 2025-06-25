@@ -320,6 +320,34 @@ export const SearchBillingsApi = async (searchTerm) => {
   }
 };
 
+
+export const SearchBillingsApiAdmittedOnly = async (searchTerm) => {
+  try {
+    const response = await axiosInstance.get('/billings_exclud_discharged/search', {
+      params: { q: searchTerm }
+    }
+
+    );
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+//billings_exclud_discharged/search
+export const SearchBillingsApiExcludingDischarged = async (searchTerm) => {
+  try {
+    const response = await axiosInstance.get('/billings_exclud_discharged/search', {
+      params: { q: searchTerm }
+    }
+
+    );
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
 export const SearchHospitalUserApi = async (searchTerm) => {
   try {
     const response = await axiosInstance.get('/users/search', {
@@ -394,17 +422,17 @@ export const getPatientReportAPI = async (startDate, endDate, page = 1, pageSize
   try {
     // we pass dates as query params
     const response = await axiosInstance.get(`patients/report/`, {
-    params: {
-      start_date: startDate,
-      end_date: endDate,
-      page,
-      page_size: pageSize
-    }
-  });
+      params: {
+        start_date: startDate,
+        end_date: endDate,
+        page,
+        page_size: pageSize
+      }
+    });
     return response;
   } catch (error) {
     console.error("Failed to fetch patient report:", error);
-    throw error;  
+    throw error;
   }
 };
 
@@ -463,6 +491,11 @@ export const getBillingByACTUALIDandNotCODE = async (id) => {
   }
 };
 
+//simple return true or false lang. NVM
+function isObjectWithFields(obj) {
+  return obj && typeof obj === 'object' && !Array.isArray(obj) && Object.keys(obj).length > 0;
+}
+
 export const addPatientAPI = async (newPatientData) => {
   try {
     const response = await axiosInstance.post('/patients/create',
@@ -470,9 +503,31 @@ export const addPatientAPI = async (newPatientData) => {
     );
     return response;
   } catch (error) {
+    const errorData = error.response?.data || {};
+    // Normalize field validation errors
+    if (isObjectWithFields(errorData)) {
+      error.validationErrors = errorData;
+      console.error("TRUE");
+      console.error(error.validationErrors)
+//       { SAMPLE ERROR.validationErrors
+//     "case_number": [
+//         "patient with this case number already exists."
+//     ],
+//     "date_of_birth": [
+//         "Date has wrong format. Use one of these formats instead: YYYY-MM-DD."
+//     ]
+// }
+
+    } else if (errorData.error) {
+      console.error("FALSE");
+      
+    }
+
     throw error;
   }
 };
+
+
 
 export const patientDetailsAPI = async (patientId) => {
   try {
@@ -491,10 +546,29 @@ export const editPatientAPI = async (patientId, updatedPatientData) => {
     });
     return response;
   } catch (error) {
+    const errorData = error.response?.data || {};
+    // Normalize field validation errors
+    if (isObjectWithFields(errorData)) {
+      error.validationErrors = errorData;
+      console.error("TRUE");
+      console.error(error.validationErrors)
+//       { SAMPLE ERROR.validationErrors
+//     "case_number": [
+//         "patient with this case number already exists."
+//     ],
+//     "date_of_birth": [
+//         "Date has wrong format. Use one of these formats instead: YYYY-MM-DD."
+//     ]
+// }
+
+    } else if (errorData.error) {
+      console.error("FALSE");
+      
+    }
+
     throw error;
   }
-}
-
+};
 
 export const loginApi = async (user_id, password) => {
   try {
@@ -535,7 +609,7 @@ export const addLabRecordsToPatient = async (patientId, labData) => {
 
 
 
-export const createClinicalNoteAPI = async (patientId,  case_number, newNoteData) => {
+export const createClinicalNoteAPI = async (patientId, case_number, newNoteData) => {
   try {
     const response = await axiosInstance.post(`/patients/${patientId}/notes/${case_number}/create`,
       newNoteData
@@ -609,7 +683,7 @@ export const uploadUSERSADMINImageAPI = async (userid, labFiles) => {
 
 
 export const assignBed = async (patientID, bedID, billingID) => {
-      //                PatientID   /  bedID   /   billingID
+  //                PatientID   /  bedID   /   billingID
 
   try {
     const response = await axiosInstance.post(`/assign-bed/${patientID}/${bedID}/${billingID}`);
@@ -652,7 +726,7 @@ export const fetchClinicalNotesByCodeAPI = async (code) => {
 };
 
 
-export const fetchPatientHistoryByIdAPI  = async (patientId, historyId) => {
+export const fetchPatientHistoryByIdAPI = async (patientId, historyId) => {
   try {
     const response = await axiosInstance.get(`/patients/${patientId}/history/id/${historyId}`);
     return response;
@@ -720,5 +794,14 @@ export const currentUserLogs = async () => {
   }
 };
 
+
+export const getBillingsByPatientAPI = async (patientId) => {
+  try {
+    const response = await axiosInstance.get(`/billings/patient/${patientId}`);
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
 
 export default axiosInstance;

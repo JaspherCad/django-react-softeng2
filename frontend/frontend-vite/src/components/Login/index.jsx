@@ -1,176 +1,127 @@
-import React, { useState, useContext } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { AuthContext } from '../../context/AuthContext';
-import hospitalLogo from '../../assets/react.svg';
-import styles from './Login.module.css';
+import React, { useState, useContext } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { AuthContext } from "../../context/AuthContext";
+import styles from "./Login.module.css";
 
 const Login = () => {
   const navigate = useNavigate();
   const { login } = useContext(AuthContext);
-  const [formData, setFormData] = useState({
-    userId: '',
-    password: '',
-    levelOfAccess: 'Admin'
-  });
-  const [error, setError] = useState({
-    userError: '',
-    passwordError: '',
-    apiError: '',
-  }); //FOR GENERAL ERRORS AND API RETURN ERRORS
 
+  // New individual state declarations
+  const [userId, setUserId] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError({
-      userError: '',
-      passwordError: '',
-      apiError: '',
-    });
-    
+  const [error, setError] = useState("");
+
+  const handleLogin = async () => {
     try {
-      const success = await login(
-        formData.userId,
-        formData.password,
-        formData.levelOfAccess
-      );
-
+      const success = await login(userId, password, "Admin");
       if (success) {
-        navigate('/dashboard');
+        navigate("/dashboard");
       }
     } catch (error) {
-      console.error(error)
-      if (error.code == "ERR_NETWORK") {
-        // setErrozr('Unable to connect to server. Please check your connection.');
-        setError((prevError) => ({
-          ...prevError,
-          apiError: 'Unable to connect to server. Please check your connection.'
-        }));
+      console.error("Login error details:", error);
+      if (error.code === "ERR_NETWORK") {
+        setError("Unable to connect to server. Please check your connection.");
       } else {
-        // setErrzor(error.response?.data?.message || 'An error occurred during login');
-        setError((prevError) => ({
-          ...prevError,
-          apiError: 'An error occurred during login'
-        }));
-        
+        setError("An error occurred during login. Check entered credentials");
       }
-      console.error('Login error details:', error);
     }
   };
 
-  const handleChange = (e) => {
-    setFormData((prevData) => ({
-      ...prevData, // Spread previous state
-      [e.target.name]: e.target.value // Update the specific field
-    }));
-
-    if (e.target.value === "" && e.target.name == "userId"){
-      setError((prevError) => ({
-        ...prevError,
-        userError: 'no null values'
-      }));
-    }else if (e.target.value === "ERROR" && e.target.name == "userId"){
-      setError((prevError) => ({
-        ...prevError,
-        userError: 'ERROR'
-      }));
-    }else if (isNaN(e.target.value) && e.target.name == "userId"){
-      setError((prevError) => ({
-        ...prevError,
-        userError: 'ID should be Integer'
-      }));
-    }else{
-      setError({
-        userError: '',
-        passwordError: '',
-        apiError: '',
-      });
-    }
-    
-
-
-    
-    
+  const handleForgotPassword = () => {
+    // Add your forgot password logic here
+    console.log("Forgot password clicked");
   };
-  
 
   return (
-    <div className={`${styles.loginContainer} d-flex align-items-center justify-content-center`}>
-      <div className="container-fluid p-0">
-        <div className="row m-0">
-          <div className="col-12 col-md-6 col-lg-5 mx-auto">
-            <div className={`card shadow-lg ${styles.loginCard}`}>
-              <div className="card-body p-4">
-                <div className="text-center mb-3">
-                  <img 
-                    src={hospitalLogo} 
-                    alt="Hospital Logo" 
-                    className="mb-2" 
-                    style={{ width: '80px', height: '80px' }} 
+    <div className={styles.loginContainer}>
+      <div className={styles.loginCard}>
+        <div className={styles.logoSection}>
+          <div className={styles.logoImageContainer}>
+            <img
+              src="./hospital_logo.png"
+              alt="Antipolo Centro De Medikal Hospital Logo"
+              className={styles.hospitalLogo}
+            />
+          </div>
+          <div className={styles.hospitalNameSmall}>
+            Antipolo Centro De Medikal Hospital
+          </div>
+          <h2 className={styles.systemTitle}>
+            Patient Information Management System
+          </h2>
+        </div>
+
+        <div className={styles.formContainer}>
+          {error && <div className="text-danger small">{error}</div>}
+
+          <div className={styles.formGroup}>
+            <label htmlFor="userId" className={styles.formLabel}>
+              User ID
+            </label>
+            <input
+              type="text"
+              id="userId"
+              value={userId}
+              onChange={(e) => setUserId(e.target.value)}
+              className={styles.formInput}
+              placeholder="Enter user ID"
+              required
+            />
+          </div>
+
+          <div className={styles.formGroup}>
+            <label htmlFor="password" className={styles.formLabel}>
+              Password
+            </label>
+            <div className={styles.passwordContainer}>
+              <input
+                type={showPassword ? "text" : "password"}
+                id="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className={styles.formInput}
+                placeholder="Enter password"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className={styles.passwordToggle}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? (
+                  <img
+                    src="./eye2.png"
+                    alt="Show password"
+                    style={{ width: "20px" }}
                   />
-                  <h1 className="h5 mb-1">Antipolo Centro De Medikal Hospital</h1>
-                  <h2 className="h6 text-muted">Patient Information Management System</h2>
-                </div>
+                ) : (
+                  <img
+                    src="./eye.png"
+                    alt="Hide password"
+                    style={{ width: "20px" }}
+                  />
+                )}
+              </button>
+            </div>
+          </div>
 
-                {error.apiError && <div className="text-danger small">{error.apiError}</div>}
+          <button
+            onClick={handleLogin}
+            className={styles.loginButton}
+            disabled={!userId || !password}
+          >
+            Login
+          </button>
 
-
-                <form onSubmit={handleSubmit}>
-                  <div className="mb-2">
-                    <label className="form-label small">User ID</label>
-                    <input
-                      type="text"
-                      name="userId"
-                      value={formData.userId}
-                      onChange={handleChange}
-                      className="form-control"
-                      required
-                    />
-                    
-                    {error.userError && <div className="text-danger small">{error.userError}</div>}
-                  </div>
-
-                  <div className="mb-2">
-                    <label className="form-label small">Password</label>
-                    <input
-                      type="password"
-                      name="password"
-                      value={formData.password}
-                      onChange={handleChange}
-                      className="form-control"
-                      required
-                    />
-                  </div>
-
-                  <div className="mb-3">
-                    <label className="form-label small">Level of Access</label>
-                    <select
-                      name="levelOfAccess"
-                      value={formData.levelOfAccess}
-                      onChange={handleChange}
-                      className="form-select"
-                    >
-                      <option value="Admin">Admin</option>
-                      <option value="Doctor">Doctor</option>
-                      <option value="Nurse">Nurse</option>
-                      <option value="Staff">Staff</option>
-                      <option value="Teller">Teller</option>
-                    </select>
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="btn btn-success w-100 mb-2"
-                  >
-                    Login
-                  </button>
-
-                  <div className="text-center">
-                    <Link to="/forgot-password" className="text-decoration-none small">
-                      Forgot Password?
-                    </Link>
-                  </div>
-                </form>
-              </div>
+          <div className={styles.forgotPasswordContainer}>
+            <div className="text-center">
+              <Link to="/forgot-password" className="text-decoration-none small">
+                Forgot Password?
+              </Link>
             </div>
           </div>
         </div>
@@ -179,4 +130,4 @@ const Login = () => {
   );
 };
 
-export default Login; 
+export default Login;

@@ -72,7 +72,10 @@ const Patients = () => {
       await fetchPatient()
       return response
     } catch (error) {
-      console.error(error)
+      console.error('Error adding patient:', error)
+      
+      // Re-throw the error so the form component can handle it
+      throw error;
     }
 
   }
@@ -84,7 +87,10 @@ const Patients = () => {
       //fetch patient
       await fetchPatient()
     } catch (error) {
-      console.error(error)
+      console.error('Error editing patient:', error)
+      
+      // Re-throw the error so the form component can handle it
+      throw error;
     }
 
   }
