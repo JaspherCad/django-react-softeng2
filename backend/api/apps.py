@@ -41,7 +41,7 @@ class ApiConfig(AppConfig):
 
             schedule(
                 'api.tasks.generate_hourly_bed_charges',  # Task function path
-                schedule_type='M',  # M = Minute
+                schedule_type='I',  # M = Minute
                 minutes=1,          # Run every 1 minute
                 repeats=-1                              # Infinite repeats
             )   

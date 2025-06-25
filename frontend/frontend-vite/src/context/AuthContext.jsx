@@ -24,11 +24,8 @@ export const AuthProvider = ({ children }) => {
   const checkAuth = async () => {
     try {
       const response = await checkAuthApi();
-      //set the user information using this api call
-      setUser({
-        name: response.data.user_id,
-        role: response.data.role,
-      });
+      console.log(response.data)
+      setUser(response.data);
       console.log("Check auth response:", response.data);
     } catch (error) {
       // Handle 401 errors specifically

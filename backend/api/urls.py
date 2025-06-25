@@ -44,6 +44,8 @@ urlpatterns = [
     path('patients/update/<int:pk>', views.patient_update, name='patient_update'),
     path('patients/<int:pk>/history', views.patient_history, name='patient-history'),
     path('patients/<int:pk>/history/id/<int:historyId>', views.patient_history_byId, name='patient-history'),
+    path('patients/report/', views.generate_report, name='generate_report'),
+
 
     path('patients/deactivate/<int:pk>', views.patient_deactivate, name='patient_deactivate'),
     # sEarch function for patient
@@ -56,7 +58,10 @@ urlpatterns = [
 
 
     #User Logs
-    path('userlogs', views.get_user_logs, name='user_userlog'),
+    path('userlogs/', views.get_user_logs, name='user_userlog'),
+    path('userlogs/<int:pk>/', views.get_user_logs_by_id, name='user_userlog_by_id'),
+    path('userlogs/all', views.get_user_logs_all, name='user_userlog_all'),
+
 
 
     #billing

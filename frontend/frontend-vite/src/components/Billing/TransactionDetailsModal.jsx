@@ -61,7 +61,7 @@ const TransactionDetailsModal = ({ transaction, onClose }) => {
             </div>
 
             <div className={styles.detailItem}>
-              <span className={styles.label}>Billing Items:</span>
+              <span className={styles.label}>Billing Itemss:</span>
               {transaction.billing_items && transaction.billing_items.length > 0 ? (
                 <ul className={styles.billingItemsList}>
                   {transaction.billing_items.map(item => (

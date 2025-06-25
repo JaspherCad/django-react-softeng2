@@ -13,6 +13,23 @@ import shortuuid
 from shortuuid.django_fields import ShortUUIDField
 from simple_history.models import HistoricalRecords
 
+from django.conf import settings                    # for settings.AUTH_USER_MODEL
+from django.contrib.contenttypes.models import ContentType
+
+
+
+def log_user_action(user, action, details=None):
+    
+    if user and user.is_authenticated:
+        try:
+            UserLog.objects.create(
+                user=user,
+                action=action,
+                details=details or {}
+            )
+        except Exception as e:
+            print(f"Failed to create log: {e}")
+            
 def generate_billing_code():
     #8-character random, URL-safe, no confusing chars I 1 0 0
     return shortuuid.ShortUUID(
@@ -117,7 +134,7 @@ class User(AbstractBaseUser, PermissionsMixin):
             self.groups.add(group)
 
 
-
+#save state save state
 
 
 
@@ -167,8 +184,48 @@ class Patient(models.Model):
     
     VISIT_TYPE_CHOICES = [
         ('New', 'New'),
-        ('Follow-up', 'Follow-up')
+        ('Old/Former', 'Old/Former'),
+        ('OPD', 'OPD'),
+        ('Follow-Up', 'Follow-Up')
     ]
+
+    DISPOSITION_CHOICES = [
+        ('Discharged', 'Discharged'),
+        ('Transferred', 'Transferred'),
+        ('HAMA', 'HAMA'),
+        ('Absconded', 'Absconded'),
+    ]
+    RESULT_CHOICES = [
+        ('Recovered', 'Recovered'),
+        ('Died', 'Died'),
+        ('48h_minus', '48 hours (-)'),
+        ('48h_plus', '48 hours (+)'),
+        ('Improved', 'Improved'),
+        ('Unimproved', 'Unimproved'),
+        ('Autopsy', 'Autopsy'),
+        ('No_autopsy', 'No Autopsy'),
+    ]
+    MEMBERSHIP_CHOICES = [
+        ('SSS', 'SSS'),
+        ('GSIS', 'GSIS'),
+        ('Both', 'Both'),
+    ]
+    GENDER_CHOICES = [
+        ('Male', 'Male'),
+        ('Female', 'Female'),
+        ('Other', 'Other'),
+    ]
+    ADMISSION_TYPE_CHOICES = [
+        ('Emergency', 'Emergency'),
+        ('Elective', 'Elective'),
+        ('New', 'New'),
+        ('Old/Former', 'Old/Former'),
+        ('OPD', 'OPD')
+    ]
+
+    # Ward and Bed
+    ward_service = models.CharField(max_length=100, null=True, blank=True)
+    bed_number = models.CharField(max_length=20, null=True, blank=True)
 
 
 
@@ -213,6 +270,10 @@ class Patient(models.Model):
     #Essential Fields for Emergency Admission
     name = models.CharField(max_length=255)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES)
+    type_of_admission = models.CharField(max_length=20,
+                                         choices=ADMISSION_TYPE_CHOICES,
+                                         null=True, blank=True)
+    
     admission_date = models.DateTimeField(null=True, blank=True)
     
 
@@ -220,6 +281,9 @@ class Patient(models.Model):
 
     # Optional Fields (Can Be Added Later)
     date_of_birth = models.DateField(null=True, blank=True) 
+    birth_place = models.CharField(max_length=255, null=True, blank=True)
+    gender = models.CharField(max_length=10, choices=GENDER_CHOICES, null=True, blank=True)
+    age = models.CharField(max_length=255, null=True, blank=True)
     address = models.CharField(max_length=255, null=True, blank=True)
     occupation = models.CharField(max_length=100, null=True, blank=True)
     civil_status = models.CharField(max_length=20, choices=CIVIL_STATUS_CHOICES, null=True, blank=True)
@@ -232,15 +296,22 @@ class Patient(models.Model):
     attending_physician = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, blank=True, related_name='patients'
     )
-    visit_type = models.CharField(max_length=20, null=True, blank=True, choices=[
-        ('New', 'New'), ('Follow-up', 'Follow-up')
-    ])
+    visit_type = models.CharField(max_length=20, null=True, blank=True, choices=VISIT_TYPE_CHOICES)
     consultation_datetime = models.DateTimeField(null=True, blank=True)
     referred_by = models.CharField(max_length=255, null=True, blank=True)
     next_consultation_date = models.DateTimeField(null=True, blank=True)
 
 
     discharge_date = models.DateTimeField(null=True, blank=True)
+    total_days = models.CharField(max_length=255, null=True, blank=True)
+
+
+    principal_diagnosis = models.CharField(max_length=255, null=True, blank=True)
+    other_diagnosis = models.CharField(max_length=255, null=True, blank=True)
+    principal_operation = models.CharField(max_length=255, null=True, blank=True)
+    other_operation = models.CharField(max_length=255, null=True, blank=True)
+
+
     phone = models.CharField(max_length=15, blank=True, null=True)
     # email = models.EmailField(blank=True, null=True)
     emergency_contact_name = models.CharField(max_length=255, blank=True, null=True)
@@ -252,7 +323,6 @@ class Patient(models.Model):
     #MEDICAL INFORMATION: should be sepeareted as MedicalHistory.. but merge as one for now.
     entry_date = models.DateTimeField(auto_now_add=True)
     notes = models.TextField()
-    diagnosed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
 
 
     height = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
@@ -268,6 +338,42 @@ class Patient(models.Model):
     icd_code = models.CharField(max_length=20, null=True, blank=True)
     diagnosis = models.TextField(null=True, blank=True)
     treatment = models.TextField(null=True, blank=True)
+
+
+    # New Fields
+    disposition = models.CharField(
+        max_length=20,
+        choices=DISPOSITION_CHOICES,
+        null=True,
+        blank=True
+    )
+    result = models.CharField(
+        max_length=20,
+        choices=RESULT_CHOICES,
+        null=True,
+        blank=True
+    )
+    membership = models.CharField(
+        max_length=10,
+        choices=MEMBERSHIP_CHOICES,
+        null=True,
+        blank=True
+    )
+
+    # Family Information
+    father_name = models.CharField(max_length=255, null=True, blank=True)
+    father_address = models.CharField(max_length=255, null=True, blank=True)
+    father_contact = models.CharField(max_length=15, null=True, blank=True)
+    mother_name = models.CharField(max_length=255, null=True, blank=True)
+    mother_address = models.CharField(max_length=255, null=True, blank=True)
+    mother_contact = models.CharField(max_length=15, null=True, blank=True)
+    spouse_name = models.CharField(max_length=255, null=True, blank=True)
+    spouse_address = models.CharField(max_length=255, null=True, blank=True)
+    spouse_contact = models.CharField(max_length=15, null=True, blank=True)
+
+
+    #NEW
+    
 
 
     #UPDATE! tracks historical record PER event. u know push get patch etc
@@ -301,7 +407,33 @@ class MedicalHistory(models.Model):
 
 
 
+# models.py
+class UserActionLog(models.Model):
+    ACTION_TYPES = [
+        ('CREATE', 'Create'),
+        ('READ', 'Read'),
+        ('UPDATE', 'Update'),
+        ('DELETE', 'Delete'),
+        ('OTHER', 'Other')
+    ]
+    
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='action_logs'
+    )
+    action_type = models.CharField(max_length=10, choices=ACTION_TYPES)
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object_id = models.PositiveIntegerField()
+    object_repr = models.CharField(max_length=200)
+    details = models.JSONField(default=dict, blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
 
+    def __str__(self):
+        return f"{self.user} {self.action_type} {self.object_repr}"
 
 
 

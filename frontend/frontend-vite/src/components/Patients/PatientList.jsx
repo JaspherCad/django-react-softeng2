@@ -47,6 +47,7 @@ const PatientList = ({
 
   const [searchTerm, setSearchTerm] = useState(''); //required for SearchBar
   const [isDropdownVisible, setIsDropdownVisible] = useState(false)  //required for SearchBar
+  const [selectedExisting, setSelectedExisting] = useState(null);
 
 
 
@@ -127,92 +128,124 @@ const PatientList = ({
     <div className={styles.patientManagement}>
       <div className={styles.container}>
         <div className={styles.tableContent}>
-          <h2>Patient Recordzs</h2>
-          <button className={styles.btnPrimary} onClick={handleAdmitClick}>
-            Admit New Patient
-          </button>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Patient ID</th>
-                <th>Name</th>
-                <th>Admission</th>
-                <th>Status</th>
-                <th>case_number</th>
-                <th colSpan="2">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {patients && patients.length > 0 ? (
-                patients.map((patient, index) => (
-                  <tr
-                    key={index}
-                    onClick={() => handleRowClick(patient)}
-                    className={styles.tableRow}
-                  >
-                    <td data-label="Patient Id">{patient.code}</td>
-                    <td data-label="Name">{patient.name}</td>
-                    <td data-label="Admission_Date">{patient.admission_date}</td>
-                    <td data-label="Status">{patient.status}</td>
-                    <td data-label="case_number">{patient.case_number}</td>
+          <div className={styles.headerRow}>
+            <h2>Patient Recordzs</h2>
+            <button className={styles.btnPrimary} onClick={handleAdmitClick}>
+              Admit New Patient
+            </button>
+          </div>
 
-                    <td data-label="Delete">
-                      <button
-                        className={styles.btnTrash}
-                        onClick={(e) => e.stopPropagation()} // STOPS row click when clicking button
-                      >
-                        <i className="fa fa-trash"></i>Delete
-                      </button>
+          {/* Search bar */}
+          <div className={styles.searchSection}>
+            <SearchBar
+              placeholder="Search patients"
+              searchApi={SearchPatientsApi}
+              onSelectSuggestion={item => {
+                setSearchTerm(item.code);
+                setSelectedExisting(item);
+                setIsDropdownVisible(false);
+                console.log(item.id)
+                navigate(`/patients/history/${item.id}`);
+              }}
+              suggestedOutput={['code', 'name']}
+              searchTerm={searchTerm}
+              setSearchTerm={setSearchTerm}
+              isDropdownVisible={isDropdownVisible}
+              setIsDropdownVisible={setIsDropdownVisible}
+              maxDropdownHeight="500px"
+            />
+          </div>
+
+
+          {/* Table */}
+          <div className={styles.tableContent}>
+
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th>Patient ID</th>
+                  <th>Name</th>
+                  <th>Admission</th>
+                  <th>Status</th>
+                  <th>case_number</th>
+                  <th colSpan="2">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {patients && patients.length > 0 ? (
+                  patients.map((patient, index) => (
+                    <tr
+                      key={index}
+                      
+                      className={styles.tableRow}
+                    >
+                      <td data-label="Patient Id">{patient.code}</td>
+                      <td data-label="Name">{patient.name}</td>
+                      <td data-label="Admission_Date">{patient.admission_date}</td>
+                      <td data-label="Status">{patient.status}</td>
+                      <td data-label="case_number">{patient.case_number}</td>
+
+                      <td data-label="View">
+                        <button
+                          className={styles.btnView}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleRowClick(patient)
+                          }} // STOPS row click when clicking button
+                        >
+                          <i className="fa fa-eye"></i>View
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="7" style={{ textAlign: 'center' }}>
+                      No patients found
                     </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="7" style={{ textAlign: 'center' }}>
-                    No patients found
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
+
+
+
+
+
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className={styles.pagination}>
+            <div className={styles.paginationInfo}>
+              Showing {(currentPage - 1) * PAGE_SIZE + 1}-{Math.min(currentPage * PAGE_SIZE, totalItems)} of {totalItems} patients
+            </div>
+
+            <div className={styles.paginationControls}>
+              <button
+                onClick={goToPrevPage}
+                disabled={currentPage === 1}
+                className={styles.paginationButton}
+              >
+                Previous
+              </button>
+
+              <span className={styles.pageInfo}>
+                Page {currentPage} of {totalPages}
+              </span>
+
+              <button
+                onClick={goToNextPage}
+                disabled={currentPage === totalPages}
+                className={styles.paginationButton}
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
       </div>
-
-
-
-
-
-
-      {/* Pagination Controls */}
-      {totalPages > 1 && (
-        <div className={styles.pagination}>
-          <div className={styles.paginationInfo}>
-            Showing {(currentPage - 1) * PAGE_SIZE + 1}-{Math.min(currentPage * PAGE_SIZE, totalItems)} of {totalItems} patients
-          </div>
-
-          <div className={styles.paginationControls}>
-            <button
-              onClick={goToPrevPage}
-              disabled={currentPage === 1}
-              className={styles.paginationButton}
-            >
-              Previous
-            </button>
-
-            <span className={styles.pageInfo}>
-              Page {currentPage} of {totalPages}
-            </span>
-
-            <button
-              onClick={goToNextPage}
-              disabled={currentPage === totalPages}
-              className={styles.paginationButton}
-            >
-              Next
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Patient Details Modal */}
       {/* WHERE SELECTED PATIENT FROM?????? the PARENT.. CRUD AND ALL UTILITY IS OVER THER>>> */}
@@ -265,7 +298,7 @@ const PatientList = ({
               <div className={styles.patientDetail}>
                 <strong>VIEW MEDICAL HISTORY</strong>
                 <button
-                  className={styles.historyBtn}         
+                  className={styles.historyBtn}
                   onClick={() => navigate(`/patients/history/${selectedPatient.id}`)}
                 >
                   VIEW&nbsp;MEDICAL&nbsp;HISTORY
@@ -289,6 +322,12 @@ const PatientList = ({
               <h2>Admit Patient</h2>
               <button className={styles.closeButton} onClick={closeAdmitModal}>&times;</button>
             </div>
+
+
+
+
+
+            
             <div className={styles.modalContent}>
 
 

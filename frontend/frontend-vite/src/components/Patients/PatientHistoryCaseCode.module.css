@@ -30,18 +30,20 @@
 /* --- note card tweaks ------------------------------------------ */
 .historyCard {
   background: #ffffff;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
   border-radius: 0.5rem;
   padding: 1rem 1.25rem;
   margin-bottom: 1rem;
   line-height: 1.35;
 }
+
 .noteHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 0.6rem;
 }
+
 .noteTypeBadge {
   font-weight: 600;
   font-size: 0.75rem;
@@ -52,10 +54,21 @@
 }
 
 /* colour-coded badges */
-.badgeDoctor     { background: #0284c7; }
-.badgeNurse      { background: #22c55e; }
-.badgeGeneral    { background: #6b7280; }
-.badgeMedication { background: #ef4444; }
+.badgeDoctor {
+  background: #0284c7;
+}
+
+.badgeNurse {
+  background: #22c55e;
+}
+
+.badgeGeneral {
+  background: #6b7280;
+}
+
+.badgeMedication {
+  background: #ef4444;
+}
 
 .noteDate {
   font-size: 0.75rem;
@@ -193,4 +206,29 @@
 
 .secondaryBtn:hover {
   background-color: #e0e0e0;
+}
+
+.labRedirect {
+  display: flex;
+  justify-content: center;
+  /* horizontal */
+  align-items: center;
+  /* vertical */
+  height: 200px;
+  /* or 100% / 100vh, whatever fits your layout */
+}
+
+/* your button styles */
+.secondaryBtn {
+  padding: 0.5rem 1rem;
+  background: var(--primary-600, #2563eb);
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 20px;
+  color: white;
+}
+
+.secondaryBtn:hover {
+  background: #e0e0e0;
 }

@@ -1,8 +1,9 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import styles from './Navbar.module.css';
 import hospitalLogo from '../../assets/react.svg';
+import '@fortawesome/fontawesome-free/css/all.min.css';
 
 const Navbar = () => {
   const { user, logout } = useContext(AuthContext);
@@ -12,20 +13,20 @@ const Navbar = () => {
 
   const navigationConfig = {
     Admin: [
-      { to: "/dashboard", label: "Dashboard" },
-      { to: "/patients", label: "View Patients" },
-      { to: "/patients/add", label: "Add Patient" },
-      { to: "/add-users", label: "Add Users" },
-      { to: "/user-logs", label: "User Logs" },
-      { to: "/reports", label: "Reports" },
-      { to: "/help", label: "Help" },
-      { to: "/about", label: "About" }
+      { to: "/dashboard", label: "Dashboard", icon: <i className="fas fa-home"></i> },
+      { to: "/patients", label: "View Patients", icon: <i className="fas fa-users"></i> },
+      { to: "/patients/add", label: "Add Patient", icon: <i className="fas fa-user-plus"></i> },
+      { to: "/add-users", label: "Add Users", icon: <i className="fas fa-users-cog"></i> },
+      { to: "/user-logs", label: "User Logs", icon: <i className="fas fa-file-alt"></i> },
+      { to: "/reports", label: "Reports", icon: <i className="fas fa-chart-bar"></i> },
+      { to: "/help", label: "Help", icon: <i className="fas fa-question-circle"></i> },
+      { to: "/about", label: "About", icon: <i className="fas fa-info-circle"></i> }
     ],
     Teller: [
-      { to: "/", label: "Billing" },
-      { to: "/Dashboard", label: "Services" }
+      { to: "/", label: "Billing", icon: <i className="fas fa-money-bill"></i> },
+      { to: "/Dashboard", label: "Services", icon: <i className="fas fa-boxes"></i> }
     ]
-  
+
     // ... other role configurations
   };
 
@@ -43,10 +44,14 @@ const Navbar = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
+  useEffect(() => {
+    console.log(user)
+  }, [])
+
   return (
     <>
       {/* Mobile Menu Toggle Button */}
-      <button 
+      <button
         className={styles.mobileMenuButton}
         onClick={toggleMobileMenu}
       >
@@ -63,29 +68,59 @@ const Navbar = () => {
 
       <div className={`${isMobileMenuOpen ? styles.sidebarOpen : ''} ${styles.sidebar}`}>
         {/* Mobile Close Button */}
-        <button 
+        <button
           className={styles.mobileCloseButton}
           onClick={toggleMobileMenu}
         >
           ×
         </button>
 
-        <div className={styles.sidebarHeader}>
-          <img src={hospitalLogo} alt="Hospital Logo" className={styles.logo} />
-          <h2 style={{ fontSize: '1.2rem', margin: 0 }}>ACDMH</h2>
+        {/* <div className={styles.sidebarHeader}>
+          {user && (
+            <>
+              <img src={hospitalLogo} alt="Hospital Logo" className={styles.logo} />
+              <h2 style={{ fontSize: '1.2rem', margin: 0 }}>{user.last_name},  {user.first_name} </h2>
+              <h3 style={{ fontSize: '1.2rem', margin: 0 }}>{user.role} </h3>
+
+            </>
+
+          )}
+
+        </div> */}
+        <div className={styles.userProfile}>
+          {user && (
+            <>
+              {/* User Profile Section */}
+              {/* User Avatar */}
+              <div className={styles.avatarContainer}>
+                <img
+                  src={user.images?.[0]?.file || '/default-avatar.png'}
+                  alt="User Avatar"
+                  className={styles.avatar}
+                />
+              </div>
+
+              {/* User Info */}
+              <div className={styles.userInfo}>
+                <h2>{user.last_name}, {user.first_name}</h2>
+                <p className={styles.role}>{user.role}</p>
+              </div>
+            </>
+          )}
         </div>
 
+
+        {/* Navigation Links */}
         <nav>
           <ul className={styles.navList}>
             {getNavLinks().map((link, index) => (
               <li key={index} className={styles.navItem}>
                 <Link
                   to={link.to}
-                  className={`${styles.navLink} ${
-                    location.pathname === link.to ? styles.active : ''
-                  }`}
-                  onClick={() => setIsMobileMenuOpen(false)} // Close menu on link click
+                  className={`${styles.navLink} ${location.pathname === link.to ? styles.active : ''}`}
+                  onClick={() => setIsMobileMenuOpen(false)}
                 >
+                  <span className={styles.icon}>{link.icon}</span>
                   {link.label}
                 </Link>
               </li>
@@ -93,10 +128,11 @@ const Navbar = () => {
           </ul>
         </nav>
 
+
         {user && (
           <div className={styles.sidebarFooter}>
             <span className={styles.userInfo}>
-              {user.name} ({user.role})
+              {user.id} ({user.role})
             </span>
             <button
               onClick={handleLogout}
