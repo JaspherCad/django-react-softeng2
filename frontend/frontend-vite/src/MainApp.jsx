@@ -13,6 +13,7 @@ import Laboratory from "./components/Laboratory";
 import InPatientRoom from "./components/InPatientRoom";
 import AdminPage from "./components/AdminPage";
 import ReportPage from "./components/Reports";
+import HelpPage from "./components/Help";
 import DatabaseBackup from "./components/BackUp/index.jsx";
 
 import UserManagement from "./components/UserManagement/UserManagement";
@@ -105,6 +106,8 @@ const MainApp = () => {
           <Route path="/laboratory/*" element={<Laboratory />} />
 
           <Route path="/reports/*" element={<ReportPage />} />
+
+          <Route path="/help_about/*" element={<HelpPage />} />
         </Route>
       </Route>
       {/* AUTHENTICATED ROUTE */}
