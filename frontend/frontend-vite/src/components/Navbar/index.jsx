@@ -26,26 +26,25 @@ const Navbar = () => {
       {
         to: "/user",
         label: "Users",
-        icon: <i className="fas fa-users-cog"></i>,
+        icon: <i className="fas fa-user-cog"></i>,
       },
       {
         to: "/billing",
         label: "Billing",
-        icon: <i className="fas fa-users-cog"></i>,
+        icon: <i className="fas fa-file-invoice-dollar"></i>,
       },
       {
         to: "/inpatientroom",
         label: "Rooms",
-        icon: <i className="fas fa-users-cog"></i>,
+        icon: <i className="fas fa-procedures"></i>,
       },
-
       {
         to: "/reports",
         label: "Reports",
         icon: <i className="fas fa-chart-bar"></i>,
       },
       {
-        to: "/help",
+        to: "/help_about",
         label: "Help & About",
         icon: <i className="fas fa-question-circle"></i>,
       },
@@ -68,7 +67,7 @@ const Navbar = () => {
         icon: <i className="fas fa-chart-bar"></i>,
       },
       {
-        to: "/help",
+        to: "/help_about",
         label: "Help & About",
         icon: <i className="fas fa-question-circle"></i>,
       },
@@ -86,17 +85,12 @@ const Navbar = () => {
         icon: <i className="fas fa-users"></i>,
       },
       {
-        to: "/user",
-        label: "Users",
-        icon: <i className="fas fa-users-cog"></i>,
-      },
-      {
         to: "/reports",
         label: "Reports",
         icon: <i className="fas fa-chart-bar"></i>,
       },
       {
-        to: "/help",
+        to: "/help_about",
         label: "Help & About",
         icon: <i className="fas fa-question-circle"></i>,
       },
@@ -116,17 +110,17 @@ const Navbar = () => {
       {
         to: "/user",
         label: "Users",
-        icon: <i className="fas fa-users-cog"></i>,
+        icon: <i className="fas fa-user-cog"></i>,
       },
       {
         to: "/billing",
         label: "Billing",
-        icon: <i className="fas fa-users-cog"></i>,
+        icon: <i className="fas fa-file-invoice-dollar"></i>,
       },
       {
         to: "/inpatientroom",
         label: "Rooms",
-        icon: <i className="fas fa-users-cog"></i>,
+        icon: <i className="fas fa-procedures"></i>,
       },
       {
         to: "/reports",
@@ -134,7 +128,7 @@ const Navbar = () => {
         icon: <i className="fas fa-chart-bar"></i>,
       },
       {
-        to: "/help",
+        to: "/help_about",
         label: "Help & About",
         icon: <i className="fas fa-question-circle"></i>,
       },
@@ -149,15 +143,15 @@ const Navbar = () => {
       {
         to: "/billing",
         label: "Billing",
-        icon: <i className="fas fa-users-cog"></i>,
+        icon: <i className="fas fa-file-invoice-dollar"></i>,
       },
       {
         to: "/inpatientroom",
         label: "Rooms",
-        icon: <i className="fas fa-users-cog"></i>,
+        icon: <i className="fas fa-procedures"></i>,
       },
       {
-        to: "/help",
+        to: "/help_about",
         label: "Help & About",
         icon: <i className="fas fa-question-circle"></i>,
       },
