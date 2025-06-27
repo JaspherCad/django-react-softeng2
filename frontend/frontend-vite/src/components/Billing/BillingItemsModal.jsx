@@ -62,7 +62,6 @@ const BillingItemsModal = ({ closeModal, billingItem, loading, error, billId, bi
       if (isEditMode) {
         console.log('🤫EDITING billing:', payload);
         
-        alert(`http://127.0.0.1:8000/api/billings/${billCode}/items/${billingItem.id}/edit`)
         const response = await editBillingItemApi(billCode, billingItem.id, payloadForEdit);
         if (response.status === 200 || response.status === 201) {
           setReloadCount((prev) => prev + 1);

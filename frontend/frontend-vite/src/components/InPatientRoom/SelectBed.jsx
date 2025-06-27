@@ -56,7 +56,7 @@ export default function SelectBed({ selectedBed, setSelectedBed, selectedRoom, s
     console.log('Room:', selectedRoom)
     console.log('Bed:', selectedBed)
     //                PatientID   /  bedID   /   billingID
-    console.log(`http://127.0.0.1:8000/api/assign-bed/${fullBilling.patient.id}/${selectedBed.id}/${fullBilling.id}`)
+    
     try {
       const { data } = await assignBed(fullBilling.patient.id, selectedBed.id, fullBilling.id);
       console.log('Assignment successful:', data);

@@ -132,7 +132,7 @@ const Navbar = () => {
         {user && (
           <div className={styles.sidebarFooter}>
             <span className={styles.userInfo}>
-              {user.id} ({user.role})
+              {user.user_id} ({user.role})
             </span>
             <button
               onClick={handleLogout}

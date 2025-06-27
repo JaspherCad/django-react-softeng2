@@ -19,6 +19,7 @@ export default function AddUserModal({ onClose, onUserAdded }) {
     const [imageFile, setImageFile] = useState(null);
     const [previewUrl, setPreviewUrl] = useState(null);
     const [errors, setErrors] = useState({});
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleChange = e => {
         const { name, value } = e.target;
@@ -33,6 +34,25 @@ export default function AddUserModal({ onClose, onUserAdded }) {
     const handleImageChange = e => {
         const file = e.target.files[0];
         if (file) {
+            // Validate file type
+            const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+            if (!validTypes.includes(file.type)) {
+                setErrors(prev => ({ ...prev, image: 'Please select a valid image file (JPEG, PNG, GIF)' }));
+                return;
+            }
+            
+            // Validate file size (5MB max)
+            const maxSize = 5 * 1024 * 1024; // 5MB
+            if (file.size > maxSize) {
+                setErrors(prev => ({ ...prev, image: 'Image size must be less than 5MB' }));
+                return;
+            }
+            
+            // Clear image error if valid
+            if (errors.image) {
+                setErrors(prev => ({ ...prev, image: null }));
+            }
+            
             setImageFile(file);
             const reader = new FileReader();
             reader.onloadend = () => setPreviewUrl(reader.result);
@@ -44,7 +64,7 @@ export default function AddUserModal({ onClose, onUserAdded }) {
         const newErrors = {};
 
         // Required fields validation
-        ['user_id', 'password', 'role', 'department', 'first_name', 'last_name', 'birthdate'].forEach(field => {
+        ['user_id', 'password', 'role', 'department', 'first_name', 'last_name', 'address', 'phone', 'birthdate'].forEach(field => {
             if (!formData[field]) {
                 const fieldName = field.replace('_', ' ').toUpperCase();
                 newErrors[field] = `${fieldName} is required`;
@@ -73,26 +93,56 @@ export default function AddUserModal({ onClose, onUserAdded }) {
 
     const handleSubmit = async e => {
         e.preventDefault();
-        console.log(1)
+        console.log('Form submission started');
+        
         if (!validateForm()) return;
+
+        setIsSubmitting(true);
+        setErrors({}); // Clear previous errors
 
         try {
             // 1) Create user
             const { data } = await axiosInstance.post('/user/register', formData);
             const newUser = data;
-            console.log(newUser)
+            console.log('User created:', newUser);
+            
             // 2) If image selected, upload
             if (imageFile) {
-                const form = new FormData();
-                form.append('file', imageFile);
-                await uploadUSERSADMINImageAPI(newUser.id, form);
+                console.log('Attempting to upload image for user ID:', newUser.id);
+                console.log('Image file details:', {
+                    name: imageFile.name,
+                    size: imageFile.size,
+                    type: imageFile.type
+                });
+                
+                const imageFormData = new FormData();
+                imageFormData.append('file', imageFile);
+                imageFormData.append('description', 'User profile image'); // Optional description
+                
+                // Debug: Log FormData contents
+                for (let pair of imageFormData.entries()) {
+                    console.log('FormData entry:', pair[0], pair[1]);
+                }
+                
+                try {
+                    const uploadResponse = await uploadUSERSADMINImageAPI(newUser.id, imageFormData);
+                    console.log('Image upload response:', uploadResponse);
+                } catch (imageError) {
+                    console.error('Image upload failed:', imageError);
+                    console.error('Image upload error response:', imageError.response);
+                    // Don't fail the entire operation if just image upload fails
+                    setErrors({ apiError: 'User created but image upload failed. You can upload it later.' });
+                }
             }
 
             // 3) Notify parent and close
             onUserAdded(newUser);
             //   onClose();
         } catch (err) {
+            console.error('User creation failed:', err);
             setErrors({ apiError: err.response?.data?.message || 'Failed to add user' });
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -134,16 +184,7 @@ export default function AddUserModal({ onClose, onUserAdded }) {
                             {errors.first_name && <div className={styles.error}>{errors.first_name}</div>}
                         </div>
 
-                        {/* Middle Name */}
-                        <div className={styles.field}>
-                            <label className={styles.label}>Middle Name (optional)</label>
-                            <input
-                                name="middle_name"
-                                value={formData.middle_name}
-                                onChange={handleChange}
-                                className={styles.input}
-                            />
-                        </div>
+                        
 
                         {/* Address */}
                         <div className={styles.field}>
@@ -266,6 +307,7 @@ export default function AddUserModal({ onClose, onUserAdded }) {
                             onChange={handleImageChange}
                             className={styles.input}
                         />
+                        {errors.image && <div className={styles.error}>{errors.image}</div>}
                     </div>
 
                     {previewUrl && (
@@ -280,8 +322,8 @@ export default function AddUserModal({ onClose, onUserAdded }) {
                         <button type="button" onClick={onClose} className={styles.cancel}>
                             Cancel
                         </button>
-                        <button type="submit" className={styles.submit}>
-                            Register
+                        <button type="submit" className={styles.submit} disabled={isSubmitting}>
+                            {isSubmitting ? 'Registering...' : 'Register'}
                         </button>
                     </div>
                 </form>

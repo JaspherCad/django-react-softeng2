@@ -172,7 +172,7 @@ class Patient(models.Model):
         ('Inactive', 'Inactive'),
         ('Deleted', 'Deleted'),
     ]
-
+    
 
     CIVIL_STATUS_CHOICES = [
         ('Single', 'Single'),
@@ -378,6 +378,23 @@ class Patient(models.Model):
     #UPDATE! tracks historical record PER event. u know push get patch etc
     history = HistoricalRecords()
 
+
+    #archiving
+    archived = models.BooleanField(default=False)
+
+
+    def deactivate_patient(self):
+        self.is_active = 'Inactive'
+        self.save()
+
+    def archive(self):
+        """Soft-archive this patient."""
+        self.archived = True
+        self.save()
+
+    def unarchive(self):
+        self.archived = False
+        self.save()
     def deactivate_patient(self):
         self.is_active = 'Inactive'
         self.save()
