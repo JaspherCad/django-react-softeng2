@@ -227,8 +227,10 @@ urlpatterns = [
 
 
 
-
-    
+    #BACKUp
+    path('backup/history/', views.get_backup_history, name='backup_history'),
+    path('backup/restore/<int:backup_id>/', views.trigger_restore, name='trigger_restore'),
+    path('backup/', views.trigger_backup, name='trigger_backup'),
 
 
 ]   

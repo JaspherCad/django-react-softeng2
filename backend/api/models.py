@@ -959,7 +959,23 @@ class BedAssignment(models.Model):
 
 
 
+class BackupHistory(models.Model):
+    backup_file = models.CharField(max_length=255)  #to .sql file
+    media_backup = models.CharField(max_length=255)  #to .zip file
+    backup_location = models.CharField(
+        max_length=255,
+        default='local'
+    )  # 'local', 'network_drive', 'usb', etc.
+    timestamp = models.DateTimeField(auto_now_add=True)
+    performed_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True
+    )
+    notes = models.TextField(blank=True)  
 
+    def __str__(self):
+        return f"Backup {self.id} - {self.timestamp}"
 
 
 
