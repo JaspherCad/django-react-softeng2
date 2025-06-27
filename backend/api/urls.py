@@ -9,6 +9,9 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 #api/
 urlpatterns = [
 
+    path("backup/export", views.export_db, name="export_db"),
+    path("backup/import", views.import_db, name="import_db"),
+    
     path('server-time', views.get_server_time, name='server-init-time'),
 
     path('about', views.about, name='aboutss'),

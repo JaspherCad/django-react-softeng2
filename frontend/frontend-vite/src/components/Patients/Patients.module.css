@@ -66,6 +66,27 @@
   display: inline-block;
 }
 
+.buttonGroup {
+  display: flex;
+  justify-content: center; /* center buttons horizontally */
+  gap: 10px; /* space between buttons */
+  margin: 20px 0; /* optional: vertical margin around the row */
+}
+
+.btnOption {
+  padding: 10px 20px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.btnOption:hover {
+  background-color: #0056b3;
+}
+
 .btnEdit {
   background-color: var(--primary-color);
   color: white;
@@ -83,6 +104,22 @@
 
 .btnTrash:hover {
   background-color: #c82333;
+}
+
+.historyBtn {
+  display: block; /* makes it respect margin auto */
+  margin: 20px auto; /* top/bottom 20px, left/right auto centers it */
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 10px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.historyBtn:hover {
+  background-color: #218838;
 }
 
 /* Responsive Table */
@@ -155,7 +192,7 @@
 }
 
 .patientForm button {
-  background-color: #4CAF50;
+  background-color: #4caf50;
   color: white;
   padding: 10px 20px;
   border: none;
@@ -434,17 +471,16 @@
 
 .searchSection {
   display: flex;
-  
+
   width: 100%;
   justify-content: space-between;
-
 }
 
-.searchSection>*:nth-child(1) {
+.searchSection > *:nth-child(1) {
   flex: 0 0 40%;
 }
 
-.searchSection>*:nth-child(2) {
+.searchSection > *:nth-child(2) {
   flex: 0 0 15%;
 }
 

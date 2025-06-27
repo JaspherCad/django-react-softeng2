@@ -1,11 +1,15 @@
-import React, { useContext, useState } from 'react';
-import styles from './Patients.module.css';
-import { useNavigate, useParams } from 'react-router-dom'
-import { archiveOrUnarchivePatient, listOfPatientAPI, SearchPatientsApi } from '../../api/axios';
-import SearchBar from '../AngAtingSeachBarWIthDropDown';
-import Pagination from '../Common/Pagination';
-import { AuthContext } from '../../context/AuthContext';
-import ArchivedPatients from './ArchivedPatients';
+import React, { useContext, useState } from "react";
+import styles from "./Patients.module.css";
+import { useNavigate, useParams } from "react-router-dom";
+import {
+  archiveOrUnarchivePatient,
+  listOfPatientAPI,
+  SearchPatientsApi,
+} from "../../api/axios";
+import SearchBar from "../AngAtingSeachBarWIthDropDown";
+import Pagination from "../Common/Pagination";
+import { AuthContext } from "../../context/AuthContext";
+import ArchivedPatients from "./ArchivedPatients";
 
 //EACH PATIENT PER .MAP() has this
 //     name: '',
@@ -20,7 +24,6 @@ import ArchivedPatients from './ArchivedPatients';
 //     emergency_contact_name: '',
 //     emergency_contact_phone: '',
 //     is_active: 'Active'
-
 
 const PatientList = ({
   patients,
@@ -37,16 +40,10 @@ const PatientList = ({
   setTotalItems,
   setTotalPages,
 
-  PAGE_SIZE }) => {
-
-  const navigate = useNavigate()
+  PAGE_SIZE,
+}) => {
+  const navigate = useNavigate();
   // const [selectedPatient, setSelectedPatient] = useState(null); //move to upper state so we can reuse for edit, specific views, etc
-
-
-
-
-
-
 
   const { user, logout } = useContext(AuthContext);
 
@@ -57,23 +54,17 @@ const PatientList = ({
   const [patientToArchive, setPatientToArchive] = useState(null);
   const [showArchivesModal, setShowArchivesModal] = useState(false);
 
-  const [searchTerm, setSearchTerm] = useState(''); //required for SearchBar
-  const [isDropdownVisible, setIsDropdownVisible] = useState(false)  //required for SearchBar
+  const [searchTerm, setSearchTerm] = useState(""); //required for SearchBar
+  const [isDropdownVisible, setIsDropdownVisible] = useState(false); //required for SearchBar
   const [selectedExisting, setSelectedExisting] = useState(null);
-
-
 
   const [seletecExistingPatient, setSeletecExistingPatient] = useState(null); // 'existing' or 'new'
 
-
-
-
-  console.log(patients)
+  console.log(patients);
   const handleRowClick = (patient) => {
     setSelectedPatient(patient); //send this info to parent
     setShowDetailsModal(true);
   };
-
 
   if (loading) {
     return <div className={styles.loading}>Loading patients...</div>;
@@ -95,10 +86,9 @@ const PatientList = ({
   const navigateForm = (formType) => {
     // formType: 'inpatient' or 'outpatient'
     // for existing vs new, you might pass patient id or not
-    console.log(`navigating to ${formType}`)
-    navigate('#');
+    console.log(`navigating to ${formType}`);
+    navigate("#");
   };
-
 
   const closeAdmitModal = () => {
     setShowAdmitModal(false);
@@ -111,30 +101,30 @@ const PatientList = ({
   };
 
   const handleSelectedItem = (selectedPatient) => {
-    console.log(selectedPatient.id)
-    setSearchTerm(selectedPatient.code)
-    setSeletecExistingPatient(selectedPatient)
-    setIsDropdownVisible(false)
-  }
+    console.log(selectedPatient.id);
+    setSearchTerm(selectedPatient.code);
+    setSeletecExistingPatient(selectedPatient);
+    setIsDropdownVisible(false);
+  };
 
   const handleEditClick = (patient, e) => {
     e.stopPropagation(); // Prevent row click when clicking button
     setSelectedPatient(patient);
     navigate(`/patients/edit/${patient.id}`);
-  }
+  };
 
   const handleArchive = (patient) => {
     setPatientToArchive(patient);
     setShowArchiveModal(true);
-
   };
-
-
 
   const confirmArchive = async () => {
     if (patientToArchive) {
       try {
-        const response = await archiveOrUnarchivePatient(patientToArchive.id, true);
+        const response = await archiveOrUnarchivePatient(
+          patientToArchive.id,
+          true
+        );
         if (response.status === 200) {
           setShowArchiveModal(false);
           setPatientToArchive(null);
@@ -144,13 +134,12 @@ const PatientList = ({
           setTotalItems(response.data.count || 0);
           setTotalPages(Math.ceil(response.data.count / PAGE_SIZE));
 
-
           if (onPageChange) {
             onPageChange(currentPage); // Refresh the current page
           }
         }
       } catch (error) {
-        console.error('Error archiving patient:', error);
+        console.error("Error archiving patient:", error);
         // You might want to show an error message to the user here
         // For example: setError('Failed to archive patient. Please try again.');
       }
@@ -176,14 +165,6 @@ const PatientList = ({
         <div className={styles.tableContent}>
           <div className={styles.headerRow}>
             <h2>Patient Records</h2>
-            {user.role === 'Admin' && (
-              <button
-                className={styles.btnViewArchives}
-                onClick={handleShowArchives}
-              >
-                <i className="fa fa-archive"></i> View Archives
-              </button>
-            )}
           </div>
 
           {/* Search bar */}
@@ -191,72 +172,77 @@ const PatientList = ({
             <SearchBar
               placeholder="🔍Search patients"
               searchApi={SearchPatientsApi}
-              onSelectSuggestion={item => {
+              onSelectSuggestion={(item) => {
                 setSearchTerm(item.code);
                 setSelectedExisting(item);
                 setIsDropdownVisible(false);
-                console.log(item.id)
+                console.log(item.id);
                 navigate(`/patients/history/${item.id}`);
               }}
-              suggestedOutput={['code', 'name']}
+              suggestedOutput={["code", "name"]}
               searchTerm={searchTerm}
               setSearchTerm={setSearchTerm}
               isDropdownVisible={isDropdownVisible}
               setIsDropdownVisible={setIsDropdownVisible}
               maxDropdownHeight="500px"
             />
-            <button className={styles.btnAddNewPatient} onClick={handleAdmitClick}>
-              Admit New Patient
+            {user.role === "Admin" && (
+              <button
+                className={styles.btnViewArchives}
+                onClick={handleShowArchives}
+              >
+                <i className="fa fa-archive"></i>View Archives
+              </button>
+            )}
+            <button
+              className={styles.btnAddNewPatient}
+              onClick={handleAdmitClick}
+            >
+              + Admit New Patient
             </button>
           </div>
 
-
           {/* Table */}
           <div className={styles.tableContent}>
-
-            {user.role === 'Admin' ?
-              (<>
+            {user.role === "Admin" ? (
+              <>
                 <table className={styles.table}>
                   <thead>
                     <tr>
                       <th>Patient ID</th>
                       <th>Name</th>
-                      <th>Admission</th>
+                      <th>Birth Date</th>
                       <th>Status</th>
-                      <th>case_number</th>
-                      <th >Action</th>
+                      <th>View</th>
                       <th>Archive</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {patients && patients.length > 0 ?
+                    {patients && patients.length > 0 ? (
                       patients.map((patient, index) => (
-                        <tr
-                          key={index}
-                          className={styles.tableRow}
-                        >
+                        <tr key={index} className={styles.tableRow}>
                           <td data-label="Patient Id">{patient.code}</td>
                           <td data-label="Name">{patient.name}</td>
-                          <td data-label="Admission_Date">{patient.admission_date}</td>
+                          <td data-label="Birth Date">
+                            {patient.date_of_birth}
+                          </td>
                           <td data-label="Status">{patient.status}</td>
-                          <td data-label="case_number">{patient.case_number}</td>
-
                           <td data-label="View">
                             <button
                               className={styles.btnView}
                               onClick={(e) => {
-                                e.stopPropagation()
-                                handleRowClick(patient)
+                                e.stopPropagation();
+                                handleRowClick(patient);
                               }}
                             >
-                              <i className="fa fa-eye"></i>View
+                              <i className="fa fa-eye"></i> View
                             </button>
                           </td>
 
                           <td data-label="Delete">
                             <button
                               className={styles.btnArchive}
-                              onClick={e => {
+                              onClick={(e) => {
                                 e.stopPropagation();
                                 handleArchive(patient);
                               }}
@@ -266,85 +252,60 @@ const PatientList = ({
                           </td>
                         </tr>
                       ))
-                      :
+                    ) : (
                       <tr>
-                        <td colSpan="7" style={{ textAlign: 'center' }}>
+                        <td colSpan="7" style={{ textAlign: "center" }}>
                           No patients found
                         </td>
                       </tr>
-                    }
+                    )}
                   </tbody>
                 </table>
-              </>)
-              :
-              (
-                <>
-                  <table className={styles.table}>
-                    <thead>
-                      <tr>
-                        <th>Patient ID</th>
-                        <th>Name</th>
-                        <th>Admission</th>
-                        <th>Status</th>
-                        <th>case_number</th>
-                        <th colSpan="2">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {patients && patients.length > 0 ?
-                        patients.map((patient, index) => (
-                          <tr
-                            key={index}
-                            className={styles.tableRow}
-                          >
-                            <td data-label="Patient Id">{patient.code}</td>
-                            <td data-label="Name">{patient.name}</td>
-                            <td data-label="Admission_Date">{patient.admission_date}</td>
-                            <td data-label="Status">{patient.status}</td>
-                            <td data-label="case_number">{patient.case_number}</td>
-
-                            <td data-label="View">
-                              <button
-                                className={styles.btnView}
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleRowClick(patient)
-                                }}
-                              >
-                                <i className="fa fa-eye"></i>View
-                              </button>
-                            </td>
-                          </tr>
-                        ))
-                        :
-                        <tr>
-                          <td colSpan="7" style={{ textAlign: 'center' }}>
-                            No patients found
+              </>
+            ) : (
+              <>
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th>Patient ID</th>
+                      <th>Name</th>
+                      <th>Status</th>
+                      <th colSpan="2">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {patients && patients.length > 0 ? (
+                      patients.map((patient, index) => (
+                        <tr key={index} className={styles.tableRow}>
+                          <td data-label="Patient Id">{patient.code}</td>
+                          <td data-label="Name">{patient.name}</td>
+                          <td data-label="Status">{patient.status}</td>
+                          <td data-label="View">
+                            <button
+                              className={styles.btnView}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRowClick(patient);
+                              }}
+                            >
+                              <i className="fa fa-eye"></i> View
+                            </button>
                           </td>
                         </tr>
-                      }
-                    </tbody>
-                  </table>
-                </>
-              )
-            }
-
-
-
-
-
-
-
-
-
-
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="7" style={{ textAlign: "center" }}>
+                          No patients found
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </>
+            )}
           </div>
         </div>
-
-
-
-
-
 
         {/* Pagination */}
         <Pagination
@@ -364,14 +325,31 @@ const PatientList = ({
       {/* WHERE SELECTED PATIENT FROM?????? the PARENT.. CRUD AND ALL UTILITY IS OVER THER>>> */}
       {showDetailsModal && selectedPatient && (
         <div className={styles.modalOverlay} onClick={closeDetailsModal}>
-          <div className={styles.modal} onClick={e => e.stopPropagation()}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <h2>Patient Details</h2>
-              <button className={styles.closeButton} onClick={closeDetailsModal}>&times;</button>
+              <button
+                className={styles.closeButton}
+                onClick={closeDetailsModal}
+              >
+                &times;
+              </button>
             </div>
             <div className={styles.modalContent}>
               <div className={styles.patientDetail}>
                 <strong>Name:</strong> {selectedPatient.name}
+              </div>
+              <div className={styles.patientDetail}>
+                <strong>Patient ID:</strong> {selectedPatient.code}
+              </div>
+              <div className={styles.patientDetail}>
+                <strong>Date of Birth:</strong> {selectedPatient.date_of_birth}
+              </div>
+              <div className={styles.patientDetail}>
+                <strong>Age:</strong> {selectedPatient.age}
+              </div>
+              <div className={styles.patientDetail}>
+                <strong>Gender:</strong> {selectedPatient.gender}
               </div>
               <div className={styles.patientDetail}>
                 <strong>Date of Birth:</strong> {selectedPatient.date_of_birth}
@@ -380,52 +358,24 @@ const PatientList = ({
                 <strong>Address:</strong> {selectedPatient.address}
               </div>
               <div className={styles.patientDetail}>
-                <strong>Admission Date:</strong> {selectedPatient.admission_date}
-              </div>
-              <div className={styles.patientDetail}>
-                <strong>Discharge Date:</strong> {selectedPatient.discharge_date || 'N/A'}
-              </div>
-              <div className={styles.patientDetail}>
                 <strong>Status:</strong> {selectedPatient.status}
-              </div>
-              <div className={styles.patientDetail}>
-                <strong>Current Condition:</strong> {selectedPatient.current_condition}
               </div>
               <div className={styles.patientDetail}>
                 <strong>Phone:</strong> {selectedPatient.phone}
               </div>
-              <div className={styles.patientDetail}>
-                <strong>Email:</strong> {selectedPatient.email}
-              </div>
-              <div className={styles.patientDetail}>
-                <strong>Emergency Contact:</strong> {selectedPatient.emergency_contact_name}
-              </div>
-              <div className={styles.patientDetail}>
-                <strong>Emergency Phone:</strong> {selectedPatient.emergency_contact_phone}
-              </div>
-              <div className={styles.patientDetail}>
-                <strong>Active Status:</strong> {selectedPatient.is_active}
-              </div>
 
-
-              <div className={styles.patientDetail}>
-                <strong>VIEW MEDICAL HISTORY</strong>
-                <button
-                  className={styles.historyBtn}
-                  onClick={() => navigate(`/patients/history/${selectedPatient.id}`)}
-                >
-                  VIEW&nbsp;MEDICAL&nbsp;HISTORY
-                </button>
-
-              </div>
-
+              <button
+                className={styles.historyBtn}
+                onClick={() =>
+                  navigate(`/patients/history/${selectedPatient.id}`)
+                }
+              >
+                View Medical Record History
+              </button>
             </div>
           </div>
         </div>
       )}
-
-
-
 
       {/* Admit Modal: Step 1 choose existing/new, Step 2 choose form and (if existing) search patient */}
       {showAdmitModal && (
@@ -433,79 +383,78 @@ const PatientList = ({
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <h2>Admit Patient</h2>
-              <button className={styles.closeButton} onClick={closeAdmitModal}>&times;</button>
+              <button className={styles.closeButton} onClick={closeAdmitModal}>
+                &times;
+              </button>
             </div>
 
-
-
-
-
-
             <div className={styles.modalContent}>
-
-
-
-
-
               {!admitStep ? (
-                <>
-                  <button className={styles.btnOption} onClick={() => choosePatientType('existing')}>
+                <div className={styles.buttonGroup}>
+                  <button
+                    className={styles.btnOption}
+                    onClick={() => choosePatientType("existing")}
+                  >
                     Existing Patient
                   </button>
-                  <button className={styles.btnOption} onClick={() => choosePatientType('new')}>
+                  <button
+                    className={styles.btnOption}
+                    onClick={() => choosePatientType("new")}
+                  >
                     New Patient
                   </button>
-                </>
+                </div>
               ) : (
                 <>
-                  {admitStep === 'existing' && (
+                  {admitStep === "existing" && (
                     <SearchBar
                       // data={dummyBillingData}
-                      placeholder={"IDKsss"}
+                      placeholder={"Search patient"}
                       searchApi={SearchPatientsApi}
                       // accept the argument passed by the SearchBar component (item) when onSelectSuggestion is invoked
                       //to accept *-*
-                      onSelectSuggestion={(filtered) => handleSelectedItem(filtered)}
-                      suggestedOutput={['code', 'name']}
+                      onSelectSuggestion={(filtered) =>
+                        handleSelectedItem(filtered)
+                      }
+                      suggestedOutput={["code", "name"]}
                       searchTerm={searchTerm}
                       setSearchTerm={setSearchTerm}
                       isDropdownVisible={isDropdownVisible}
                       setIsDropdownVisible={setIsDropdownVisible}
                       maxDropdownHeight="500px"
-
                     />
                   )}
-
-
-
-
+                  <p> </p>
                   <p>Choose form type:</p>
-                  <button
-                    className={styles.btnOption}
-                    onClick={() => {
-                      const url = admitStep === 'existing'
-                        ? `inpatient/edit/${seletecExistingPatient.id}`
-                        : `inpatient/add`
-                      navigate(url);
-                      closeAdmitModal();
-                    }}
-                  >
-                    Inpatient
-                  </button>
+                  <div className={styles.buttonGroup}>
+                    <button
+                      className={styles.btnOption}
+                      onClick={() => {
+                        const url =
+                          admitStep === "existing"
+                            ? `inpatient/edit/${seletecExistingPatient.id}`
+                            : `inpatient/add`;
+                        navigate(url);
+                        closeAdmitModal();
+                      }}
+                    >
+                      Inpatient
+                    </button>
 
-
-                  <button
-                    className={styles.btnOption}
-                    onClick={() => {
-                      const url = admitStep === 'existing'
-                        ? `outpatient/edit/${seletecExistingPatient.id}`
-                        : `outpatient/add`;
-                      navigate(url);
-                      closeAdmitModal();
-                    }}
-                  >
-                    Outpatient
-                  </button>
+                    <button
+                      className={styles.btnOption}
+                      onClick={() => {
+                        const url =
+                          admitStep === "existing"
+                            ? `outpatient/edit/${seletecExistingPatient.id}`
+                            : `outpatient/add`;
+                        navigate(url);
+                        closeAdmitModal();
+                      }}
+                    >
+                      Outpatient
+                    </button>
+                  </div>
                 </>
               )}
             </div>
@@ -516,27 +465,42 @@ const PatientList = ({
       {/* Archive Confirmation Modal */}
       {showArchiveModal && patientToArchive && (
         <div className={styles.modalOverlay} onClick={closeArchiveModal}>
-          <div className={styles.modal} onClick={e => e.stopPropagation()}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <h2>Archive Patient</h2>
-              <button className={styles.closeButton} onClick={closeArchiveModal}>&times;</button>
+              <button
+                className={styles.closeButton}
+                onClick={closeArchiveModal}
+              >
+                &times;
+              </button>
             </div>
             <div className={styles.modalContent}>
               <div className={styles.archiveConfirmation}>
                 <p>Are you sure you want to archive the following patient?</p>
                 <div className={styles.patientInfo}>
-                  <strong>Patient ID:</strong> {patientToArchive.code}<br />
-                  <strong>Name:</strong> {patientToArchive.name}<br />
-                  <strong>Admission Date:</strong> {patientToArchive.admission_date}
+                  <strong>Patient ID:</strong> {patientToArchive.code}
+                  <br />
+                  <strong>Name:</strong> {patientToArchive.name}
+                  <br />
+                  <strong>Admission Date:</strong>{" "}
+                  {patientToArchive.admission_date}
                 </div>
                 <p className={styles.warningText}>
-                  This action will move the patient to the archive. The patient record will no longer be visible in the active patient list.
+                  This action will move the patient to the archive. The patient
+                  record will no longer be visible in the active patient list.
                 </p>
                 <div className={styles.modalActions}>
-                  <button className={styles.btnCancel} onClick={closeArchiveModal}>
+                  <button
+                    className={styles.btnCancel}
+                    onClick={closeArchiveModal}
+                  >
                     Cancel
                   </button>
-                  <button className={styles.btnConfirmArchive} onClick={confirmArchive}>
+                  <button
+                    className={styles.btnConfirmArchive}
+                    onClick={confirmArchive}
+                  >
                     Archive Patient
                   </button>
                 </div>
@@ -546,14 +510,21 @@ const PatientList = ({
         </div>
       )}
 
-
       {/* Archives Modal */}
       {showArchivesModal && (
         <div className={styles.modalOverlay} onClick={closeArchivesModal}>
-          <div className={`${styles.modal} ${styles.archivesModal}`} onClick={e => e.stopPropagation()}>
+          <div
+            className={`${styles.modal} ${styles.archivesModal}`}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className={styles.modalHeader}>
               <h2>Archived Patients</h2>
-              <button className={styles.closeButton} onClick={closeArchivesModal}>&times;</button>
+              <button
+                className={styles.closeButton}
+                onClick={closeArchivesModal}
+              >
+                &times;
+              </button>
             </div>
             <div className={styles.modalContent}>
               <ArchivedPatients onClose={closeArchivesModal} />
@@ -564,6 +535,5 @@ const PatientList = ({
     </div>
   );
 };
-
 
 export default PatientList;

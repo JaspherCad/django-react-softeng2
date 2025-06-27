@@ -1,6 +1,11 @@
 from django.utils import timezone
 import json
 from datetime import datetime, time
+import subprocess
+import os
+from django.http import FileResponse, JsonResponse, HttpResponseBadRequest
+from django.views.decorators.csrf import csrf_exempt
+from django.conf import settings
 
 from rest_framework import generics
 from rest_framework import status
@@ -81,8 +86,60 @@ def auth_check(request):
 ####################################################################
 
 
+@csrf_exempt
+def export_db(request):
+    if request.method != "GET":
+        return HttpResponseBadRequest("Only GET allowed")
+
+    filename = f"{settings.BASE_DIR}/backup_{request.user.id if request.user.is_authenticated else 'anon'}.sql"
+    
+    try:
+        subprocess.run(
+            [
+                "mysqldump",
+                "-u", settings.DATABASES['default']['USER'],
+                f"-p{settings.DATABASES['default']['PASSWORD']}",
+                settings.DATABASES['default']['NAME']
+            ],
+            check=True,
+            stdout=open(filename, "w", encoding="utf-8")
+        )
+        return FileResponse(open(filename, "rb"), as_attachment=True, filename=os.path.basename(filename))
+    except subprocess.CalledProcessError:
+        return JsonResponse({"error": "Database export failed"}, status=500)
 
 
+@csrf_exempt
+def import_db(request):
+    if request.method != "POST":
+        return HttpResponseBadRequest("Only POST allowed")
+    
+    file = request.FILES.get("file")
+    if not file:
+        return HttpResponseBadRequest("No file uploaded")
+
+    tmp_path = f"{settings.BASE_DIR}/tmp_import.sql"
+    with open(tmp_path, "wb+") as destination:
+        for chunk in file.chunks():
+            destination.write(chunk)
+
+    try:
+        subprocess.run(
+            [
+                "mysql",
+                "-u", settings.DATABASES['default']['USER'],
+                f"-p{settings.DATABASES['default']['PASSWORD']}",
+                settings.DATABASES['default']['NAME']
+            ],
+            check=True,
+            stdin=open(tmp_path, "r", encoding="utf-8")
+        )
+        return JsonResponse({"success": True})
+    except subprocess.CalledProcessError:
+        return JsonResponse({"error": "Database import failed"}, status=500)
+    finally:
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
 
 
 ####################################################################
@@ -250,17 +307,16 @@ def get_patient_history_by_case(request, case_number):
 
 
 
-#dashboards
 @api_view(['GET'])
-@permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist])
+@permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist | IsTeller])
 def dashboard_totals(request):
     
     now = timezone.now()
-    week_ago = now - timezone.timedelta(days=7)
+    week_ago = now - timezone.timedelta(days=1)
 
-    total_patients    = Patient.objects.exclude(status='Discharged').count()
-    active_members    = User.objects.filter(is_active=True).count()
-    new_patients      = Patient.objects.filter(admission_date__gte=week_ago).count()
+    total_patients = Patient.objects.exclude(status__in=['Discharged', 'Outpatient']).count()
+    active_members = User.objects.filter(is_active=True).count()
+    new_patients = Patient.objects.filter(admission_date__gte=week_ago).count()
 
     data = {
         "total_patients": total_patients,
@@ -268,8 +324,6 @@ def dashboard_totals(request):
         "new_patients_last_7_days": new_patients,
     }
     return Response(data, status=status.HTTP_200_OK)
-
-
 
 
 
