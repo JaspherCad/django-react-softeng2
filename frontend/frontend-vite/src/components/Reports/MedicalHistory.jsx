@@ -1,13 +1,14 @@
 // MedicalHistory.js
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import config from '../../config/config';
 
 const MedicalHistory = ({ match }) => {
   const [history, setHistory] = useState([]);
   const patientId = match.params.id;
 
   useEffect(() => {
-    axios.get(`http://127.0.0.1:8000/api/patients/${patientId}/history`)
+    axios.get(config.getApiEndpoint(`/patients/${patientId}/history`))
       .then(response => setHistory(response.data))
       .catch(error => console.error(error));
   }, [patientId]);

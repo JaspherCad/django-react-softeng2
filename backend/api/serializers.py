@@ -20,7 +20,7 @@ class UserSerializer(serializers.ModelSerializer):
         return GroupSerializer(obj.groups.all(), many=True).data
 
     def get_images(self, obj):
-        images = obj.images.all()
+        images = obj.images.all().order_by('-uploaded_at')  
         return UserImageSerializer(images, many=True, context=self.context).data
 
     # def create(self, validated_data):

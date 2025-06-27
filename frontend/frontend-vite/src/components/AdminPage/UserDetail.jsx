@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import styles from './UserDetail.module.css';
 import axiosInstance from '../../api/axios';
+import config from '../../config/config';
 
 const UserDetail = () => {
   const { userId } = useParams();
@@ -52,7 +53,7 @@ const UserDetail = () => {
             {user.images?.[0] ?
               (<>
                 <img
-                  src={`http://localhost:8000${user.images?.[0]?.file}`}
+                  src={config.getMediaURL(user.images?.[0]?.file)}
                   alt={`${user.first_name} ${user.last_name}`}
                   className={styles.profileImage}
                 />

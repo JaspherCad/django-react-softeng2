@@ -102,7 +102,6 @@ const BillingItemsOfThatBill = ({ modalBillId, isModal = false }) => {
 
   const handleEditBillingItem = async (billingItemId, service_id) => {
     setIsModalOpen(true);
-    alert(`http://127.0.0.1:8000/api/billings/${billId}/items/${billingItemId}/edit`)
 
     await getBillingItemById(billingItemId, service_id);
     //billingItemsModal handleCreateOrUpdate for continuation

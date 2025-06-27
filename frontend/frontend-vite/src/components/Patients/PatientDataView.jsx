@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import styles from "./PatientDataView.module.css";
 import { getPatientImagesAPI } from '../../api/axios';
 
+// Get the API base URL from environment variables
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 //pseudocode:
 //fetch the PatientHistory with the hitoryID of ${id} AND caseCode of this ${caseCode} and even historyUSer
@@ -113,7 +115,7 @@ const PatientDataView = ({ patientData }) => {
                     src={
                       existingImages[0].file.startsWith('http')
                         ? existingImages[0].file
-                        : `http://localhost:8000${existingImages[0].file}`
+                        : `${API_BASE}${existingImages[0].file}`
                     }
                     alt="Patient"
                     className={styles.firstImage}
@@ -206,7 +208,7 @@ const PatientDataView = ({ patientData }) => {
                       src={
                         img.file.startsWith('http')
                           ? img.file
-                          : `http://localhost:8000${img.file}`
+                          : `${API_BASE}${img.file}`
                       }
                       alt="Patient"
                       className={styles.gridImage}

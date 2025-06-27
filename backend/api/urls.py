@@ -46,6 +46,15 @@ urlpatterns = [
     path('patients/<int:pk>/history/id/<int:historyId>', views.patient_history_byId, name='patient-history'),
     path('patients/report/', views.generate_report, name='generate_report'),
 
+    #archiving patients 
+    #await axios.post(`/api/patients/${patientId}/archive/`, { archive: true });
+    path('patients/<int:pk>/archive/', views.archive_patient, name='patient-archive'),
+    #{ "id": 42, "unarchive": true }
+
+    path('patients/archived/', views.archived_patients, name='archived-patient-list'),
+
+
+
 
     path('patients/deactivate/<int:pk>', views.patient_deactivate, name='patient_deactivate'),
 
@@ -182,8 +191,8 @@ urlpatterns = [
 
 
 
-
-
+    #dashboards
+    path('dashboard/dashboard_totals', views.dashboard_totals, name='dashboard_totals'),
 
 
 
@@ -192,7 +201,7 @@ urlpatterns = [
 
 
     #step 1:
-    # http://127.0.0.1:8000/api/patients/1/notes/4678NEW/create
+    # http://147:8000/api/patients/1/notes/4678NEW/create
 
 # {
 #   "author": 1,
@@ -206,7 +215,7 @@ urlpatterns = [
 #   "dose_frequency": ""
 # }
 
-    #step 2: fetch http://127.0.0.1:8000/api/notes/history/4678NEW
+    #step 2: fetch http://172.3dsad0.8.147:8000/api/notes/history/4678NEW
 
 
     #WORKING! 1

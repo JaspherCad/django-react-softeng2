@@ -1,4 +1,3 @@
-
 .patientManagement {
   padding: 20px;
   font-family: var(--font-primary);
@@ -15,7 +14,6 @@
   border-radius: 8px;
   box-shadow: var(--shadow-md);
   padding: 20px;
-  margin-top: 20px;
 }
 
 .tableContent h2 {
@@ -49,7 +47,6 @@
   background-color: #f5f5f5;
 }
 
-/* Button Styles */
 .btnEdit,
 .btnTrash {
   padding: 6px 12px;
@@ -58,6 +55,15 @@
   cursor: pointer;
   font-size: 14px;
   transition: background-color 0.3s ease;
+}
+
+.btnAddNewPatient {
+  background-color: #059669;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  display: inline-block;
 }
 
 .btnEdit {
@@ -211,6 +217,7 @@
     opacity: 0;
     transform: translateY(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -285,25 +292,7 @@
   }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /* BRUH THIS IS FOR THE PATIENT FORM UPDATE */
-
-
-
 
 /* UPLOAD IMAGE PATEINT */
 .imageUploadSection {
@@ -350,118 +339,157 @@
 }
 
 .firstImageContainer {
-position: relative;
-display: inline-block;
-cursor: pointer;
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
 }
+
 .firstImage {
-width: 150px;
-height: 150px;
-object-fit: cover;
-border-radius: 8px;
-box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  width: 150px;
+  height: 150px;
+  object-fit: cover;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
 .viewAllIconContainer {
-position: absolute;
-bottom: 8px;
-right: 8px;
-background: rgba(0, 0, 0, 0.6);
-border-radius: 50%;
-padding: 4px;
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 50%;
+  padding: 4px;
 }
+
 .viewAllIcon {
-color: #fff;
-width: 20px;
-height: 20px;
+  color: #fff;
+  width: 20px;
+  height: 20px;
 }
 
 .modalOverlay {
-position: fixed;
-top: 0;
-left: 0;
-width: 100vw;
-height: 100vh;
-background: rgba(0, 0, 0, 0.5);
-display: flex;
-align-items: center;
-justify-content: center;
-z-index: 1000;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
 }
+
 .modalContent {
-background: #fff;
-padding: 16px;
-border-radius: 8px;
-max-width: 90%;
-max-height: 90%;
-overflow-y: auto;
-position: relative;
+  background: #fff;
+  padding: 16px;
+  border-radius: 8px;
+  max-width: 90%;
+  max-height: 90%;
+  overflow-y: auto;
+  position: relative;
 }
+
 .closeButton {
-position: absolute;
-top: 8px;
-right: 8px;
-background: transparent;
-border: none;
-font-size: 24px;
-cursor: pointer;
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: transparent;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
 }
+
 .imageGrid {
-display: grid;
-grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-gap: 8px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 8px;
 }
+
 .gridImage {
-width: 100%;
-height: 100px;
-object-fit: cover;
-border-radius: 4px;
+  width: 100%;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 4px;
 }
 
-
-.headerRow { display: flex; justify-content: space-between; align-items: center; }
-.pageTitle { font-size: 1.5rem; color: var(--secondary-color); }
-.btnAdd { background: var(--success-color); color: white; padding: 0.5rem 1rem; border-radius: 0.375rem; }
-.searchSection { margin: 1rem 0; }
-.btnView { background: var(--primary-color); color: white; padding: 0.375rem 0.75rem; border-radius: 0.375rem; }
-
-/* Patient Info Section */
-.patientInfo {
-  margin: 20px 0;
-  padding: 15px;
-  border-bottom: 1px solid #eee;
+.headerRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
 }
 
-.patientInfo p {
-  margin: 5px 0;
+.pageTitle {
+  font-size: 1.5rem;
+  color: var(--secondary-color);
 }
 
-/* Add Record Button */
 .btnAdd {
-  background-color: var(--success-color);
+  background: var(--success-color);
   color: white;
   padding: 0.5rem 1rem;
   border-radius: 0.375rem;
+}
+
+.searchSection {
   display: flex;
-  align-items: center;
-  gap: 5px;
+  
+  width: 100%;
+  justify-content: space-between;
+
 }
 
-.btnAdd i {
-  font-size: 14px;
+.searchSection>*:nth-child(1) {
+  flex: 0 0 40%;
 }
 
-/* View Button */
+.searchSection>*:nth-child(2) {
+  flex: 0 0 15%;
+}
+
 .btnView {
-  background-color: var(--primary-color);
+  background: var(--primary-color);
   color: white;
   padding: 0.375rem 0.75rem;
   border-radius: 0.375rem;
-  transition: background-color 0.3s ease;
 }
 
-.btnView:hover {
-  background-color: #158bb8;
+.btnArchive {
+  background: grey;
+  color: white;
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.375rem;
 }
 
+.btnViewArchives {
+  background-color: #4a5568;
+  color: white;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: background-color 0.2s;
+}
 
+.btnViewArchives:hover {
+  background-color: #2d3748;
+}
+
+.btnViewArchives i {
+  font-size: 1rem;
+}
+
+.archivesModal {
+  width: 90%;
+  max-width: 1200px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.archivesModal .modalContent {
+  padding: 0;
+}

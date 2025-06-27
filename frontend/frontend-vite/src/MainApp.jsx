@@ -4,7 +4,7 @@ import Navbar from './components/Navbar';
 import Home from './components/Home';
 import DashBoardDoctor from './components/DashBoardDoctor';
 
-import Dashboard from './components/Dashboard';
+import Dashboard from './components/DashboardNew';
 import Login from './components/Login';
 import { AuthContext } from './context/AuthContext';
 import Patients from './components/Patients';
@@ -16,7 +16,6 @@ import ReportPage from './components/Reports';
 
 
 
-import TellerDashboard from './components/DashBoardTeller';
 import UserManagement from './components/UserManagement/UserManagement';
 import ForgotPassword from './components/ForgotPassword/ForgotPasswordLayout.jsx';
 import ForgotPasswordLayout from './components/ForgotPassword/ForgotPasswordLayout.jsx';
@@ -112,8 +111,10 @@ const MainApp = () => {
 
                       {/* Outlet represents these elements */}
           <Route path="/" element={<Home />} />
-          <Route path="/doctor/dashboard" element={<DashBoardDoctor />} />
-          <Route path="/teller/dashboard" element={<TellerDashboard />} />
+          {/* <Route path="/doctor/dashboard" element={<DashBoardDoctor />} /> */}
+          {/* <Route path="/teller/dashboard" element={<TellerDashboard />} /> */}
+          <Route path="/dashboard" element={<Dashboard />} />
+
 
           <Route path="/patients/*" element={<Patients />} />
           <Route path="/billing/*" element={<Billing />} />

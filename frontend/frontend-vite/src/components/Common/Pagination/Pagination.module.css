@@ -1,0 +1,242 @@
+/* Pagination Container */
+.paginationContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+  margin: 2rem 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+}
+
+/* Pagination Info */
+.paginationInfo {
+  color: #6c757d;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+/* Pagination Controls */
+.paginationControls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* Base Button Styles */
+.pageButton,
+.navButton {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #dee2e6;
+  background-color: #fff;
+  color: #6c757d;
+  text-decoration: none;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+  font-size: 0.9rem;
+  min-width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+}
+
+/* Page Number Buttons */
+.pageButton:hover:not(.disabled):not(.active) {
+  background-color: #e9ecef;
+  border-color: #adb5bd;
+  color: #495057;
+}
+
+.pageButton.active {
+  background-color: #4CAF50;
+  border-color: #4CAF50;
+  color: #fff;
+  font-weight: 600;
+}
+
+/* Navigation Buttons */
+.navButton {
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+}
+
+.navButton:hover:not(.disabled) {
+  background-color: #e9ecef;
+  border-color: #adb5bd;
+  color: #495057;
+}
+
+.navButton.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Button Text and Arrows */
+.buttonText {
+  font-size: 0.9rem;
+}
+
+.arrow {
+  font-size: 1rem;
+  font-weight: bold;
+}
+
+.doubleArrow {
+  font-size: 1rem;
+  font-weight: bold;
+}
+
+/* Page Numbers Container */
+.pageNumbers {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* Ellipsis */
+.ellipsis {
+  padding: 0.5rem 0.25rem;
+  color: #6c757d;
+  font-weight: bold;
+}
+
+/* Page Jump Input */
+.pageJump {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: #6c757d;
+  margin-top: 0.5rem;
+}
+
+.pageInput {
+  width: 4rem;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #dee2e6;
+  border-radius: 0.25rem;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.pageInput:focus {
+  outline: none;
+  border-color: #4CAF50;
+  box-shadow: 0 0 0 0.2rem rgba(76, 175, 80, 0.25);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .paginationContainer {
+    gap: 0.75rem;
+  }
+  
+  .paginationControls {
+    gap: 0.25rem;
+  }
+  
+  .pageButton,
+  .navButton {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.8rem;
+    min-width: 2.25rem;
+    height: 2.25rem;
+  }
+  
+  .navButton {
+    padding: 0.4rem 0.8rem;
+  }
+  
+  .buttonText {
+    font-size: 0.8rem;
+  }
+  
+  .arrow,
+  .doubleArrow {
+    font-size: 0.9rem;
+  }
+  
+  .pageJump {
+    flex-direction: column;
+    gap: 0.25rem;
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .paginationControls {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .pageNumbers {
+    order: 2;
+  }
+  
+  .navButton:first-of-type {
+    order: 1;
+  }
+  
+  .navButton:last-of-type {
+    order: 3;
+  }
+  
+  /* Hide text on very small screens, keep only arrows */
+  .buttonText {
+    display: none;
+  }
+  
+  .navButton {
+    min-width: 2.25rem;
+    padding: 0.4rem;
+  }
+}
+
+/* Accessibility */
+.pageButton:focus,
+.navButton:focus {
+  outline: none;
+  box-shadow: 0 0 0 0.2rem rgba(76, 175, 80, 0.25);
+  border-color: #4CAF50;
+}
+
+/* Loading State (Optional) */
+.paginationContainer.loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Alternative Compact Style */
+.paginationContainer.compact .paginationControls {
+  gap: 0.125rem;
+}
+
+.paginationContainer.compact .pageButton,
+.paginationContainer.compact .navButton {
+  padding: 0.375rem 0.625rem;
+  font-size: 0.8rem;
+  min-width: 2rem;
+  height: 2rem;
+}
+
+/* Alternative Minimal Style */
+.paginationContainer.minimal .pageButton,
+.paginationContainer.minimal .navButton {
+  border: none;
+  background-color: transparent;
+}
+
+.paginationContainer.minimal .pageButton:hover:not(.disabled):not(.active),
+.paginationContainer.minimal .navButton:hover:not(.disabled) {
+  background-color: #f8f9fa;
+}
+
+.paginationContainer.minimal .pageButton.active {
+  background-color: #4CAF50;
+  color: #fff;
+}

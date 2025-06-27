@@ -1,8 +1,12 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import styles from './Patients.module.css';
 import { useNavigate, useParams } from 'react-router-dom'
-import { SearchPatientsApi } from '../../api/axios';
+import { archiveOrUnarchivePatient, listOfPatientAPI, SearchPatientsApi } from '../../api/axios';
 import SearchBar from '../AngAtingSeachBarWIthDropDown';
+import Pagination from '../Common/Pagination';
+import { AuthContext } from '../../context/AuthContext';
+import ArchivedPatients from './ArchivedPatients';
+
 //EACH PATIENT PER .MAP() has this
 //     name: '',
 //     date_of_birth: '',
@@ -28,7 +32,11 @@ const PatientList = ({
   currentPage,
   totalPages,
   totalItems,
+  setPatients,
   onPageChange,
+  setTotalItems,
+  setTotalPages,
+
   PAGE_SIZE }) => {
 
   const navigate = useNavigate()
@@ -40,10 +48,14 @@ const PatientList = ({
 
 
 
+  const { user, logout } = useContext(AuthContext);
 
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showAdmitModal, setShowAdmitModal] = useState(false);
   const [admitStep, setAdmitStep] = useState(null); // 'existing' or 'new'
+  const [showArchiveModal, setShowArchiveModal] = useState(false);
+  const [patientToArchive, setPatientToArchive] = useState(null);
+  const [showArchivesModal, setShowArchivesModal] = useState(false);
 
   const [searchTerm, setSearchTerm] = useState(''); //required for SearchBar
   const [isDropdownVisible, setIsDropdownVisible] = useState(false)  //required for SearchBar
@@ -62,18 +74,6 @@ const PatientList = ({
     setShowDetailsModal(true);
   };
 
-
-  const goToNextPage = () => {
-    if (currentPage < totalPages) {
-      onPageChange(currentPage + 1);
-    }
-  };
-
-  const goToPrevPage = () => {
-    if (currentPage > 1) {
-      onPageChange(currentPage - 1);
-    }
-  };
 
   if (loading) {
     return <div className={styles.loading}>Loading patients...</div>;
@@ -117,28 +117,79 @@ const PatientList = ({
     setIsDropdownVisible(false)
   }
 
-
   const handleEditClick = (patient, e) => {
     e.stopPropagation(); // Prevent row click when clicking button
     setSelectedPatient(patient);
     navigate(`/patients/edit/${patient.id}`);
   }
 
+  const handleArchive = (patient) => {
+    setPatientToArchive(patient);
+    setShowArchiveModal(true);
+
+  };
+
+
+
+  const confirmArchive = async () => {
+    if (patientToArchive) {
+      try {
+        const response = await archiveOrUnarchivePatient(patientToArchive.id, true);
+        if (response.status === 200) {
+          setShowArchiveModal(false);
+          setPatientToArchive(null);
+          const response = await listOfPatientAPI(currentPage);
+
+          setPatients(response.data.results || []);
+          setTotalItems(response.data.count || 0);
+          setTotalPages(Math.ceil(response.data.count / PAGE_SIZE));
+
+
+          if (onPageChange) {
+            onPageChange(currentPage); // Refresh the current page
+          }
+        }
+      } catch (error) {
+        console.error('Error archiving patient:', error);
+        // You might want to show an error message to the user here
+        // For example: setError('Failed to archive patient. Please try again.');
+      }
+    }
+  };
+
+  const closeArchiveModal = () => {
+    setShowArchiveModal(false);
+    setPatientToArchive(null);
+  };
+
+  const handleShowArchives = () => {
+    setShowArchivesModal(true);
+  };
+
+  const closeArchivesModal = () => {
+    setShowArchivesModal(false);
+  };
+
   return (
     <div className={styles.patientManagement}>
       <div className={styles.container}>
         <div className={styles.tableContent}>
           <div className={styles.headerRow}>
-            <h2>Patient Recordzs</h2>
-            <button className={styles.btnPrimary} onClick={handleAdmitClick}>
-              Admit New Patient
-            </button>
+            <h2>Patient Records</h2>
+            {user.role === 'Admin' && (
+              <button
+                className={styles.btnViewArchives}
+                onClick={handleShowArchives}
+              >
+                <i className="fa fa-archive"></i> View Archives
+              </button>
+            )}
           </div>
 
           {/* Search bar */}
           <div className={styles.searchSection}>
             <SearchBar
-              placeholder="Search patients"
+              placeholder="🔍Search patients"
               searchApi={SearchPatientsApi}
               onSelectSuggestion={item => {
                 setSearchTerm(item.code);
@@ -154,59 +205,139 @@ const PatientList = ({
               setIsDropdownVisible={setIsDropdownVisible}
               maxDropdownHeight="500px"
             />
+            <button className={styles.btnAddNewPatient} onClick={handleAdmitClick}>
+              Admit New Patient
+            </button>
           </div>
 
 
           {/* Table */}
           <div className={styles.tableContent}>
 
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th>Patient ID</th>
-                  <th>Name</th>
-                  <th>Admission</th>
-                  <th>Status</th>
-                  <th>case_number</th>
-                  <th colSpan="2">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {patients && patients.length > 0 ? (
-                  patients.map((patient, index) => (
-                    <tr
-                      key={index}
-                      
-                      className={styles.tableRow}
-                    >
-                      <td data-label="Patient Id">{patient.code}</td>
-                      <td data-label="Name">{patient.name}</td>
-                      <td data-label="Admission_Date">{patient.admission_date}</td>
-                      <td data-label="Status">{patient.status}</td>
-                      <td data-label="case_number">{patient.case_number}</td>
-
-                      <td data-label="View">
-                        <button
-                          className={styles.btnView}
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleRowClick(patient)
-                          }} // STOPS row click when clicking button
-                        >
-                          <i className="fa fa-eye"></i>View
-                        </button>
-                      </td>
+            {user.role === 'Admin' ?
+              (<>
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th>Patient ID</th>
+                      <th>Name</th>
+                      <th>Admission</th>
+                      <th>Status</th>
+                      <th>case_number</th>
+                      <th >Action</th>
+                      <th>Archive</th>
                     </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="7" style={{ textAlign: 'center' }}>
-                      No patients found
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                  </thead>
+                  <tbody>
+                    {patients && patients.length > 0 ?
+                      patients.map((patient, index) => (
+                        <tr
+                          key={index}
+                          className={styles.tableRow}
+                        >
+                          <td data-label="Patient Id">{patient.code}</td>
+                          <td data-label="Name">{patient.name}</td>
+                          <td data-label="Admission_Date">{patient.admission_date}</td>
+                          <td data-label="Status">{patient.status}</td>
+                          <td data-label="case_number">{patient.case_number}</td>
+
+                          <td data-label="View">
+                            <button
+                              className={styles.btnView}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleRowClick(patient)
+                              }}
+                            >
+                              <i className="fa fa-eye"></i>View
+                            </button>
+                          </td>
+
+                          <td data-label="Delete">
+                            <button
+                              className={styles.btnArchive}
+                              onClick={e => {
+                                e.stopPropagation();
+                                handleArchive(patient);
+                              }}
+                            >
+                              <i className="fa fa-trash" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                      :
+                      <tr>
+                        <td colSpan="7" style={{ textAlign: 'center' }}>
+                          No patients found
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </>)
+              :
+              (
+                <>
+                  <table className={styles.table}>
+                    <thead>
+                      <tr>
+                        <th>Patient ID</th>
+                        <th>Name</th>
+                        <th>Admission</th>
+                        <th>Status</th>
+                        <th>case_number</th>
+                        <th colSpan="2">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {patients && patients.length > 0 ?
+                        patients.map((patient, index) => (
+                          <tr
+                            key={index}
+                            className={styles.tableRow}
+                          >
+                            <td data-label="Patient Id">{patient.code}</td>
+                            <td data-label="Name">{patient.name}</td>
+                            <td data-label="Admission_Date">{patient.admission_date}</td>
+                            <td data-label="Status">{patient.status}</td>
+                            <td data-label="case_number">{patient.case_number}</td>
+
+                            <td data-label="View">
+                              <button
+                                className={styles.btnView}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleRowClick(patient)
+                                }}
+                              >
+                                <i className="fa fa-eye"></i>View
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                        :
+                        <tr>
+                          <td colSpan="7" style={{ textAlign: 'center' }}>
+                            No patients found
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </>
+              )
+            }
+
+
+
+
+
+
+
+
+
+
           </div>
         </div>
 
@@ -215,36 +346,18 @@ const PatientList = ({
 
 
 
-        {/* Pagination Controls */}
-        {totalPages > 1 && (
-          <div className={styles.pagination}>
-            <div className={styles.paginationInfo}>
-              Showing {(currentPage - 1) * PAGE_SIZE + 1}-{Math.min(currentPage * PAGE_SIZE, totalItems)} of {totalItems} patients
-            </div>
-
-            <div className={styles.paginationControls}>
-              <button
-                onClick={goToPrevPage}
-                disabled={currentPage === 1}
-                className={styles.paginationButton}
-              >
-                Previous
-              </button>
-
-              <span className={styles.pageInfo}>
-                Page {currentPage} of {totalPages}
-              </span>
-
-              <button
-                onClick={goToNextPage}
-                disabled={currentPage === totalPages}
-                className={styles.paginationButton}
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        )}
+        {/* Pagination */}
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          itemsPerPage={PAGE_SIZE}
+          onPageChange={onPageChange}
+          itemName="patients"
+          showInfo={true}
+          showPageNumbers={true}
+          maxVisiblePages={5}
+        />
       </div>
 
       {/* Patient Details Modal */}
@@ -327,7 +440,7 @@ const PatientList = ({
 
 
 
-            
+
             <div className={styles.modalContent}>
 
 
@@ -399,9 +512,58 @@ const PatientList = ({
           </div>
         </div>
       )}
+
+      {/* Archive Confirmation Modal */}
+      {showArchiveModal && patientToArchive && (
+        <div className={styles.modalOverlay} onClick={closeArchiveModal}>
+          <div className={styles.modal} onClick={e => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h2>Archive Patient</h2>
+              <button className={styles.closeButton} onClick={closeArchiveModal}>&times;</button>
+            </div>
+            <div className={styles.modalContent}>
+              <div className={styles.archiveConfirmation}>
+                <p>Are you sure you want to archive the following patient?</p>
+                <div className={styles.patientInfo}>
+                  <strong>Patient ID:</strong> {patientToArchive.code}<br />
+                  <strong>Name:</strong> {patientToArchive.name}<br />
+                  <strong>Admission Date:</strong> {patientToArchive.admission_date}
+                </div>
+                <p className={styles.warningText}>
+                  This action will move the patient to the archive. The patient record will no longer be visible in the active patient list.
+                </p>
+                <div className={styles.modalActions}>
+                  <button className={styles.btnCancel} onClick={closeArchiveModal}>
+                    Cancel
+                  </button>
+                  <button className={styles.btnConfirmArchive} onClick={confirmArchive}>
+                    Archive Patient
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+
+      {/* Archives Modal */}
+      {showArchivesModal && (
+        <div className={styles.modalOverlay} onClick={closeArchivesModal}>
+          <div className={`${styles.modal} ${styles.archivesModal}`} onClick={e => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h2>Archived Patients</h2>
+              <button className={styles.closeButton} onClick={closeArchivesModal}>&times;</button>
+            </div>
+            <div className={styles.modalContent}>
+              <ArchivedPatients onClose={closeArchivesModal} />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 
-export default PatientList; 
+export default PatientList;
