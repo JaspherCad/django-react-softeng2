@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import styles from "./PatientDataView.module.css";
 import { getPatientImagesAPI } from '../../api/axios';
+import '@fortawesome/fontawesome-free/css/all.min.css';
 
 // Get the API base URL from environment variables
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
@@ -37,10 +39,14 @@ const calculateAge = (birthDateStr) => {
 };
 
 const PatientDataView = ({ patientData }) => {
+  const navigate = useNavigate();
 
   const [existingImages, setExistingImages] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  
+  const [showAdmitModal, setShowAdmitModal] = useState(false);
+  const [admitStep, setAdmitStep] = useState(null);
   useEffect(() => {
     const fetchPatient = async () => {
       try {
@@ -58,6 +64,22 @@ const PatientDataView = ({ patientData }) => {
     fetchPatient();
   }, [patientData]);
 
+  // Admit modal handlers - same as PatientHistory
+  const handleUpdateClick = () => {
+    setShowAdmitModal(true);
+  };
+
+  const chooseFormType = (type) => {
+    setAdmitStep(type);
+    navigate(`/patients/${type}/edit/${patientData.id}`);
+    setShowAdmitModal(false);
+  };
+
+  const closeAdmitModal = () => {
+    setShowAdmitModal(false);
+    setAdmitStep(null);
+  };
+
   console.log(patientData)
   if (!patientData) return null;
 
@@ -68,7 +90,12 @@ const PatientDataView = ({ patientData }) => {
         {/* Header with tabs and edit button */}
         <div className={styles['section-header']}>
           <button className={styles['tab-button']}>Patient Data</button>
-          <button className={styles['edit-button']}>✎ Update</button>
+          <button 
+            className={styles['edit-button']}
+            onClick={handleUpdateClick}
+          >
+            ✎ Update
+          </button>
         </div>
 
         {/* Case Information */}
@@ -115,13 +142,13 @@ const PatientDataView = ({ patientData }) => {
                     src={
                       existingImages[0].file.startsWith('http')
                         ? existingImages[0].file
-                        : `${API_BASE}${existingImages[0].file}`
+                        : `${API_BASE}:8000${existingImages[0].file}`
                     }
                     alt="Patient"
                     className={styles.firstImage}
                   />
                   <div className={styles.viewAllIconContainer}>
-                    VIEW
+                    VIEWs
                   </div>
                 </div>
               )}
@@ -208,7 +235,7 @@ const PatientDataView = ({ patientData }) => {
                       src={
                         img.file.startsWith('http')
                           ? img.file
-                          : `${API_BASE}${img.file}`
+                          : `${API_BASE}:8000${img.file}`
                       }
                       alt="Patient"
                       className={styles.gridImage}
@@ -221,6 +248,34 @@ const PatientDataView = ({ patientData }) => {
 
 
         </div>
+
+        {/* Admit Modal - same as PatientHistory */}
+        {showAdmitModal && (
+          <div className={styles.modalOverlay} onClick={closeAdmitModal}>
+            <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+              <div className={styles.modalHeader}>
+                <h2>Select Form Type</h2>
+                <button className={styles.closeButton} onClick={closeAdmitModal}>
+                  &times;
+                </button>
+              </div>
+              <div className={styles.modalContent}>
+                <button
+                  className={styles.btnOption}
+                  onClick={() => chooseFormType('inpatient')}
+                >
+                  Inpatient
+                </button>
+                <button
+                  className={styles.btnOption}
+                  onClick={() => chooseFormType('outpatient')}
+                >
+                  Outpatient
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

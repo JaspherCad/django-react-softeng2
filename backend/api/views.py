@@ -1,6 +1,7 @@
 from django.utils import timezone
 import json
 from datetime import datetime, time
+import os
 
 from rest_framework import generics
 from rest_framework import status
@@ -14,7 +15,7 @@ from django.contrib.auth.hashers import make_password
 import hashlib
 
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from .models import ClinicalNote, PatientImage, User, LabResultFileGroup, LabResultFileInGroup ,Patient, UserLog, Billing, BillingItem, BillingOperatorLog, PatientService, Service, LaboratoryResult, LabResultFile, Bed, BedAssignment, Room, UserSecurityQuestion
+from .models import BackupHistory, ClinicalNote, PatientImage, User, LabResultFileGroup, LabResultFileInGroup ,Patient, UserLog, Billing, BillingItem, BillingOperatorLog, PatientService, Service, LaboratoryResult, LabResultFile, Bed, BedAssignment, Room, UserSecurityQuestion
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -23,6 +24,10 @@ from django.shortcuts import get_object_or_404
 from .permissions import IsTeller, IsAdmin, IsDoctor, IsNurse, IsReceptionist  # Use the subclass
 from rest_framework.pagination import PageNumberPagination
 
+from django.core.management import call_command
+from rest_framework.permissions import IsAdminUser
+from rest_framework.response import Response
+from rest_framework import status
 
 from rest_framework.exceptions import (
     APIException,
@@ -252,7 +257,7 @@ def get_patient_history_by_case(request, case_number):
 
 #dashboards
 @api_view(['GET'])
-@permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist])
+@permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist | IsTeller])
 def dashboard_totals(request):
     
     now = timezone.now()
@@ -1000,7 +1005,7 @@ def create_billing(request):
         )
 
 
-@api_view(['POST'])
+@api_view(['PUT'])
 @permission_classes([IsAdmin | IsTeller])
 def mark_billing_paid(request, billing_code):
     billing = get_object_or_404(Billing, code=billing_code)
@@ -3249,6 +3254,9 @@ def reset_password(request):
             {"error": "User not found"},
             status=status.HTTP_404_NOT_FOUND
         )
+    
+
+
 
 #RAW --> JSON
 # {
@@ -3318,6 +3326,66 @@ def user_roles(request):
                       status=status.HTTP_403_FORBIDDEN)
     
     return Response(dict(User.ROLE_CHOICES))
+
 ####################################################################
 # % ADMIN PANEL % #
+####################################################################
+
+
+
+
+
+
+
+
+
+
+
+
+####################################################################
+# % BACKUP DATA % #
+####################################################################
+@api_view(['POST'])
+@api_view(['POST'])
+@api_view(['POST'])
+@permission_classes([IsAdmin])
+def trigger_backup(request):
+    try:
+        call_command('backup')
+        return Response({"message": "Backup completed successfully"}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+
+@api_view(['POST'])
+@permission_classes([IsAdmin])
+def trigger_restore(request, backup_id):
+    # DISABLED FOR SAFETY - Use management command instead
+    return Response({
+        "error": "API restore disabled for safety. Use management command: python manage.py restore <backup_id>",
+        "status": "disabled"
+    }, status=status.HTTP_403_FORBIDDEN)
+    
+
+
+
+
+@api_view(['GET'])
+@permission_classes([IsAdmin])
+def get_backup_history(request):
+    backups = BackupHistory.objects.order_by('-timestamp')
+    return Response([
+        {
+            "id": b.id,
+            "db_file": os.path.basename(b.backup_file),
+            "media_file": os.path.basename(b.media_backup),
+            "timestamp": b.timestamp,
+            "performed_by": b.performed_by.user_id if b.performed_by else "System"
+        } for b in backups
+    ])
+
+
+
+####################################################################
+# % BACKUP DATA % #
 ####################################################################

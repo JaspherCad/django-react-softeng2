@@ -1,9 +1,9 @@
-import React, { useContext, useEffect, useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { AuthContext } from '../../context/AuthContext';
-import styles from './Navbar.module.css';
-import hospitalLogo from '../../assets/react.svg';
-import '@fortawesome/fontawesome-free/css/all.min.css';
+import React, { useContext, useEffect, useState } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { AuthContext } from "../../context/AuthContext";
+import styles from "./Navbar.module.css";
+import hospitalLogo from "../../assets/react.svg";
+import "@fortawesome/fontawesome-free/css/all.min.css";
 
 const Navbar = () => {
   const { user, logout } = useContext(AuthContext);
@@ -13,26 +13,144 @@ const Navbar = () => {
 
   const navigationConfig = {
     Admin: [
-      { to: "/dashboard", label: "Dashboard", icon: <i className="fas fa-home"></i> },
-      { to: "/patients", label: "View Patients", icon: <i className="fas fa-users"></i> },
-      { to: "/patients/add", label: "Add Patient", icon: <i className="fas fa-user-plus"></i> },
-      { to: "/add-users", label: "Add Users", icon: <i className="fas fa-users-cog"></i> },
-      { to: "/user-logs", label: "User Logs", icon: <i className="fas fa-file-alt"></i> },
-      { to: "/reports", label: "Reports", icon: <i className="fas fa-chart-bar"></i> },
-      { to: "/help", label: "Help", icon: <i className="fas fa-question-circle"></i> },
-      { to: "/about", label: "About", icon: <i className="fas fa-info-circle"></i> }
+      {
+        to: "/dashboard",
+        label: "Dashboard",
+        icon: <i className="fas fa-home"></i>,
+      },
+      {
+        to: "/patients",
+        label: "Patients",
+        icon: <i className="fas fa-users"></i>,
+      },
+      {
+        to: "/admin",
+        label: "Users",
+        icon: <i className="fas fa-user-cog"></i>,
+      },
+      {
+        to: "/billing/lists_transactions",
+        label: "Billing",
+        icon: <i className="fas fa-file-invoice-dollar"></i>,
+      },
+      {
+        to: "/inpatientroom",
+        label: "Rooms",
+        icon: <i className="fas fa-procedures"></i>,
+      },
+      {
+        to: "/reports",
+        label: "Reports",
+        icon: <i className="fas fa-chart-bar"></i>,
+      },
+      {
+        to: "/help_about",
+        label: "Help & About",
+        icon: <i className="fas fa-question-circle"></i>,
+      },
     ],
+
+    Doctor: [
+      {
+        to: "/dashboard",
+        label: "Dashboard",
+        icon: <i className="fas fa-home"></i>,
+      },
+      {
+        to: "/patients",
+        label: "Patients",
+        icon: <i className="fas fa-users"></i>,
+      },
+      
+      {
+        to: "/help_about",
+        label: "Help & About",
+        icon: <i className="fas fa-question-circle"></i>,
+      },
+    ],
+
+    Nurse: [
+      {
+        to: "/dashboard",
+        label: "Dashboard",
+        icon: <i className="fas fa-home"></i>,
+      },
+      {
+        to: "/patients",
+        label: "Patients",
+        icon: <i className="fas fa-users"></i>,
+      },
+      
+      {
+        to: "/help_about",
+        label: "Help & About",
+        icon: <i className="fas fa-question-circle"></i>,
+      },
+    ],
+
+    Receptionist: [
+      {
+        to: "/dashboard",
+        label: "Dashboard",
+        icon: <i className="fas fa-home"></i>,
+      },
+      {
+        to: "/patients",
+        label: "Patients",
+        icon: <i className="fas fa-users"></i>,
+      },
+      {
+        to: "/user",
+        label: "Users",
+        icon: <i className="fas fa-user-cog"></i>,
+      },
+      {
+        to: "/billing/lists_transactions",
+        label: "Billing",
+        icon: <i className="fas fa-file-invoice-dollar"></i>,
+      },
+      {
+        to: "/inpatientroom",
+        label: "Rooms",
+        icon: <i className="fas fa-procedures"></i>,
+      },
+      
+      {
+        to: "/help_about",
+        label: "Help & About",
+        icon: <i className="fas fa-question-circle"></i>,
+      },
+    ],
+
     Teller: [
-      { to: "/", label: "Billing", icon: <i className="fas fa-money-bill"></i> },
-      { to: "/Dashboard", label: "Services", icon: <i className="fas fa-boxes"></i> }
-    ]
+      {
+        to: "/dashboard",
+        label: "Dashboard",
+        icon: <i className="fas fa-home"></i>,
+      },
+      {
+        to: "/billing/lists_transactions",
+        label: "Billing",
+        icon: <i className="fas fa-file-invoice-dollar"></i>,
+      },
+      {
+        to: "/inpatientroom",
+        label: "Rooms",
+        icon: <i className="fas fa-procedures"></i>,
+      },
+      {
+        to: "/help_about",
+        label: "Help & About",
+        icon: <i className="fas fa-question-circle"></i>,
+      },
+    ],
 
     // ... other role configurations
   };
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate("/login");
   };
 
   const getNavLinks = () => {
@@ -45,33 +163,24 @@ const Navbar = () => {
   };
 
   useEffect(() => {
-    console.log(user)
-  }, [])
+    console.log(user);
+  }, []);
 
   return (
     <>
       {/* Mobile Menu Toggle Button */}
-      <button
-        className={styles.mobileMenuButton}
-        onClick={toggleMobileMenu}
-      >
+      <button className={styles.mobileMenuButton} onClick={toggleMobileMenu}>
         <span className={styles.hamburger}></span>
       </button>
       {/* Mobile Menu Toggle Button */}
 
-
-
-
-
-
-
-
-      <div className={`${isMobileMenuOpen ? styles.sidebarOpen : ''} ${styles.sidebar}`}>
+      <div
+        className={`${isMobileMenuOpen ? styles.sidebarOpen : ""} ${
+          styles.sidebar
+        }`}
+      >
         {/* Mobile Close Button */}
-        <button
-          className={styles.mobileCloseButton}
-          onClick={toggleMobileMenu}
-        >
+        <button className={styles.mobileCloseButton} onClick={toggleMobileMenu}>
           ×
         </button>
 
@@ -94,7 +203,7 @@ const Navbar = () => {
               {/* User Avatar */}
               <div className={styles.avatarContainer}>
                 <img
-                  src={user.images?.[0]?.file || '/default-avatar.png'}
+                  src={user.images?.[0]?.file || "/default-avatar.png"}
                   alt="User Avatar"
                   className={styles.avatar}
                 />
@@ -102,13 +211,14 @@ const Navbar = () => {
 
               {/* User Info */}
               <div className={styles.userInfo}>
-                <h2>{user.last_name}, {user.first_name}</h2>
+                <h2>
+                  {user.last_name}, {user.first_name}
+                </h2>
                 <p className={styles.role}>{user.role}</p>
               </div>
             </>
           )}
         </div>
-
 
         {/* Navigation Links */}
         <nav>
@@ -117,7 +227,9 @@ const Navbar = () => {
               <li key={index} className={styles.navItem}>
                 <Link
                   to={link.to}
-                  className={`${styles.navLink} ${location.pathname === link.to ? styles.active : ''}`}
+                  className={`${styles.navLink} ${
+                    location.pathname === link.to ? styles.active : ""
+                  }`}
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   <span className={styles.icon}>{link.icon}</span>
@@ -128,16 +240,9 @@ const Navbar = () => {
           </ul>
         </nav>
 
-
         {user && (
           <div className={styles.sidebarFooter}>
-            <span className={styles.userInfo}>
-              {user.user_id} ({user.role})
-            </span>
-            <button
-              onClick={handleLogout}
-              className={styles.logoutButton}
-            >
+            <button onClick={handleLogout} className={styles.logoutButton}>
               Logout
             </button>
           </div>
@@ -152,4 +257,4 @@ const Navbar = () => {
   );
 };
 
-export default Navbar; 
+export default Navbar;

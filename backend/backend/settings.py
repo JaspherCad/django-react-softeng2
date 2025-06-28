@@ -19,7 +19,8 @@ from .config import CORS_ALLOWED_ORIGINS, CSRF_TRUSTED_ORIGINS, ALLOWED_HOSTS
 load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent 
+#CLUE: this is the react+django/backend folder only.
 
 
 # Quick-start development settings - unsuitable for production
@@ -144,7 +145,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'hospital_db',
         'USER': 'hospital_user',
-        'PASSWORD': 'your_secure_password',
+        'PASSWORD': 'your_secure_password', #ITO PASSWORD NG DATABASE LITERALLY> wtf
         'HOST': 'localhost',
         'PORT': '3306',
         'OPTIONS': {

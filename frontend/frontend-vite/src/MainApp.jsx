@@ -13,7 +13,7 @@ import Laboratory from './components/Laboratory';
 import InPatientRoom from './components/InPatientRoom';
 import AdminPage from './components/AdminPage';
 import ReportPage from './components/Reports';
-
+import HelpAbout from './components/HelpAndABout';
 
 
 import UserManagement from './components/UserManagement/UserManagement';
@@ -123,6 +123,10 @@ const MainApp = () => {
 
           <Route path="/Admin/*" element={<AdminPage />} />
           <Route path="/Reports/*" element={<ReportPage />} />
+
+
+          <Route path="/help_about/" element={<HelpAbout />} />
+
 
 
 

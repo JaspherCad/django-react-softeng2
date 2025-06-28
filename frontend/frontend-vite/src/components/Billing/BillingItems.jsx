@@ -1,10 +1,11 @@
 // src/components/Billing/BillingItemsOfThatBill.jsx
 
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import styles from './BillingItemsOfThatBill.module.css';
 import BillingItemsModal from './BillingItemsModal';
 import { getBillingByID, getBillingItemByIdAPI } from '../../api/axios';
+import axiosInstance from '../../api/axios';
 import { PDFViewer, PDFDownloadLink } from '@react-pdf/renderer';
 import BillingPDF from '../PdfGenerator/BillingPDF';
 
@@ -13,6 +14,7 @@ const BillingItemsOfThatBill = ({ modalBillId, isModal = false }) => {
   // IF we're in modal mode use the prop... ELSE use URL param:
   const { billId: routeBillId } = useParams();
   const billId = isModal ? modalBillId : routeBillId;
+  const navigate = useNavigate();
 
   const [billData, setBillData] = useState(null);    // fetched billing object
   const [error, setError] = useState(null);
@@ -113,6 +115,28 @@ const BillingItemsOfThatBill = ({ modalBillId, isModal = false }) => {
 
 
 
+  }
+
+  const handleAddNewBilling = () => {
+    // Navigate back to the main billing page to add a new billing
+    navigate('/billing');
+  }
+
+  const handleMarkAsPaid = async () => {
+    console.log('Marking billing as paid:', billData.code);
+    try {
+      setLoading(true);
+      const response = await axiosInstance.put(`/billings/${billData.code}/mark-paid`);
+      
+      if (response.status === 200) {
+        await fetchBillingsById(billId);
+      }
+    } catch (err) {
+      console.error('Error marking billing as paid:', err);
+      alert('Failed to mark billing as paid. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   }
 
 
@@ -322,8 +346,14 @@ const BillingItemsOfThatBill = ({ modalBillId, isModal = false }) => {
       <div className={styles.billingButtons}>
 
         <button className={styles.openModalButton} onClick={handleAddBillingItem}>
-          Add New Billing
+          Add New Billing Item
         </button>
+      
+        {billStatus === 'Unpaid' && (
+          <button className={styles.markPaidButton} onClick={handleMarkAsPaid}>
+            Mark as Paid
+          </button>
+        )}
         <button className={styles.openModalButton} onClick={() => setShowPDF(true)}>
           Generate Bill
         </button>

@@ -50,7 +50,9 @@ export default function UserCard({ user }) {
             onClick={() => navigate(`/admin/${user.id}`)}>
             View Profile
           </button>
-          <button className={styles.editButton}>
+          <button 
+            className={styles.editButton}
+            onClick={() => navigate(`${user.id}`)}>
             Edit
           </button>
         </div>
