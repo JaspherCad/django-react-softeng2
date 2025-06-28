@@ -235,8 +235,6 @@ const PatientReport = () => {
 
   return (
     <div className={styles.container}>
-      <h2 className={styles.title}>Patient Admission Report</h2>
-
       {isMedicalHistory && (<div className={styles.searchBar}>
         <SearchBar
           // data={dummyBillingData}

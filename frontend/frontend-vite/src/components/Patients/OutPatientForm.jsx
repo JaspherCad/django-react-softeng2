@@ -441,7 +441,7 @@ const OutPatientForm = ({ onSubmit }) => {
   //all renders use this, some file are image some files actual files,,,,,
   function FilePreview({ url }) {
     const isImage = /\.(jpe?g|png|gif|webp)$/i.test(url);
-    const fullUrl = `${API_BASE}${url}`;
+    const fullUrl = `${API_BASE}:8000${url}`;
 
     return (
       <div className={styles.filePreviewContainer}>
@@ -1129,7 +1129,7 @@ const OutPatientForm = ({ onSubmit }) => {
                     src={
                       existingImages[0].file.startsWith('http')
                         ? existingImages[0].file
-                        : `${API_BASE}${existingImages[0].file}`
+                        : `${API_BASE}:8000${existingImages[0].file}`
                     }
                     alt="Patient"
                     className={styles.firstImage}
@@ -1158,7 +1158,7 @@ const OutPatientForm = ({ onSubmit }) => {
                         src={
                           img.file.startsWith('http')
                             ? img.file
-                            : `${API_BASE}${img.file}`
+                            : `${API_BASE}:8000${img.file}`
                         }
                         alt="Patient"
                         className={styles.gridImage}

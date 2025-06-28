@@ -77,7 +77,9 @@ const TransactionDetailsModal = ({ transaction, onClose }) => {
           </div>
 
           <div className={styles.modalActions}>
-            <button className={styles.primaryAction}>Mark as Paid</button>
+            <button
+              className={styles.primaryAction}
+              onClick={() => setShowReceiptModal(true)}>Mark as Paid</button>
             <button
               className={styles.secondaryAction}
               onClick={() => setShowReceiptModal(true)}>Download Receipt</button>

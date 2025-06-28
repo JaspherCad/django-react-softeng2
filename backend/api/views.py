@@ -257,7 +257,7 @@ def get_patient_history_by_case(request, case_number):
 
 #dashboards
 @api_view(['GET'])
-@permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist])
+@permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist | IsTeller])
 def dashboard_totals(request):
     
     now = timezone.now()
@@ -1005,7 +1005,7 @@ def create_billing(request):
         )
 
 
-@api_view(['POST'])
+@api_view(['PUT'])
 @permission_classes([IsAdmin | IsTeller])
 def mark_billing_paid(request, billing_code):
     billing = get_object_or_404(Billing, code=billing_code)

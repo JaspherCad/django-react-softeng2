@@ -702,19 +702,19 @@ export const uploadPatientImageAPI = async (labFiles) => {
 
 
 
-export const uploadUSERSADMINImageAPI = async (userid, labFiles) => {
+export const uploadUSERSADMINImageAPI = async (userId, formData) => {
   try {
-    const response = await axiosInstance.post(`/user/${userid}/upload-image`,
-      labFiles,
+    const response = await axiosInstance.post(`/user/${userId}/upload-image`, 
+      formData,
       {
         headers: {
-
           'Content-Type': 'multipart/form-data',
         },
       }
     );
     return response;
   } catch (error) {
+    console.error('Upload API Error:', error.response?.data || error.message);
     throw error;
   }
 };
@@ -833,6 +833,56 @@ export const currentUserLogs = async () => {
   }
 };
 
+// Get user logs with date filtering and pagination
+export const getUserLogsAPI = async (startDate, endDate, page = 1, pageSize = 10) => {
+  try {
+    const response = await axiosInstance.get('/userlogs/', {
+      params: {
+        start_date: startDate,
+        end_date: endDate,
+        page: page,
+        page_size: pageSize
+      }
+    });
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Get user logs by specific user ID
+export const getUserLogsByIdAPI = async (userId, startDate, endDate, page = 1, pageSize = 10) => {
+  try {
+    const response = await axiosInstance.get(`/userlogs/${userId}/`, {
+      params: {
+        start_date: startDate,
+        end_date: endDate,
+        page: page,
+        page_size: pageSize
+      }
+    });
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Get all user logs (admin access)
+export const getAllUserLogsAPI = async (startDate, endDate, page = 1, pageSize = 10) => {
+  try {
+    const response = await axiosInstance.get('/userlogs/all', {
+      params: {
+        start_date: startDate,
+        end_date: endDate,
+        page: page,
+        page_size: pageSize
+      }
+    });
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
 
 export const getBillingsByPatientAPI = async (patientId) => {
   try {

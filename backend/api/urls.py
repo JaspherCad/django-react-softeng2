@@ -109,7 +109,7 @@ urlpatterns = [
     path('billings/<str:billing_pk>/items/<str:item_pk>/edit', views.edit_bill_item, name='edit_bill_item'),
 
     path('billings/<str:billing_pk>/items/<str:item_pk>/get', views.get_bill_item, name='get_bill_item'),
-    path('billings/<int:billing_id>/mark-paid/', views.mark_billing_paid, name='mark_billing_paid'),
+    path('billings/<str:billing_code>/mark-paid', views.mark_billing_paid, name='mark_billing_paid'),
 
 
     #GET /api/billings/search?q=john

@@ -260,6 +260,11 @@ const TransactionsList = () => {
     console.log('Selected billing codes:', Array.from(selectedCodes));
   };
 
+  const handleAddNewBilling = () => {
+    // Navigate back to the main billing page to add a new billing
+    navigate('/billing');
+  };
+
   if (loading) {
     return <div className={styles.loading}>Loading transactions...</div>;
   }
@@ -274,6 +279,8 @@ const TransactionsList = () => {
         <h2>Transaction List</h2>
 
         <div className={styles.controls}>
+
+
           <div className={styles.searchGroup}>
             <SearchBar
               // data={dummyBillingData}
@@ -339,12 +346,17 @@ const TransactionsList = () => {
 
 
           <div className={styles.actionButtons}>
-            <button className={styles.exportButton}>
-              <FaRegFilePdf /> PDF
+            <button
+              onClick={handleAddNewBilling}
+              className={styles.addButton}
+            >
+              +Add New Billing
             </button>
+            
             <button className={styles.exportButton} onClick={exportToCSV}>
               <FaRegFileExcel /> CSV
             </button>
+
           </div>
         </div>
       </div>

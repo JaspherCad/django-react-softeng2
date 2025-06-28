@@ -155,7 +155,7 @@ const AddLaboratory = ({
   //all renders use this, some file are image some files actual files,,,,,
   function FilePreview({ url }) {
     const isImage = /\.(jpe?g|png|gif|webp)$/i.test(url);
-    const fullUrl = `${API_BASE}${url}`;
+    const fullUrl = `${API_BASE}:8000${url}`;
 
     return (
       <div className={styles.filePreviewContainer}>
