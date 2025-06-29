@@ -1,0 +1,219 @@
+/* TransactionsList.module.css */
+
+/* Container */
+.container {
+  padding: 24px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #f5f8fa;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+.header h2 {
+  margin: 0;
+  font-size: 1.75rem;
+  color: #333;
+}
+
+/* Controls */
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: flex-start;
+  align-items: center;
+  margin-top: 16px;
+}
+.searchGroup,
+.dropdownGroup {
+  display: flex;
+  flex-direction: column;
+}
+.searchGroup input,
+.dropdownGroup select {
+  padding: 8px 12px;
+  font-size: 0.95rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  min-width: 180px;
+  background: #fff;
+}
+.actionButtons {
+  display: flex;
+  gap: 8px;
+}
+.exportButton {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: #007acc;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.exportButton:hover {
+  background: #005fa3;
+}
+
+/* Add Button */
+.addButton {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  background: #27ae60;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.addButton:hover {
+  background: #219a52;
+}
+
+/* Primary Button (for existing confirm button) */
+.primaryBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: #007acc;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.primaryBtn:hover {
+  background: #005fa3;
+}
+
+/* Table wrapper */
+.tableContainer {
+  margin-top: 24px;
+  overflow-x: auto;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  background: white;
+}
+
+/* Table */
+.transactionTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+.transactionTable thead {
+  background: #007acc;
+  color: white;
+}
+.transactionTable th,
+.transactionTable td {
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 0.95rem;
+}
+.transactionTable th.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+.transactionTable th.sortable:hover {
+  background: #0065a8;
+}
+.sortIcon {
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+/* Zebra striping */
+.transactionTable tbody tr:nth-child(even) {
+  background: #f9fbfd;
+}
+.transactionTable tbody tr:hover {
+  background: #e6f2ff;
+}
+
+/* Status badge */
+.statusBadge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  color: white;
+  text-transform: capitalize;
+}
+.status-paid    { background: #2ecc71; }
+.status-unpaid  { background: #e74c3c; }
+.status-partial { background: #f39c12; }
+
+/* Loading & Error */
+.loading,
+.error {
+  padding: 2rem;
+  text-align: center;
+  font-size: 1rem;
+}
+.error {
+  background: #ffecec;
+  color: #e74c3c;
+  border-left: 4px solid #e74c3c;
+}
+
+/* Add to your TransactionList.module.css */
+.pagination {
+  margin-top: 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 0;
+}
+
+.paginationInfo {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.paginationControls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.paginationButton {
+  background: #f0f0f0;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.paginationButton:hover {
+  background: #e0e0e0;
+}
+
+.paginationButton.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pageInfo {
+  font-weight: 500;
+  color: #333;
+}

@@ -1,0 +1,9 @@
+# Ignore Python virtual environment
+env/
+
+# Ignore Python compiled files
+__pycache__/
+*.pyc
+
+# Ignore Node.js dependencies (if applicable)
+node_modules/git add .

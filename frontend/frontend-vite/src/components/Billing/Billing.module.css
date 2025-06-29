@@ -1,0 +1,607 @@
+.billingContainer {
+    display: flex;
+    flex-wrap: wrap; 
+    justify-content: center;
+    gap: 2rem;
+    padding: 2rem;
+    min-height: 95vh;
+    background-color: #f4f6fa;
+    box-sizing: border-box;
+  }
+  
+  .leftPanel {
+    flex: 1 1 300px;
+    max-width: 400px;
+    background: #ffffff;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .actionHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #edf2f7;
+  }
+
+  .actionHeader h2 {
+    font-size: 1.4rem;
+    color: #2c3e50;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .actionHeader h2 i {
+    color: #3498db;
+  }
+
+  .addButton {
+    background-color: #4caf50;
+    color: white;
+    border: none;
+    border-radius: 20px;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+    font-size: 0.9rem;
+  }
+
+  .addButton:hover {
+    background-color: #3d8b40;
+    transform: translateY(-2px);
+    box-shadow: 0 3px 10px rgba(76, 175, 80, 0.3);
+  }
+
+  .searchSection {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .searchBarContainer {
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 12px;
+    background-color: #f8fafc;
+    transition: border 0.2s ease;
+  }
+
+  .searchBarContainer:focus-within {
+    border-color: #3498db;
+    box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.15);
+  }
+  
+  /* Right Panel - Patient and Billing Information */
+  .rightPanel {
+    flex: 2 1 300px;
+    max-width: 700px;
+    background: #ffffff;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  }
+
+  .rightPanel h2 {
+    color: #2c3e50;
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+    font-size: 1.4rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #edf2f7;
+  }
+
+  .rightPanel h2 i {
+    color: #3498db;
+  }
+  
+  /* Patient Information Box */
+  .patientBox {
+    padding: 0;
+    border-radius: 10px;
+    background: #ffffff;
+  }
+
+  .patientHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 0;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid #edf2f7;
+  }
+
+  .patientInfo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .patientInfo i {
+    font-size: 1.8rem;
+    color: #3498db;
+  }
+
+  .patientInfo span {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #2c3e50;
+  }
+
+  .detailsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+    margin-bottom: 2rem;
+  }
+
+  .detailSection {
+    background-color: #f8fafc;
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  }
+  
+  .detailSection h3 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    color: #2c3e50;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .detailSection h3 i {
+    color: #3498db;
+  }
+
+  .detailItem {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 0.75rem;
+  }
+
+  .detailItem i {
+    color: #7f8c8d;
+    width: 18px;
+  }
+  
+  .detailItem p {
+    font-size: 0.95rem;
+    color: #555;
+    margin: 0;
+    line-height: 1.4;
+  }
+
+  .billingItemsSection {
+    margin-top: 2rem;
+  }
+
+  .billingItemsSection h3 {
+    margin-bottom: 1rem;
+    color: #2c3e50;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .billingItemsSection h3 i {
+    color: #3498db;
+  }
+
+  .itemsTable {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+
+  .billingItemCard {
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .serviceInfo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .serviceInfo i {
+    color: #3498db;
+  }
+
+  .serviceInfo span {
+    font-weight: 500;
+    color: #2c3e50;
+  }
+
+  .itemDetails {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+  }
+
+  .itemDetails span {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: #7f8c8d;
+  }
+
+  .actionButtons {
+    margin-top: 2rem;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .viewDetailsButton {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 20px;
+    padding: 8px 20px;
+    cursor: pointer;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+  }
+
+  .viewDetailsButton:hover {
+    background-color: #2980b9;
+    transform: translateY(-2px);
+    box-shadow: 0 3px 10px rgba(52, 152, 219, 0.3);
+  }
+  
+  /* Message when no billing item is selected */
+  .emptyState {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 1rem;
+    text-align: center;
+  }
+
+  .emptyState i {
+    font-size: 3rem;
+    color: #cbd5e0;
+    margin-bottom: 1rem;
+  }
+
+  .noSelection {
+    font-size: 1.2rem;
+    color: #64748b;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+  }
+
+  .instructions {
+    color: #a0aec0;
+    font-size: 0.95rem;
+  }
+
+  .noItems {
+    text-align: center;
+    padding: 2rem;
+    color: #a0aec0;
+    font-style: italic;
+  }
+
+  /* Status badges */
+  .statusBadge {
+    display: inline-block;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .unpaid {
+    background-color: #fff5f5;
+    color: #e53e3e;
+    border: 1px solid #fed7d7;
+  }
+
+  .paid {
+    background-color: #f0fff4;
+    color: #38a169;
+    border: 1px solid #c6f6d5;
+  }
+
+  .partial {
+    background-color: #fffaf0;
+    color: #dd6b20;
+    border: 1px solid #feebc8;
+  }
+  
+  /* PatientBillings Component Styles */
+.patientBillingsContainer {
+  padding: 2rem;
+  background-color: #f4f6fa;
+  min-height: 95vh;
+}
+
+.patientBillingsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.patientBillingsHeader h2 {
+  font-size: 1.8rem;
+  color: #333;
+  margin: 0;
+}
+
+.backButton {
+  background-color: #f0f0f0;
+  border: none;
+  border-radius: 5px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-weight: 500;
+  color: #333;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+}
+
+.backButton:hover {
+  background-color: #e0e0e0;
+}
+
+.patientInfoCard {
+  background: white;
+  border-radius: 10px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.patientInfoCard h3 {
+  margin-top: 0;
+  color: #333;
+  font-size: 1.4rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 0.5rem;
+}
+
+.patientInfoGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+}
+
+.patientInfoGrid p {
+  margin: 0.5rem 0;
+  color: #555;
+}
+
+.patientInfoGrid p strong {
+  color: #333;
+}
+
+.billingsTable {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  margin-bottom: 2rem;
+}
+
+.billingsTable th {
+  background-color: #f5f5f5;
+  padding: 12px 15px;
+  text-align: left;
+  font-weight: 600;
+  color: #333;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.billingsTable td {
+  padding: 12px 15px;
+  border-bottom: 1px solid #eee;
+  color: #555;
+}
+
+.billingRow:hover {
+  background-color: #f9f9f9;
+}
+
+.statusBadge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.unpaid {
+  background-color: #ffecec;
+  color: #e53935;
+}
+
+.paid {
+  background-color: #e8f5e9;
+  color: #43a047;
+}
+
+.partial {
+  background-color: #fff8e1;
+  color: #ff8f00;
+}
+
+.viewButton {
+  background-color: #1976d2;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.2s;
+}
+
+.viewButton:hover {
+  background-color: #1565c0;
+}
+
+.noBillingsMessage {
+  background: white;
+  padding: 2rem;
+  text-align: center;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  color: #757575;
+  font-size: 1.1rem;
+}
+
+.loadingContainer, .errorContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  min-height: 50vh;
+}
+
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.loadingSpinner {
+  border: 3px solid rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+  border-top: 3px solid #3498db;
+  width: 36px;
+  height: 36px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loadingContainer p {
+  color: #718096;
+  font-size: 0.95rem;
+}
+
+.errorContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.errorContainer i {
+  font-size: 2.5rem;
+  color: #e53e3e;
+  margin-bottom: 1rem;
+}
+
+.errorContainer h3 {
+  color: #e53e3e;
+  margin-bottom: 0.5rem;
+}
+
+.errorContainer p {
+  color: #718096;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  line-height: 1.5;
+}
+
+.retryButton {
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 20px;
+  cursor: pointer;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.retryButton:hover {
+  background-color: #2980b9;
+  transform: translateY(-2px);
+  box-shadow: 0 3px 10px rgba(52, 152, 219, 0.3);
+}
+
+/* Responsive Design for Mobile */
+@media (max-width: 768px) {
+    .billingContainer {
+      flex-direction: column;
+      align-items: stretch;
+    }
+  
+    .leftPanel,
+    .rightPanel {
+      max-width: 100%;
+    }
+  }
+
+  /* Responsive adjustments */
+@media (max-width: 768px) {
+  .patientBillingsContainer {
+    padding: 1rem;
+  }
+  
+  .patientInfoGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .billingsTable {
+    font-size: 0.9rem;
+  }
+  
+  .billingsTable th, .billingsTable td {
+    padding: 8px 10px;
+  }
+}

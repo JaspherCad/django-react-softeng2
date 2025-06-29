@@ -1,0 +1,22 @@
+
+services:
+  backend:
+  #PATH NG DOCKER FILE below
+    build: ./backend
+    ports:
+      - "8000:8000"
+    # volumes:
+    #   - ./backend:/app
+    environment:
+      - DEBUG=True
+      - SECRET_KEY=your-secret-key
+
+  frontend:
+  #PATH NG DOCKER FILE below
+    build:
+      context: ./frontend/frontend-vite  # <-- Updated path
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    environment:
+      - API_URL=http://backend:8000  # Points to the backend service

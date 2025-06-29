@@ -1,0 +1,172 @@
+.modalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    animation: fadeIn 0.2s ease-in-out;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  .modalContent {
+    background: #fff;
+    border-radius: 12px;
+    position: relative;
+    min-width: 350px;
+    max-width: 90%;
+    max-height: 50vh; 
+    height: 50vh; 
+
+    width: auto;
+    overflow: visible;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    animation: slideUp 0.3s ease-out;
+  }
+  
+  @keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  
+  .modalHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    background-color: #f8fafc;
+    border-bottom: 1px solid #edf2f7;
+  }
+  
+  .modalHeader h2 {
+    margin: 0;
+    font-size: 1.3rem;
+    color: #2c3e50;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .modalHeader h2 i {
+    color: #3498db;
+  }
+  
+  .modalBody {
+    padding: 20px;
+    overflow-y: visible;
+  }
+  
+  .closeButton {
+    background-color: transparent;
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: #64748b;
+  }
+  
+  .closeButton:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    color: #e53e3e;
+  }
+  
+  .closeButton i {
+    font-size: 1rem;
+  }
+
+  /* AddBillingModalV2 Styles */
+  .searchInstructions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #edf2f7;
+  }
+
+  .searchIcon {
+    background-color: #ebf8ff;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #3498db;
+    font-size: 1.5rem;
+  }
+
+  .instructionText h3 {
+    margin: 0 0 5px 0;
+    font-size: 1.1rem;
+    color: #2c3e50;
+  }
+
+  .instructionText p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #718096;
+  }
+
+  .searchBarWrapper {
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #f8fafc;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+  }
+
+  .confirmationContent {
+    text-align: center;
+  }
+
+  .confirmationContent p {
+    margin-bottom: 15px;
+    color: #718096;
+  }
+
+  .patientConfirmBox {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    background-color: #f8fafc;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    margin: 10px 0;
+  }
+
+  .patientConfirmBox i {
+    font-size: 2.5rem;
+    color: #3498db;
+  }
+
+  .patientConfirmInfo {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+  }
+
+  .patientConfirmInfo strong {
+    font-size: 1.1rem;
+    color: #2c3e50;
+  }
+
+  .patientConfirmInfo span {
+    font-size: 0.9rem;
+    color: #718096;
+  }
+  
