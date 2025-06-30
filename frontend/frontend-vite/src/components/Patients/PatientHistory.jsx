@@ -2,8 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { fetchPatientHistoryAPI } from '../../api/axios';
 import styles from './Patients.module.css';
-import PatientHistoryModal from './PatientHistoryModal';
+
 import '@fortawesome/fontawesome-free/css/all.min.css';
+import ModalOverview from './ModalOverview';
 
 const PatientHistory = ({ setSelectedMedicalHistory }) => {
   const { id } = useParams();
@@ -141,7 +142,7 @@ const PatientHistory = ({ setSelectedMedicalHistory }) => {
               <th>Record Type</th>
               <th>Date</th>
               
-              <th>Action</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -184,17 +185,7 @@ const PatientHistory = ({ setSelectedMedicalHistory }) => {
 
       {/* Modals */}
       {selectedNote && (
-        <div className={styles.modalOverlay} onClick={closeModal}>
-          <div
-            className={styles.modalContent}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button className={styles.closeButton} onClick={closeModal}>
-              &times;
-            </button>
-            <PatientHistoryModal note={selectedNote} handleView={handleView} />
-          </div>
-        </div>
+        <ModalOverview patient={selectedNote} onClose={closeModal} />
       )}
 
       {showAdmitModal && (

@@ -6,6 +6,7 @@ import SearchBar from '../AngAtingSeachBarWIthDropDown';
 import Pagination from '../Common/Pagination';
 import { AuthContext } from '../../context/AuthContext';
 import ArchivedPatients from './ArchivedPatients';
+import ModalOverview from './ModalOverview';
 
 //EACH PATIENT PER .MAP() has this
 //     name: '',
@@ -237,8 +238,16 @@ const PatientList = ({
                         >
                           <td data-label="Patient Id">{patient.code}</td>
                           <td data-label="Name">{patient.name}</td>
-                          <td data-label="Admission_Date">{patient.admission_date}</td>
-                          <td data-label="Status">{patient.status}</td>
+                          <td data-label="Admission_Date">{new Date(patient.admission_date).toLocaleDateString()}</td>
+                          <td data-label="Status">
+                            <span className={
+                              patient.status === 'Admitted' ? 'bg-green-500 text-black px-2 py-1 rounded-full text-xs' :
+                              patient.status === 'Discharged' ? 'bg-blue-500 text-black px-2 py-1 rounded-full text-xs' :
+                              'bg-yellow-500 text-white px-2 py-1 rounded-full text-xs'
+                            }>
+                              {patient.status}
+                            </span>
+                          </td>
                           <td data-label="case_number">{patient.case_number}</td>
 
                           <td data-label="View">
@@ -248,8 +257,9 @@ const PatientList = ({
                                 e.stopPropagation()
                                 handleRowClick(patient)
                               }}
+                              aria-label="View patient details"
                             >
-                              <i className="fa fa-eye"></i>View
+                              <i className="fa fa-eye"></i> View
                             </button>
                           </td>
 
@@ -299,8 +309,16 @@ const PatientList = ({
                           >
                             <td data-label="Patient Id">{patient.code}</td>
                             <td data-label="Name">{patient.name}</td>
-                            <td data-label="Admission_Date">{patient.admission_date}</td>
-                            <td data-label="Status">{patient.status}</td>
+                            <td data-label="Admission_Date">{new Date(patient.admission_date).toLocaleDateString()}</td>
+                            <td data-label="Status">
+                              <span className={
+                                patient.status === 'Admitted' ? 'bg-green-500 text-white px-2 py-1 rounded-full text-xs' :
+                                patient.status === 'Discharged' ? 'bg-blue-500 text-white px-2 py-1 rounded-full text-xs' :
+                                'bg-yellow-500 text-white px-2 py-1 rounded-full text-xs'
+                              }>
+                                {patient.status}
+                              </span>
+                            </td>
                             <td data-label="case_number">{patient.case_number}</td>
 
                             <td data-label="View">
@@ -310,8 +328,9 @@ const PatientList = ({
                                   e.stopPropagation()
                                   handleRowClick(patient)
                                 }}
+                                aria-label="View patient details"
                               >
-                                <i className="fa fa-eye"></i>View
+                                <i className="fa fa-eye"></i> View
                               </button>
                             </td>
                           </tr>
@@ -360,68 +379,12 @@ const PatientList = ({
         />
       </div>
 
-      {/* Patient Details Modal */}
-      {/* WHERE SELECTED PATIENT FROM?????? the PARENT.. CRUD AND ALL UTILITY IS OVER THER>>> */}
+      {/* Patient Details Modal - Using ModalOverview component */}
       {showDetailsModal && selectedPatient && (
-        <div className={styles.modalOverlay} onClick={closeDetailsModal}>
-          <div className={styles.modal} onClick={e => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h2>Patient Details</h2>
-              <button className={styles.closeButton} onClick={closeDetailsModal}>&times;</button>
-            </div>
-            <div className={styles.modalContent}>
-              <div className={styles.patientDetail}>
-                <strong>Name:</strong> {selectedPatient.name}
-              </div>
-              <div className={styles.patientDetail}>
-                <strong>Date of Birth:</strong> {selectedPatient.date_of_birth}
-              </div>
-              <div className={styles.patientDetail}>
-                <strong>Address:</strong> {selectedPatient.address}
-              </div>
-              <div className={styles.patientDetail}>
-                <strong>Admission Date:</strong> {selectedPatient.admission_date}
-              </div>
-              <div className={styles.patientDetail}>
-                <strong>Discharge Date:</strong> {selectedPatient.discharge_date || 'N/A'}
-              </div>
-              <div className={styles.patientDetail}>
-                <strong>Status:</strong> {selectedPatient.status}
-              </div>
-              <div className={styles.patientDetail}>
-                <strong>Current Condition:</strong> {selectedPatient.current_condition}
-              </div>
-              <div className={styles.patientDetail}>
-                <strong>Phone:</strong> {selectedPatient.phone}
-              </div>
-              <div className={styles.patientDetail}>
-                <strong>Email:</strong> {selectedPatient.email}
-              </div>
-              <div className={styles.patientDetail}>
-                <strong>Emergency Contact:</strong> {selectedPatient.emergency_contact_name}
-              </div>
-              <div className={styles.patientDetail}>
-                <strong>Emergency Phone:</strong> {selectedPatient.emergency_contact_phone}
-              </div>
-              <div className={styles.patientDetail}>
-                <strong>Active Status:</strong> {selectedPatient.is_active}
-              </div>
-
-
-              <div className={styles.patientDetail}>
-                <strong>VIEW MEDICAL HISTORY</strong>
-                <button
-                  className={styles.historyBtn}
-                  onClick={() => navigate(`/patients/history/${selectedPatient.id}`)}
-                >
-                  VIEW&nbsp;MEDICAL&nbsp;HISTORY
-                </button>
-
-              </div>
-
-            </div>
-          </div>
-        </div>
+        <ModalOverview 
+          patient={selectedPatient} 
+          onClose={closeDetailsModal}
+        />
       )}
 
 

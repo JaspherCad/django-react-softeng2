@@ -334,8 +334,8 @@ def get_clinical_notes_by_code(request, case_number):
         )
 
     patient_id = hist.id
-    # Now fetch notes by the consistent patient ID
-    notes = ClinicalNote.objects.filter(patient_id=patient_id).order_by('-created_at')
+    # Now fetch notes by the consistent patient ID with author information
+    notes = ClinicalNote.objects.filter(patient_id=patient_id).select_related('author').order_by('-created_at')
     
     serializer = ClinicalNoteSerializer(notes, many=True)
 
@@ -343,8 +343,9 @@ def get_clinical_notes_by_code(request, case_number):
                 user=request.user,
                 action="VIEW",
                 details={
-                    "message": "Viewed a clinical note:",
-                   
+                    "message": "Viewed clinical notes by code:",
+                    "case_number": case_number,
+                    "notes_count": notes.count()
                 }
             )
 
@@ -410,9 +411,7 @@ def create_clinical_note(request, pk, case_number):
 def get_clinical_notes_by_case_number(request, case_number):
     #notes/history/<str:case_number>
 
-
-
-    #SINCE CASE NUMBER IS UNIQUE, we can saerch the PATIENT HISTORY using that.... if any matched on it GET THAT ID!
+    #SINCE CASE NUMBER IS UNIQUE, we can search the PATIENT HISTORY using that.... if any matched on it GET THAT ID!
     history_model = Patient.history.model
     historical_patient = history_model.objects.filter(case_number=case_number).order_by('-history_date').first()
 
@@ -420,10 +419,14 @@ def get_clinical_notes_by_case_number(request, case_number):
         return Response({"detail": f"Case number '{case_number}' not found in patient history."},
                         status=status.HTTP_404_NOT_FOUND)
 
-    #the fethced id
+    #the fetched id
     patient_id = historical_patient.id
 
-    notes = ClinicalNote.objects.filter(patient_id=patient_id, case_number_patient=case_number)
+    # Use select_related to fetch author information in a single query
+    notes = ClinicalNote.objects.filter(
+        patient_id=patient_id, 
+        case_number_patient=case_number
+    ).select_related('author').order_by('-created_at')
     
     serializer = ClinicalNoteSerializer(notes, many=True)
 
@@ -431,8 +434,9 @@ def get_clinical_notes_by_case_number(request, case_number):
                 user=request.user,
                 action="VIEW",
                 details={
-                    "message": "Viewed a clinical note:",
-                    
+                    "message": "Viewed clinical notes by case number:",
+                    "case_number": case_number,
+                    "notes_count": notes.count()
                 }
             )
 
@@ -444,16 +448,17 @@ def get_clinical_notes_by_case_number(request, case_number):
 @api_view(['GET'])
 @permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist])
 def get_clinical_notes_by_patient(request, patient_id):
-    notes = ClinicalNote.objects.filter(patient_id=patient_id)
+    # Use select_related to fetch author information in a single query
+    notes = ClinicalNote.objects.filter(patient_id=patient_id).select_related('author').order_by('-created_at')
     serializer = ClinicalNoteSerializer(notes, many=True)
 
     log_action(
                 user=request.user,
                 action="VIEW",
                 details={
-                    "message": "Viewed a clinical note:",
+                    "message": "Viewed clinical notes by patient:",
                     "patient_id": patient_id,
-                    
+                    "notes_count": notes.count()
                 }
             )
 

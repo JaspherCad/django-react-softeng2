@@ -141,7 +141,7 @@
 .formInput:disabled,
 .formInput[readonly] {
   background-color: #f3f4f6;
-  color: #6b7280;
+  color: #9ca3af;
   cursor: not-allowed;
 }
 
@@ -755,16 +755,26 @@
 
 /* Disabled Input Styles */
 .disabledInput {
-  background-color: #f9fafb !important;
-  color: #6b7280 !important;
-  cursor: not-allowed !important;
-  border-color: #e5e7eb !important;
+  background-color: #f3f4f6;
+  border-color: #d1d5db;
+  color: #9ca3af;
+  cursor: not-allowed;
 }
 
 .disabledInput:focus {
-  box-shadow: none !important;
-  border-color: #e5e7eb !important;
-  background-color: #f9fafb !important;
+  border-color: #d1d5db;
+  box-shadow: none;
+}
+
+/* Disabled Radio Styles */
+.disabledRadio {
+  color: #9ca3af;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.disabledRadio input {
+  cursor: not-allowed;
 }
 
 /* Help Text Styles */

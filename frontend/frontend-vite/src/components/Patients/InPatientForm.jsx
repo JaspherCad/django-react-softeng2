@@ -14,6 +14,92 @@ import styles from "./BothPatientForm.module.css";
 // Get the API base URL from environment variables
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
+// HMO options array
+const HMO_OPTIONS = [
+  'AMAPHIL',
+  'ABSOLUTE LAUNDRY',
+  'ASIANLIFE/ETIQA',
+  'BENEFICIAL/BENLIFE',
+  'CAREWELL',
+  'COOPERATIVE/1COOP',
+  'COCOLIFE',
+  'DYNAMIC CARE',
+  'EASTWEST',
+  'GETWELL',
+  'GENERALI',
+  'HMI',
+  'HPPI',
+  'IMS/IWC',
+  'INLIFE/ICARE/INSULAR',
+  'KAISER',
+  'LACSON & LACSON',
+  'MEDASIA',
+  'MEDILINK',
+  'MEDOCARE',
+  'MEDICARE PLUS',
+  'MEDICARD',
+  'ALLIANZ PNBLIFE',
+  'PACIFIC CROSS',
+  'PONDEROSA',
+  'SUNLIFE GREPA',
+  'VALUE CARE'
+];
+
+// Nationality options array
+const NATIONALITY_OPTIONS = [
+  'Filipino',
+  'American',
+  'Chinese',
+  'Indian',
+  'Japanese',
+  'Korean',
+  'Malaysian',
+  'Indonesian',
+  'Singaporean', 
+  'Vietnamese',
+  'Thai',
+  'British',
+  'Australian',
+  'Canadian',
+  'Russian',
+  'German',
+  'French',
+  'Spanish',
+  'Italian',
+  'Brazilian',
+  'Mexican',
+  'South African',
+  'Nigerian',
+  'Egyptian',
+  'Other'
+];
+
+// Religion options array
+const RELIGION_OPTIONS = [
+  'Catholic',
+  'Protestant',
+  'Christian',
+  'Islam',
+  'Buddhism',
+  'Hinduism',
+  'Judaism',
+  'Seventh-day Adventist',
+  'Jehovah\'s Witness',
+  'Mormon',
+  'Baptist',
+  'Methodist',
+  'Presbyterian',
+  'Evangelical',
+  'Anglican',
+  'Orthodox',
+  'Taoism',
+  'Confucianism',
+  'Agnostic',
+  'Atheist',
+  'None',
+  'Other'
+];
+
 //----------------------------------------date format fix--------------------------------------
 //pseudo: when edit, we have to get the FORMATTED String 00:z from backend to frontend BUT we have to convert that into input format (YYYY-MM-DDTHH:MM)
 
@@ -51,6 +137,27 @@ const InPatientForm = ({ onSubmit }) => {
   
   // Determine if this is an "existing" patient route (generates new case number)
   const isExistingPatientRoute = location.pathname.includes('/existing/');
+  
+  // Determine if this is a new patient route (add route)
+  const isNewPatientRoute = location.pathname.includes('/add');
+  
+  // If URL is /add, set default type_of_admission to "New"
+  useEffect(() => {
+    if (isNewPatientRoute) {
+      setFormData(prevData => ({
+        ...prevData,
+        type_of_admission: "New"
+      }));
+    } else if (isExistingPatientRoute) {
+      // For existing patients, ensure type_of_admission is not "New"
+      if (formData.type_of_admission === "New" || !formData.type_of_admission) {
+        setFormData(prevData => ({
+          ...prevData,
+          type_of_admission: "Old/Former"
+        }));
+      }
+    }
+  }, [isNewPatientRoute, isExistingPatientRoute]);
   
   const [searchTerm, setSearchTerm] = useState(""); //required for SearchBar
   const [searchTermDiagnosedBy, setSearchTermDiagnosedBy] = useState(""); //required for SearchBar
@@ -781,13 +888,19 @@ const InPatientForm = ({ onSubmit }) => {
               </div>
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>HMO</label>
-                <input
-                  type="text"
+                <select
                   name="hmo"
                   value={formData.hmo}
                   onChange={handleInputChange}
                   className={styles.formInput}
-                />
+                >
+                  <option value="">Select HMO</option>
+                  {HMO_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
@@ -954,23 +1067,35 @@ const InPatientForm = ({ onSubmit }) => {
             <div className={styles.formGrid}>
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>Nationality</label>
-                <input
-                  type="text"
+                <select
                   name="nationality"
                   value={formData.nationality}
                   onChange={handleInputChange}
                   className={styles.formInput}
-                />
+                >
+                  <option value="">Select Nationality</option>
+                  {NATIONALITY_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>Religion</label>
-                <input
-                  type="text"
+                <select
                   name="religion"
                   value={formData.religion}
                   onChange={handleInputChange}
                   className={styles.formInput}
-                />
+                >
+                  <option value="">Select Religion</option>
+                  {RELIGION_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>Occupation</label>
@@ -1302,33 +1427,37 @@ const InPatientForm = ({ onSubmit }) => {
             <div className={styles.checkboxGroup}>
               <label className={styles.formLabel}>Type of Admission</label>
               <div className={styles.radioGroup}>
-                <label className={styles.radioLabel}>
+                <label className={`${styles.radioLabel} ${isExistingPatientRoute ? styles.disabledRadio : ''}`}>
                   <input
                     type="radio"
                     name="type_of_admission"
                     value="New"
                     checked={formData.type_of_admission === "New"}
                     onChange={handleInputChange}
+                    disabled={isExistingPatientRoute}
+                    required
                   />
                   New
                 </label>
-                <label className={styles.radioLabel}>
+                <label className={`${styles.radioLabel} ${isNewPatientRoute ? styles.disabledRadio : ''}`}>
                   <input
                     type="radio"
                     name="type_of_admission"
                     value="Old/Former"
                     checked={formData.type_of_admission === "Old/Former"}
                     onChange={handleInputChange}
+                    disabled={isNewPatientRoute}
                   />
                   Old/Former
                 </label>
-                <label className={styles.radioLabel}>
+                <label className={`${styles.radioLabel} ${isNewPatientRoute ? styles.disabledRadio : ''}`}>
                   <input
                     type="radio"
                     name="type_of_admission"
                     value="OPD"
                     checked={formData.type_of_admission === "OPD"}
                     onChange={handleInputChange}
+                    disabled={isNewPatientRoute}
                   />
                   OPD
                 </label>

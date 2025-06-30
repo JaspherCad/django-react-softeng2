@@ -5,7 +5,7 @@ import styles from "./PatientHistoryCaseCode.module.css";
 import PatientDataView from "./PatientDataView";
 import PatientHistoryModal from "./PatientHistoryModal";
 
-const NOTE_TYPES = ["All", "Doctor", "Nurse", "General", "Medication", "Laboratories"];
+const NOTE_TYPES = ["All", "General", "Nurse", "Doctor", "Medication", "Laboratories"];
 
 export default function PatientHistoryCaseCode() {
     const { patientid, caseCode, historyid } = useParams();
@@ -13,7 +13,7 @@ export default function PatientHistoryCaseCode() {
     const [notes, setNotes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [filter, setFilter] = useState("Doctor");
+    const [filter, setFilter] = useState("General");
 
     const [patientInformation, setPatientInformation] = useState();
 
@@ -255,7 +255,9 @@ export default function PatientHistoryCaseCode() {
                             </div>
 
                             <p>
-                                <strong>By:</strong> {note.author + " thats id, ADD BACKEND NAMES FOR AUTHOR! serializer clue" || "—"}
+                                <strong>By:</strong> {note.author_info ? 
+                                    `${note.author_info.full_name} (${note.author_info.role} - ${note.author_info.department})` : 
+                                    `User ID: ${note.author}` || "—"}
                             </p>
                             <hr />
 

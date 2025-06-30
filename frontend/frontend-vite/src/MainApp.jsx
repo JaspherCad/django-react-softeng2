@@ -111,7 +111,7 @@ const MainApp = () => {
 
                       {/* Outlet represents these elements */}
           <Route path="/" element={<Home />} />
-          {/* <Route path="/doctor/dashboard" element={<DashBoardDoctor />} /> */}
+          <Route path="/doctor/dashboard" element={<DashBoardDoctor />} /> 
           {/* <Route path="/teller/dashboard" element={<TellerDashboard />} /> */}
           <Route path="/dashboard" element={<Dashboard />} />
 

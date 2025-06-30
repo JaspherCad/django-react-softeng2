@@ -208,14 +208,28 @@ class PasswordResetSerializer(serializers.Serializer):
         return data
 
 class ClinicalNoteSerializer(serializers.ModelSerializer):
+    author_info = serializers.SerializerMethodField()
     
     class Meta:
         model = ClinicalNote
         fields = [
-            'id','patient','case_number_patient', 'author','note_type','note_date',
+            'id','patient','case_number_patient', 'author', 'author_info','note_type','note_date',
             'focus_problem','progress_notes','orders','content',
             'medication','dose_frequency','created_at','updated_at'
         ]
+    
+    def get_author_info(self, obj):
+        if obj.author:
+            return {
+                'id': obj.author.id,
+                'user_id': obj.author.user_id,
+                'first_name': obj.author.first_name,
+                'last_name': obj.author.last_name,
+                'full_name': f"{obj.author.first_name} {obj.author.last_name}".strip(),
+                'role': obj.author.role,
+                'department': obj.author.department
+            }
+        return None
 
 
 
