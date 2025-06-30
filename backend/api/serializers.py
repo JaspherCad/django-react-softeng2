@@ -1,5 +1,95 @@
 from rest_framework import serializers
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.tokens import RefreshToken
+from django.contrib.auth import authenticate
+from django.core.cache import cache
+from django.utils import timezone
 from .models import ClinicalNote, PatientImage, User, Patient, LaboratoryResult, LabResultFile, UserImage, UserLog, Service, PatientService, Billing, BillingItem, LabResultFileInGroup, LabResultFileGroup, Bed, Room, BedAssignment, MedicalHistory, UserSecurityQuestion
+
+
+
+#DJANGO BUILT IN TOKE OBTAIN VIEW (Battery Includd function do not overthink)
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    username_field = 'user_id'
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['user_id'] = serializers.CharField()
+        self.fields['password'] = serializers.CharField()
+        # del self.fields['username']
+
+    def validate(self, attrs):
+        user_id = attrs.get('user_id')
+        password = attrs.get('password')
+
+        # Rate limiting: Check failed login attempts
+        attempt_key = f'login_attempts_{user_id}'
+        block_key = f'login_blocked_{user_id}'
+        
+        # Check if user is currently blocked
+        if cache.get(block_key):
+            raise serializers.ValidationError({
+                'user_id': 'Too many failed login attempts. Please try again after 1 minute.'
+            })
+        
+        # Get current failed attempts count
+        failed_attempts = cache.get(attempt_key, 0)
+
+        #user?
+        try:
+            user = User.objects.get(user_id=user_id)
+        except User.DoesNotExist:
+            # Increment failed attempts for non-existent users too
+            self._handle_failed_login(user_id, failed_attempts, attempt_key, block_key)
+            raise serializers.ValidationError({
+                'user_id': 'User ID not found. Please check your User ID and try again.'
+            })
+
+        #user?.active
+        if not user.is_active:
+            # Don't count as failed attempt for deactivated accounts
+            raise serializers.ValidationError({
+                'user_id': 'This account has been deactivated. Please contact your administrator.'
+            })
+
+        if not user.check_password(password):
+            # Increment failed attempts for wrong password
+            self._handle_failed_login(user_id, failed_attempts, attempt_key, block_key)
+            raise serializers.ValidationError({
+                'password': 'Incorrect password. Please check your password and try again.'
+            })
+
+        # Login successful - clear any failed attempts
+        cache.delete(attempt_key)
+        cache.delete(block_key)
+
+        #BENCHMARK login is succesful
+        refresh = RefreshToken.for_user(user)
+        
+        return {
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+            'user': {
+                'id': user.id,
+                'user_id': user.user_id,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'role': user.role,
+                'department': user.department,
+            }
+        }
+    
+    def _handle_failed_login(self, user_id, current_attempts, attempt_key, block_key):
+        """Handle failed login attempts and blocking logic"""
+        failed_attempts = current_attempts + 1
+        
+        if failed_attempts >= 3:
+            # Block user for 1 minute (60 seconds)
+            cache.set(block_key, True, timeout=60)
+            cache.delete(attempt_key)  # Clear attempts counter since user is now blocked
+        else:
+            # Set failed attempts with 1 minute expiry (resets counter after 1 minute)
+            cache.set(attempt_key, failed_attempts, timeout=60)
 
 class UserSerializer(serializers.ModelSerializer):
     groups = serializers.SerializerMethodField()

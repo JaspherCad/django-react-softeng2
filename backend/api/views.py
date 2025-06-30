@@ -5,12 +5,13 @@ import os
 
 from rest_framework import generics
 from rest_framework import status
+from rest_framework.views import APIView
 from django.db import transaction
 from django.db.models import Q
 from django.contrib.auth.models import Group, Permission
 from django.core.cache import cache
 from django.utils.crypto import get_random_string
-from .serializers import ClinicalNoteSerializer, GroupPermissionUpdateSerializer, GroupSerializer, PatientHistorySerializer, PatientImageSerializer, UserImageSerializer, UserSerializer, PatientSerializer, UserLogSerializer, BillingCreateSerializer, ServiceSerializer, PatientServiceSerializer, LaboratoryResultSerializer, LabResultFileSerializer, BillingItemSerializer, BillingSerializer, BillingSerializerNoList, Billing_PatientInfo_Serializer, LabResultFileGroupSerializer, LabResultFileInGroup, LabResultFileInGroupSerializer, RoomWithBedInfoSerializer, BedAssignmentSerializer, UserCreateSerializer
+from .serializers import CustomTokenObtainPairSerializer, ClinicalNoteSerializer, GroupPermissionUpdateSerializer, GroupSerializer, PatientHistorySerializer, PatientImageSerializer, UserImageSerializer, UserSerializer, PatientSerializer, UserLogSerializer, BillingCreateSerializer, ServiceSerializer, PatientServiceSerializer, LaboratoryResultSerializer, LabResultFileSerializer, BillingItemSerializer, BillingSerializer, BillingSerializerNoList, Billing_PatientInfo_Serializer, LabResultFileGroupSerializer, LabResultFileInGroup, LabResultFileInGroupSerializer, RoomWithBedInfoSerializer, BedAssignmentSerializer, UserCreateSerializer
 from django.contrib.auth.hashers import make_password
 import hashlib
 
@@ -2936,9 +2937,29 @@ class CreateUserView(generics.CreateAPIView):
     serializer_class = UserSerializer
     permission_classes = [AllowAny]
 
-    
-from rest_framework.views import APIView
+#DJANGO BUILT IN TOKE OBTAIN VIEW (Battery Includd function do not overthink)
+class CustomTokenObtainPairView(APIView):
+    permission_classes = [AllowAny]
 
+    def post(self, request):
+        serializer = CustomTokenObtainPairSerializer(data=request.data)
+        try:
+            serializer.is_valid(raise_exception=True)
+            return Response(serializer.validated_data, status=status.HTTP_200_OK)
+        except Exception as e:
+
+
+            #PRINT the error for debugging
+            print(f"Authentication error: {str(e)}")
+            #resaponse the specific validation errors
+            if hasattr(serializer, 'errors') and serializer.errors:
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response({
+                    'detail': 'Authentication failed. Please check your credentials.'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+    
 #CUSTOM USER CREATION
 class UserCreateView(APIView):
     permission_classes = [IsAdmin]
@@ -3153,7 +3174,7 @@ def user_list(request):
         users_qs = User.objects.all().prefetch_related('groups').order_by('user_id')
 
         paginator = PageNumberPagination()
-        paginator.page_size = 2      
+        paginator.page_size = 3      
 
         #paginate queryset
         page = paginator.paginate_queryset(users_qs, request)
