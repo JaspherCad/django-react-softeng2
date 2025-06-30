@@ -17,7 +17,7 @@ const UserList = () => {
   const [isDropdownVisible, setIsDropdownVisible] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
 
-  const PAGE_SIZE = 2;
+  const PAGE_SIZE = 3;
 
   useEffect(() => {
     const fetchUsers = async () => {

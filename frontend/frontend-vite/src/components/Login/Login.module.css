@@ -90,6 +90,35 @@
   border-color: transparent;
 }
 
+.errorInput {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 1px #ef4444 !important;
+}
+
+.errorInput:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px #ef4444 !important;
+  border-color: #ef4444 !important;
+}
+
+.blockedError {
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  padding: 12px;
+  font-weight: 500;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
 .passwordContainer {
   position: relative;
 }

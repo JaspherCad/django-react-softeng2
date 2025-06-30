@@ -341,7 +341,7 @@ const PatientReport = () => {
                           className={styles.linkButton}
                           title="View PDF Report"
                         >
-                          <i className="fas fa-file-pdf" style={{ color: 'red', marginRight: 6 }}></i> PDF
+                          <i className="fas fa-file-csv" style={{ color: 'green', marginRight: 6 }}></i> CSV
                         </button>
                       </td>
                     )}
