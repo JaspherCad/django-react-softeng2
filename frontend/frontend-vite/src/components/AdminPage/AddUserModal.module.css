@@ -120,6 +120,15 @@
   cursor: pointer;
 }
 
+/* Password hint styles */
+.passwordHint {
+  color: #6c757d;
+  font-size: 0.75rem;
+  margin-top: 4px;
+  display: block;
+  font-style: italic;
+}
+
 /* Security Questions Styles */
 .sectionDescription {
   font-size: 0.875rem;

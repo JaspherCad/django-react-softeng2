@@ -11,7 +11,7 @@ import PatientHistoryCaseCode from './PatientHistoryCaseCode';
 
 
 
-const PAGE_SIZE = 2;
+const PAGE_SIZE = 4;
 
 
 const Patients = () => {

@@ -4,7 +4,7 @@ import { useState, createContext } from 'react'
 
 import { Outlet, useLocation, Link, useNavigate } from 'react-router-dom'
 import styles from './ForgotPassword.module.css'
-
+import hospitalLogo from '../../../public/hospital_logo.png' 
 
 export const ForgotPasswordContext = createContext()
 
@@ -33,7 +33,7 @@ export default function ForgotPasswordLayout() {
     <div className={styles.fpContainer}>
       <div className={styles.fpCard}>
         <div className={styles.header}>
-          <img src="/your-logo.png" alt="Hospital Logo" className={styles.logo} />
+          <img src={hospitalLogo} alt="Hospital Logo" className={styles.logo} />
           <h5 className={styles.title}>Antipolo Centro De Medikal Hospital</h5>
           <p className={styles.subtitle}>Reset Password</p>
         </div>

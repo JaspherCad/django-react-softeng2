@@ -63,7 +63,7 @@ const LoggingReports = () => {
     ];
 
     const rows = userLogs.map(log => ({
-      user_name: log.user_name || log.user?.username || log.user || 'N/A',
+      user_name: log.user_info?.full_name || log.user_info?.user_id || log.user || 'N/A',
       action: log.action || 'N/A',
       timestamp: log.timestamp 
         ? new Date(log.timestamp).toLocaleString('en-US', { 
@@ -113,7 +113,7 @@ const LoggingReports = () => {
       };
 
       return [
-        escapeCommas(log.user_name || log.user?.username || log.user || 'N/A'),
+        escapeCommas(log.user_info?.full_name || log.user_info?.user_id || log.user || 'N/A'),
         escapeCommas(log.action || 'N/A'),
         escapeCommas(formatTimestamp(log.timestamp)),
         escapeCommas(log.ip_address || 'N/A'),
@@ -251,7 +251,41 @@ const LoggingReports = () => {
                   userLogs.map((log, index) => (
                     <tr key={log.id || index} className={styles.tr}>
                       <td className={styles.td}>
-                        {log.user_name || log.user?.username || log.user || 'N/A'}
+                        <div className={styles.userInfo}>
+                          <div className={styles.userAvatar}>
+                            {log.user_info?.image ? (
+                              <img 
+                                src={log.user_info.image} 
+                                alt={log.user_info.full_name || 'User'}
+                                className={styles.avatarImage}
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                  e.target.nextSibling.style.display = 'flex';
+                                }}
+                              />
+                            ) : null}
+                            <div 
+                              className={styles.avatarFallback}
+                              style={{ display: log.user_info?.image ? 'none' : 'flex' }}
+                            >
+                              {log.user_info?.full_name 
+                                ? log.user_info.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+                                : log.user_info?.user_id?.slice(0, 2).toUpperCase() || 'NA'
+                              }
+                            </div>
+                          </div>
+                          <div className={styles.userDetails}>
+                            <div className={styles.userName}>
+                              {log.user_info?.full_name || 'Unknown User'}
+                            </div>
+                            <div className={styles.userId}>
+                              ID: {log.user_info?.user_id || 'N/A'}
+                            </div>
+                            <div className={styles.userRole}>
+                              {log.user_info?.role || 'N/A'}
+                            </div>
+                          </div>
+                        </div>
                       </td>
                       <td className={styles.td}>
                         <span className={`${styles.actionBadge} ${styles[log.action?.toLowerCase()] || ''}`}>

@@ -780,6 +780,7 @@ def patient_deactivate(request, pk):
 ####################################################################
 
 @api_view(['GET'])
+@permission_classes([IsAdmin])
 #/<int:pk>
 def get_user_logs(request):
     
@@ -837,11 +838,11 @@ def get_user_logs(request):
         page = paginator.paginate_queryset(current_user_log, request)
 
         if page is not None:
-            serializer = UserLogSerializer(page, many=True)
+            serializer = UserLogSerializer(page, many=True, context={'request': request})
             return paginator.get_paginated_response(serializer.data)
 
         #send to backend by serializing first
-        serializer = UserLogSerializer(current_user_log, many=True)
+        serializer = UserLogSerializer(current_user_log, many=True, context={'request': request})
 
         log_action(
                 user=request.user,
@@ -857,6 +858,7 @@ def get_user_logs(request):
 
 
 @api_view(['GET'])
+@permission_classes([IsAdmin])
 #/<int:pk>
 def get_user_logs_by_id(request, pk):
     
@@ -915,11 +917,11 @@ def get_user_logs_by_id(request, pk):
         page = paginator.paginate_queryset(current_user_log, request)
 
         if page is not None:
-            serializer = UserLogSerializer(page, many=True)
+            serializer = UserLogSerializer(page, many=True, context={'request': request})
             return paginator.get_paginated_response(serializer.data)
 
         #send to backend by serializing first
-        serializer = UserLogSerializer(current_user_log, many=True)
+        serializer = UserLogSerializer(current_user_log, many=True, context={'request': request})
 
         log_action(
                 user=request.user,
@@ -934,6 +936,7 @@ def get_user_logs_by_id(request, pk):
     
 
 @api_view(['GET'])
+@permission_classes([IsAdmin])
 #/<int:pk>
 def get_user_logs_all(request):
     
@@ -991,11 +994,11 @@ def get_user_logs_all(request):
         page = paginator.paginate_queryset(current_user_log, request)
 
         if page is not None:
-            serializer = UserLogSerializer(page, many=True)
+            serializer = UserLogSerializer(page, many=True, context={'request': request})
             return paginator.get_paginated_response(serializer.data)
 
         #send to backend by serializing first
-        serializer = UserLogSerializer(current_user_log, many=True)
+        serializer = UserLogSerializer(current_user_log, many=True, context={'request': request})
 
         log_action(
                 user=request.user,
@@ -1041,7 +1044,7 @@ def get_user_logs_all(request):
 
 
 @api_view(['POST'])
-@permission_classes([IsAdmin | IsTeller])
+@permission_classes([IsAdmin | IsTeller | IsReceptionist | IsDoctor | IsNurse])
  # {
     #   "patient": 1,
     #   "status": "Unpaid"
@@ -1144,7 +1147,7 @@ def mark_billing_paid(request, billing_code):
 
 
 @api_view(['PATCH'])
-@permission_classes([IsAdmin | IsTeller])
+@permission_classes([IsAdmin | IsTeller | IsReceptionist | IsDoctor | IsNurse])
 def update_billing(request, pk):
     billing = get_object_or_404(Billing, id=pk)
 
@@ -1182,7 +1185,7 @@ def update_billing(request, pk):
     # path('billings/add-billing-item/<int:pk>', views.create_bill_item, name='create_billing_item'),
 
 @api_view(['PUT'])
-@permission_classes([IsAdmin | IsTeller])
+@permission_classes([IsAdmin | IsTeller | IsReceptionist | IsDoctor | IsNurse])
 def edit_bill_item(request, billing_pk, item_pk):
 
     #get the parent Billing
@@ -1270,7 +1273,7 @@ def edit_bill_item(request, billing_pk, item_pk):
 
 
 @api_view(['GET'])
-@permission_classes([IsAdmin | IsTeller])
+@permission_classes([IsAdmin | IsTeller | IsReceptionist | IsDoctor | IsNurse])
 def get_bill_item(request, billing_pk, item_pk):
     """
     Retrieve a single BillingItem that belongs to a specific Billing.
@@ -1298,7 +1301,7 @@ def get_bill_item(request, billing_pk, item_pk):
 
 
 @api_view(['POST'])
-@permission_classes([IsAdmin | IsTeller | IsReceptionist])
+@permission_classes([IsAdmin | IsTeller | IsReceptionist | IsDoctor | IsNurse])
 def create_bill_item(request, pk):
     #get billing thru link
     billing = get_object_or_404(Billing, id=pk)
@@ -1366,7 +1369,7 @@ def create_bill_item(request, pk):
 
 
 @api_view(['GET'])
-@permission_classes([IsAdmin | IsAuthenticated])
+@permission_classes([IsAdmin | IsTeller | IsReceptionist | IsDoctor | IsNurse])
 def search_service(request):
     query = request.query_params.get('q', '').strip()
     if not query:
@@ -1395,7 +1398,7 @@ def search_service(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAdmin | IsAuthenticated])
+@permission_classes([IsAdmin | IsTeller | IsReceptionist | IsDoctor | IsNurse])
 def search_patients(request):
     #SAERCH ALL PATIENT REGARDLESS OF STATUS
     query = request.query_params.get('q', '').strip()
@@ -1434,7 +1437,7 @@ def search_patients(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAdmin | IsAuthenticated])
+@permission_classes([IsAdmin | IsTeller | IsReceptionist | IsDoctor | IsNurse])
 def search_patients_that_are_not_discharged(request):
     #search_patients_that_are_not_discharged
     query = request.query_params.get('q', '').strip()
@@ -1469,7 +1472,7 @@ def search_patients_that_are_not_discharged(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAdmin | IsAuthenticated])
+@permission_classes([IsAdmin | IsTeller | IsReceptionist | IsDoctor | IsNurse])
 def search_patients_admitted_only(request):
     #Search patients those are Admitted status
     query = request.query_params.get('q', '').strip()
@@ -1503,7 +1506,7 @@ def search_patients_admitted_only(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAdmin | IsAuthenticated])
+@permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist])
 def search_users(request):
     q = request.query_params.get('q', '').strip()
     if not q:
@@ -1543,7 +1546,7 @@ def search_users(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAdmin | IsTeller])
+@permission_classes([IsAdmin | IsTeller | IsReceptionist | IsDoctor | IsNurse])
 def search_billings(request):
     
     query = request.query_params.get('q', '').strip()
@@ -1591,7 +1594,7 @@ def search_billings(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAdmin | IsTeller])
+@permission_classes([IsAdmin | IsTeller | IsReceptionist | IsDoctor | IsNurse])
 def search_billings_admitted_only(request):
     
     query = request.query_params.get('q', '').strip()
@@ -1639,7 +1642,7 @@ def search_billings_admitted_only(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAdmin | IsTeller])
+@permission_classes([IsAdmin | IsTeller | IsReceptionist | IsDoctor | IsNurse])
 def search_billings_exclud_discharged(request):
     
     query = request.query_params.get('q', '').strip()
@@ -1696,7 +1699,7 @@ def search_billings_exclud_discharged(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAdmin | IsTeller]) 
+@permission_classes([IsAdmin | IsTeller | IsReceptionist | IsDoctor | IsNurse]) 
 def get_billing_item(request, pk):
     
     
@@ -1731,7 +1734,7 @@ def get_billing_item(request, pk):
 
 #PAGINATION FORMAT SAMPLE
 @api_view(['GET'])
-@permission_classes([IsAdmin | IsTeller])
+@permission_classes([IsAdmin | IsTeller | IsReceptionist | IsDoctor | IsNurse])
 def get_bills(request):
 #   /api/billings/list
 #   /api/billings/list?page=2
@@ -1773,7 +1776,7 @@ def get_bills(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAdmin | IsTeller])
+@permission_classes([IsAdmin | IsTeller | IsReceptionist | IsDoctor | IsNurse])
 def get_bills_with_bill_items(request):
     try:
         bills_queryset = Billing.objects.prefetch_related('billing_items').all().order_by('-date_created')
@@ -1833,7 +1836,7 @@ def get_bills_with_bill_items(request):
 #get_bills_by_patient
 
 @api_view(['GET'])
-@permission_classes([IsAdmin | IsTeller])
+@permission_classes([IsAdmin | IsTeller | IsReceptionist | IsDoctor | IsNurse])
 def get_bills_by_patient(request, patient_id):
     try:
                
@@ -1883,7 +1886,7 @@ def get_bills_by_patient(request, patient_id):
 
 
 @api_view(['GET'])
-@permission_classes([IsAdmin | IsTeller])
+@permission_classes([IsAdmin | IsTeller | IsReceptionist | IsDoctor | IsNurse])
 def get_bills_by_id_with_bill_items(request, pk):
     try:
                 #get specific billing record by ID
@@ -1933,7 +1936,7 @@ def get_bills_by_id_with_bill_items(request, pk):
 
 
 @api_view(['GET'])
-@permission_classes([IsAdmin | IsTeller])
+@permission_classes([IsAdmin | IsTeller | IsReceptionist | IsDoctor | IsNurse])
 def get_bills_by_ACTUAL_id_with_bill_items(request, pk):
     try:
                 #get specific billing record by ID
@@ -1982,7 +1985,7 @@ def get_bills_by_ACTUAL_id_with_bill_items(request, pk):
     
     
 @api_view(['POST'])
-@permission_classes([IsAdmin | IsTeller])
+@permission_classes([IsAdmin | IsTeller | IsReceptionist | IsDoctor | IsNurse])
 def create_bills(request):
    
 
@@ -2107,7 +2110,7 @@ def get_bill_items_intuition_never_mind_this(request):
 
 
 @api_view(['POST'])
-@permission_classes([IsAdmin | IsDoctor])
+@permission_classes([IsAdmin | IsDoctor | IsNurse])
 def create_laboratory_result_for_patient(request, pk):
    
 
@@ -2353,7 +2356,7 @@ def create_laboratory_file_result_for_laboratory_class(request, pk):
 
 #ORDER MATTERS!
 @api_view(['GET'])
-@permission_classes([IsAdmin | IsAuthenticated])
+@permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist])
 def search_labId(request):
     query = request.query_params.get('q', '').strip()
     if not query:
@@ -2393,7 +2396,7 @@ def search_labId(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAdmin | IsDoctor])
+@permission_classes([IsAdmin | IsDoctor | IsNurse])
 def get_laboratory_by_id(request, pk):
     try:
         # Get the laboratory result with related files in a single query
@@ -2441,7 +2444,7 @@ def get_laboratory_by_id(request, pk):
 #GROUP UPLAOD FILES to an EXISTING LABORATORY   
 
 @api_view(['POST'])
-@permission_classes([IsAdmin | IsDoctor])
+@permission_classes([IsAdmin | IsDoctor | IsNurse])
 def create_laboratory_file_group(request, labId):
     try:
         
@@ -2510,7 +2513,7 @@ def create_laboratory_file_group(request, labId):
 
 
 @api_view(['GET'])
-@permission_classes([IsAdmin | IsDoctor])
+@permission_classes([IsAdmin | IsDoctor | IsNurse])
 def get_laboratory_file_group(request, group_id):
     """
     Retrieve a specific LabResultFileGroup by ID, including its files.
@@ -2544,7 +2547,7 @@ def get_laboratory_file_group(request, group_id):
 
 
 @api_view(['POST'])
-@permission_classes([IsAdmin | IsDoctor])
+@permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist])
 @parser_classes([MultiPartParser, FormParser])
 def upload_user_image(request, user_id):
     """
@@ -2617,7 +2620,7 @@ def upload_user_image(request, user_id):
 
 
 @api_view(['POST'])
-@permission_classes([IsAdmin | IsDoctor])
+@permission_classes([IsAdmin | IsDoctor | IsNurse])
 def patientImageupload(request):
     #  -F "patient=123" \
     #  -F "file=@/path/to/image.jpg" \
@@ -2650,7 +2653,7 @@ def patientImageupload(request):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist])
 def get_patient_images(request, patient_id):
     """
     Fetch all images for a specific patient by ID
@@ -2716,7 +2719,7 @@ def get_server_time(request):
 
 
 @api_view(['POST'])
-@permission_classes([IsAdmin | IsDoctor | IsTeller | IsReceptionist])
+@permission_classes([IsAdmin | IsDoctor | IsNurse | IsTeller | IsReceptionist])
 def assign_bed(request, patient_id, bed_id, billing_id):
     patient = get_object_or_404(Patient, id=patient_id)
     bed = get_object_or_404(Bed, id=bed_id)
@@ -2793,7 +2796,7 @@ def add_laboratory_file_group_to_existing_lab(request, labId):
 
 # views.py
 @api_view(['POST'])
-@permission_classes([IsAdmin | IsDoctor | IsTeller | IsReceptionist])
+@permission_classes([IsAdmin | IsDoctor | IsNurse | IsTeller | IsReceptionist])
 def discharge_patient(request, patient_id):
     patient = get_object_or_404(Patient, id=patient_id)
     assignment = patient.bed_assignments.filter(end_time__isnull=True).first()
@@ -2887,7 +2890,7 @@ def discharge_patient(request, patient_id):
 #     return Response({"message": "Billing task executed"}, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated | IsAdmin])
+@permission_classes([IsAdmin | IsDoctor | IsNurse | IsTeller | IsReceptionist])
 def room_bed_list(request):
     rooms = Room.objects.prefetch_related('bed_set').all()
     serializer = RoomWithBedInfoSerializer(rooms, many=True)
@@ -2907,7 +2910,7 @@ def room_bed_list(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAdmin | IsDoctor | IsNurse | IsTeller | IsReceptionist])
 def bed_assignment_list(request):
 
     #optional param active
@@ -2947,6 +2950,17 @@ class CreateUserView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [AllowAny]
+    
+    def create(self, request, *args, **kwargs):
+        # Validate password length
+        password = request.data.get('password', '')
+        if len(password) < 8:
+            return Response({
+                "password": ["Password must be at least 8 characters long"]
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Call the parent create method
+        return super().create(request, *args, **kwargs)
 
 #DJANGO BUILT IN TOKE OBTAIN VIEW (Battery Includd function do not overthink)
 class CustomTokenObtainPairView(APIView):
@@ -2979,6 +2993,13 @@ class UserCreateView(APIView):
         try:
             with transaction.atomic():
                 data = request.data.copy()
+                
+                # Validate password length
+                password = data.get('password', '')
+                if len(password) < 8:
+                    return Response({
+                        "password": ["Password must be at least 8 characters long"]
+                    }, status=status.HTTP_400_BAD_REQUEST)
                 
                 # Hash password
                 if 'password' in data:
@@ -3161,6 +3182,7 @@ def log_action(user: User, action: str, details: dict):
         except Exception as e:
             # Fail gracefully if logging fails
             print(f"Failed to create log: {e}")
+
 
 ####################################################################
 # % ADMIN PANEL % #
@@ -3359,6 +3381,19 @@ def reset_password(request):
     confirm_password = request.data.get('confirm_password')
     reset_token_from_input = request.data.get('reset_token')
     
+    # Validate required fields
+    if not all([user_id, new_password, confirm_password, reset_token_from_input]):
+        return Response(
+            {"error": "All fields are required"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    # Validate password length
+    if len(new_password) < 8:
+        return Response(
+            {"error": "Password must be at least 8 characters long"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
     
     #BASE CASES
     if new_password != confirm_password:

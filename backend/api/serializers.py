@@ -414,9 +414,51 @@ class PatientHistorySerializer(serializers.ModelSerializer):
 #save state save stat eito hahaha 123 
 
 class UserLogSerializer(serializers.ModelSerializer):
+    user_info = serializers.SerializerMethodField()
+    
     class Meta:
         model = UserLog
-        fields = '__all__'
+        fields = ['id', 'user', 'action', 'timestamp', 'details', 'user_info']
+    
+    def get_user_info(self, obj):
+        """Get user information (name, image) for the log entry"""
+        if obj.user:
+            # Get user image with proper URL handling
+            image_url = None
+            try:
+                user_image = UserImage.objects.filter(user=obj.user).first()
+                if user_image and user_image.file:
+                    # Use the same approach as UserImageSerializer
+                    request = self.context.get('request')
+                    if request:
+                        image_url = request.build_absolute_uri(user_image.file.url)
+                    else:
+                        image_url = user_image.file.url
+            except Exception:
+                image_url = None
+            
+            return {
+                'id': obj.user.id,
+                'user_id': obj.user.user_id,
+                'first_name': obj.user.first_name,
+                'last_name': obj.user.last_name,
+                'full_name': f"{obj.user.first_name} {obj.user.last_name}".strip(),
+                'role': obj.user.role,
+                'department': obj.user.department,
+                'image': image_url
+            }
+        else:
+            # Handle cases where user might be null (deleted users)
+            return {
+                'id': None,
+                'user_id': 'Unknown User',
+                'first_name': 'Unknown',
+                'last_name': 'User',
+                'full_name': 'Unknown User',
+                'role': 'Unknown',
+                'department': 'Unknown',
+                'image': None
+            }
 
 
 

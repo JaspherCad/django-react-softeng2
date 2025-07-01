@@ -113,6 +113,12 @@ export default function AddUserModal({ onClose, onUserAdded }) {
                 newErrors[field] = `${fieldName} is required`;
             }
         });
+        
+        // Password length validation
+        if (formData.password && formData.password.length < 8) {
+            newErrors.password = 'Password must be at least 8 characters long';
+        }
+        
         // Email format validation
         if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
             newErrors.email = 'Invalid email format';
@@ -347,9 +353,11 @@ export default function AddUserModal({ onClose, onUserAdded }) {
                                 value={formData.password}
                                 onChange={handleChange}
                                 className={`${styles.input} ${errors.password ? styles.errorInput : ''}`}
+                                placeholder="Minimum 8 characters"
                                 required
                             />
                             {errors.password && <div className={styles.error}>{errors.password}</div>}
+                            <small className={styles.passwordHint}>Password must be at least 8 characters long</small>
                         </div>
 
                         {/* Role & Department */}
