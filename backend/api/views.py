@@ -123,7 +123,7 @@ def patient_list(request):
 
             #Initialize paginator
             paginator = PageNumberPagination()
-            paginator.page_size = 2
+            paginator.page_size = 4
 
 
             #paginate queryset
@@ -1513,6 +1513,12 @@ def search_users(request):
         qs = User.objects.filter(
             Q(user_id__icontains=q) |
             Q(role__icontains=q) |
+            Q(last_name__icontains=q) |
+            Q(first_name__icontains=q) |
+            Q(role__icontains=q) |
+
+
+
             Q(department__icontains=q)
         )[:5]
         serializer = UserSerializer(qs, many=True)
@@ -3397,34 +3403,18 @@ def reset_password(request):
 
 #RAW --> JSON
 # {
+#   "user_id": 3,
 #   "questions": [
 #     {
-#       "question": "What is the name of your favorite pet?",
-#       "answer": "Spot"
+#       "question": "What was the name of your first pet?",
+#       "answer": "Fluffy"
 #     },
 #     {
 #       "question": "What is your mother's maiden name?",
-#       "answer": "Smith"
+#       "answer": "Johnson"
 #     },
 #     {
-#       "question": "In what city were you born?",
-#       "answer": "Manila"
-#     }
-#   ]
-# }
-
-# {
-#   "questions": [
-#     {
-#       "question": "What is the name of your favorite pet?",
-#       "answer": "Spot"
-#     },
-#     {
-#       "question": "What is your mother's maiden name?",
-#       "answer": "Smith"
-#     },
-#     {
-#       "question": "In what city were you born?",
+#       "question": "What city were you born in?",
 #       "answer": "Manila"
 #     }
 #   ]
@@ -3433,21 +3423,34 @@ def reset_password(request):
 @permission_classes([IsAuthenticated])
 def set_security_questions(request):
     #revert back to 0 security questons restart from none
-    user = request.user
+    target_user_id = request.data.get('user_id')
     questions = request.data.get('questions', [])
     
+    if target_user_id:
+
+
+        if not request.user.role == 'Admin':  
+            return Response({"error": "Permission denied"}, status=403)
+        
+        try:
+            target_user = User.objects.get(id=target_user_id)
+        except User.DoesNotExist:
+            return Response({"error": "User not found"}, status=404)
+    else: #if not admin, only its user
+        target_user = request.user
     
-    user.security_questions.all().delete()
+    target_user.security_questions.all().delete()
+
     
     for q in questions:
         UserSecurityQuestion.objects.create(
-            user=user,
+            user=target_user,
             question=q['question'],
             answer=hash_answer(q['answer']) 
         )
     
-    user.has_security_questions = True
-    user.save(update_fields=['has_security_questions'])
+    target_user.has_security_questions = True
+    target_user.save(update_fields=['has_security_questions'])
     return Response({"message": "Security questions updated"})
 
 #---------------------- FORGOT PASSWORD -----------------------------
@@ -3482,8 +3485,7 @@ def user_roles(request):
 ####################################################################
 # % BACKUP DATA % #
 ####################################################################
-@api_view(['POST'])
-@api_view(['POST'])
+
 @api_view(['POST'])
 @permission_classes([IsAdmin])
 def trigger_backup(request):
@@ -3498,11 +3500,11 @@ def trigger_backup(request):
 @permission_classes([IsAdmin])
 def trigger_restore(request, backup_id):
     # DISABLED FOR SAFETY - Use management command instead
-    return Response({
-        "error": "API restore disabled for safety. Use management command: python manage.py restore <backup_id>",
-        "status": "disabled"
-    }, status=status.HTTP_403_FORBIDDEN)
-    
+    try:
+        call_command('restore', str(backup_id))
+        return Response({"message": "Restore completed successfully"}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)    
 
 
 
@@ -3510,16 +3512,53 @@ def trigger_restore(request, backup_id):
 @api_view(['GET'])
 @permission_classes([IsAdmin])
 def get_backup_history(request):
-    backups = BackupHistory.objects.order_by('-timestamp')
-    return Response([
+    import json
+    import os
+    from django.conf import settings
+    
+    # Get backups from database
+    db_backups = BackupHistory.objects.order_by('-timestamp')
+    db_backup_data = [
         {
             "id": b.id,
             "db_file": os.path.basename(b.backup_file),
             "media_file": os.path.basename(b.media_backup),
             "timestamp": b.timestamp,
-            "performed_by": b.performed_by.user_id if b.performed_by else "System"
-        } for b in backups
-    ])
+            "performed_by": b.performed_by.user_id if b.performed_by else "System",
+            "source": "database"
+        } for b in db_backups
+    ]
+    
+    # Try to get backups from external registry
+    registry_backups = []
+    try:
+        registry_path = os.path.join(settings.BASE_DIR, 'backup_registry.json')
+        if os.path.exists(registry_path):
+            with open(registry_path, 'r') as f:
+                registry = json.load(f)
+                
+            # Get backup IDs that are already in database
+            db_backup_ids = {b.id for b in db_backups}
+            
+            # Add registry backups that aren't in database
+            for backup in registry.get("backups", []):
+                if backup["id"] not in db_backup_ids:
+                    registry_backups.append({
+                        "id": backup["id"],
+                        "db_file": backup["db_file"],
+                        "media_file": backup["media_file"],
+                        "timestamp": backup["timestamp"],
+                        "performed_by": backup["performed_by"],
+                        "source": "registry"
+                    })
+    except Exception as e:
+        print(f"Could not read backup registry: {e}")
+    
+    # Combine and sort all backups
+    all_backups = db_backup_data + registry_backups
+    all_backups.sort(key=lambda x: x["timestamp"], reverse=True)
+    
+    return Response(all_backups)
 
 
 

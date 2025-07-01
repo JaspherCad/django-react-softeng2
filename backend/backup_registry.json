@@ -1,0 +1,96 @@
+{
+  "backups": [
+    {
+      "id": 2,
+      "db_file": "db_20250701-112608.sql",
+      "media_file": "media_20250701-112608.zip",
+      "timestamp": "2025-07-01T11:26:10.312958",
+      "performed_by": "system"
+    },
+    {
+      "id": 3,
+      "db_file": "db_20250701-112624.sql",
+      "media_file": "media_20250701-112624.zip",
+      "timestamp": "2025-07-01T11:26:25.802607",
+      "performed_by": "system"
+    },
+    {
+      "id": 4,
+      "db_file": "db_20250701-112942.sql",
+      "media_file": "media_20250701-112942.zip",
+      "timestamp": "2025-07-01T11:29:44.424862",
+      "performed_by": "system"
+    },
+    {
+      "id": 5,
+      "db_file": "db_20250701-113047.sql",
+      "media_file": "media_20250701-113047.zip",
+      "timestamp": "2025-07-01T11:30:48.518448",
+      "performed_by": "system"
+    },
+    {
+      "id": 6,
+      "db_file": "db_20250701-113147.sql",
+      "media_file": "media_20250701-113147.zip",
+      "timestamp": "2025-07-01T11:31:48.682407",
+      "performed_by": "system"
+    },
+    {
+      "id": 7,
+      "db_file": "db_20250701-113528.sql",
+      "media_file": "media_20250701-113528.zip",
+      "timestamp": "2025-07-01T11:35:30.454213",
+      "performed_by": "system"
+    },
+    {
+      "id": 7,
+      "db_file": "db_20250701-113630.sql",
+      "media_file": "media_20250701-113630.zip",
+      "timestamp": "2025-07-01T11:36:33.069117",
+      "performed_by": "system"
+    },
+    {
+      "id": 8,
+      "db_file": "db_20250701-113720.sql",
+      "media_file": "media_20250701-113720.zip",
+      "timestamp": "2025-07-01T11:37:22.591860",
+      "performed_by": "system"
+    },
+    {
+      "id": 8,
+      "db_file": "db_20250701-113755.sql",
+      "media_file": "media_20250701-113755.zip",
+      "timestamp": "2025-07-01T11:37:57.123181",
+      "performed_by": "system"
+    },
+    {
+      "id": 9,
+      "db_file": "db_20250701-130827.sql",
+      "media_file": "media_20250701-130827.zip",
+      "timestamp": "2025-07-01T13:08:29.906958",
+      "performed_by": "system"
+    },
+    {
+      "id": 10,
+      "db_file": "db_20250701-130842.sql",
+      "media_file": "media_20250701-130842.zip",
+      "timestamp": "2025-07-01T13:08:44.653807",
+      "performed_by": "system"
+    },
+    {
+      "id": 11,
+      "db_file": "db_20250701-131029.sql",
+      "media_file": "media_20250701-131029.zip",
+      "timestamp": "2025-07-01T13:10:31.151510",
+      "performed_by": "system"
+    },
+    {
+      "id": 11,
+      "db_file": "db_20250701-131050.sql",
+      "media_file": "media_20250701-131050.zip",
+      "timestamp": "2025-07-01T13:10:58.166671",
+      "performed_by": "system"
+    }
+  ],
+  "last_updated": "2025-07-01T13:10:58.166671"
+}

@@ -88,10 +88,12 @@ const UserDetail = () => {
           throw new Error('All questions and answers are required');
         }
       }
+      
       await axiosInstance.post('/set-security-questions', {
-        current_password: currentPassword,
+        user_id: userId,
         questions: secQuestions 
       });
+      
       setShowSecQModal(false);
       setCurrentPassword('');
       setSecQuestions([
@@ -235,7 +237,7 @@ const UserDetail = () => {
         {modalError && <div className={styles.error}>{modalError}</div>}
         <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
           <button type="submit" className={styles.updateButton} disabled={modalLoading}>
-            {modalLoading ? 'Saving...' : 'Save'}
+            {modalLoading ? 'Saving...' : 'Saves'}
           </button>
           <button type="button" className={styles.cancelButton} onClick={() => setShowSecQModal(false)}>
             Cancel

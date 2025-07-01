@@ -312,9 +312,7 @@ export const dischargePatientAPI = async (patientId) => {
   }
 };
 
-
-
-//.post(`/api/patients/${patientId}/archive/`, { archive: true });
+//post(`/api/patients/${patientId}/archive/`, { archive: true });
 export const archiveOrUnarchivePatient = async (patientId, archive = true) => {
   try {
     const response = await axiosInstance.post(`/patients/${patientId}/archive/`, { archive });
@@ -362,7 +360,7 @@ export const SearchBillingsApi = async (searchTerm) => {
 
 export const SearchBillingsApiAdmittedOnly = async (searchTerm) => {
   try {
-    const response = await axiosInstance.get('/billings_exclud_discharged/search', {
+    const response = await axiosInstance.get('/billings_admittedOnly/search', {
       params: { q: searchTerm }
     }
 
@@ -790,8 +788,6 @@ export const fetchLab = async (labId) => {
   }
 };
 
-
-
 //http://:8000/api/notes/history/4678NEW
 export const fetchClinicalNotesByCodeAPI = async (code) => {
   try {
@@ -860,8 +856,6 @@ export const fetchRooms = async () => {
 };
 
 
-
-
 export const currentUserLogs = async () => {
   try {
     const response = await axiosInstance.get('/userlogs');
@@ -925,6 +919,34 @@ export const getAllUserLogsAPI = async (startDate, endDate, page = 1, pageSize =
 export const getBillingsByPatientAPI = async (patientId) => {
   try {
     const response = await axiosInstance.get(`/billings/patient/${patientId}`);
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Backup Management APIs
+export const createBackupAPI = async () => {
+  try {
+    const response = await axiosInstance.post('/backup/');
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const getBackupHistoryAPI = async () => {
+  try {
+    const response = await axiosInstance.get('/backup/history/');
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const restoreBackupAPI = async (backupId) => {
+  try {
+    const response = await axiosInstance.post(`/backup/restore/${backupId}/`);
     return response;
   } catch (error) {
     throw error;

@@ -45,6 +45,11 @@ const Navbar = () => {
         icon: <i className="fas fa-chart-bar"></i>,
       },
       {
+        to: "/admin/backup",
+        label: "Backup",
+        icon: <i className="fas fa-database"></i>,
+      },
+      {
         to: "/help_about",
         label: "Help & About",
         icon: <i className="fas fa-question-circle"></i>,

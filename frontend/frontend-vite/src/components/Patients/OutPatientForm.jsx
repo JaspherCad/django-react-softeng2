@@ -152,6 +152,9 @@ const OutPatientForm = ({ onSubmit }) => {
   
   // Track field-level validation errors
   const [fieldErrors, setFieldErrors] = useState({});
+  
+  // Track sanitized fields to show feedback to the user
+  const [sanitizedFields, setSanitizedFields] = useState({});
 
   const navigate = useNavigate();
 
@@ -243,6 +246,51 @@ const OutPatientForm = ({ onSubmit }) => {
   });
   const [loading, setLoading] = useState(true);
 
+  // Helper function to validate input
+  const validateInput = (value, type, fieldName) => {
+    // For text fields, prevent special characters and limit to 200 words
+    if (type === "text" || type === "textarea") {
+      // Allow only alphanumeric characters, spaces, and common punctuation
+      const sanitizedValue = value.replace(/[^\w\s.,;:'"()&-]/g, '');
+      const hasSpecialChars = sanitizedValue !== value;
+      
+      // Count and limit words to 200
+      const wordCount = sanitizedValue.trim().split(/\s+/).length;
+      const isTruncated = wordCount > 200;
+      
+      if (hasSpecialChars || isTruncated) {
+        setSanitizedFields(prev => ({
+          ...prev,
+          [fieldName]: {
+            hasSpecialChars,
+            isTruncated,
+            message: hasSpecialChars && isTruncated 
+              ? "Special characters removed and limited to 200 words"
+              : hasSpecialChars 
+                ? "Special characters removed" 
+                : "Limited to 200 words"
+          }
+        }));
+      } else {
+        // Clear sanitized flag if the field is now valid
+        setSanitizedFields(prev => {
+          const newState = {...prev};
+          delete newState[fieldName];
+          return newState;
+        });
+      }
+      
+      if (isTruncated) {
+        // Keep only the first 200 words
+        return sanitizedValue.trim().split(/\s+/).slice(0, 200).join(' ');
+      }
+      
+      return sanitizedValue;
+    }
+    
+    return value;
+  };
+
   const handleInputChange = (e) => {
     const { name, value, type } = e.target;
 
@@ -255,16 +303,19 @@ const OutPatientForm = ({ onSubmit }) => {
       });
     }
 
+    // Validate and sanitize the input
+    const validatedValue = validateInput(value, type, name);
+
     setFormData((prev) => ({
       ...prev,
       [name]:
         type === "radio"
-          ? value === "true"
+          ? validatedValue === "true"
             ? true
-            : value === "false"
+            : validatedValue === "false"
               ? false
-              : value // if it's a string radio value
-          : value,
+              : validatedValue // if it's a string radio value
+          : validatedValue,
     }));
   };
 
@@ -611,6 +662,17 @@ const OutPatientForm = ({ onSubmit }) => {
     );
   };
   
+  // Component to show feedback when input has been sanitized
+  const SanitizedFieldMessage = ({ fieldName }) => {
+    if (!sanitizedFields[fieldName]) return null;
+    
+    return (
+      <div className={validationStyles.warningText}>
+        {sanitizedFields[fieldName].message}
+      </div>
+    );
+  };
+  
   if (loading) return <div>Loading…</div>;
 
 
@@ -737,6 +799,7 @@ const OutPatientForm = ({ onSubmit }) => {
                     className={`${styles.formInput} ${fieldErrors.name ? validationStyles.errorInput : ''}`}
                   />
                   <FieldError fieldName="name" />
+                  <SanitizedFieldMessage fieldName="name" />
                 </div>
               </div>
 
@@ -753,6 +816,7 @@ const OutPatientForm = ({ onSubmit }) => {
                     required
                   />
                   <FieldError fieldName="address" />
+                  <SanitizedFieldMessage fieldName="address" />
                 </div>
                 {/* -- Contact Number */}
                 <div className={styles.formGroup}>

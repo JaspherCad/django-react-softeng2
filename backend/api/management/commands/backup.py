@@ -3,6 +3,7 @@
 import os
 import shutil
 import subprocess
+import json
 from datetime import datetime
 from django.core.management.base import BaseCommand
 from django.conf import settings
@@ -57,6 +58,8 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(f"Backup completed: {db_backup_path}, {media_backup_path}"))
 
         # Save backup to BackupHistory
+        # Record backup history in database
+        backup_record = None
         try:
             # Try to get system user, create if doesn't exist
             system_user, created = User.objects.get_or_create(
@@ -74,7 +77,7 @@ class Command(BaseCommand):
             if created:
                 self.stdout.write("Created system user for backups")
             
-            BackupHistory.objects.create(
+            backup_record = BackupHistory.objects.create(
                 backup_file=db_backup_path,
                 media_backup=media_backup_path,
                 performed_by=system_user,  
@@ -84,3 +87,34 @@ class Command(BaseCommand):
         except Exception as e:
             self.stderr.write(f"Warning: Could not save backup history: {str(e)}")
             # Don't fail the backup if we can't save the history
+
+        # Also record in external registry file (backup safety)
+        try:
+            registry_path = os.path.join(settings.BASE_DIR, 'backup_registry.json')
+            
+            # Load existing registry
+            if os.path.exists(registry_path):
+                with open(registry_path, 'r') as f:
+                    registry = json.load(f)
+            else:
+                registry = {"backups": [], "last_updated": None}
+            
+            # Add new backup entry
+            registry["backups"].append({
+                "id": backup_record.id if backup_record else len(registry["backups"]) + 1,
+                "db_file": os.path.basename(db_backup_path),
+                "media_file": os.path.basename(media_backup_path),
+                "timestamp": datetime.now().isoformat(),
+                "performed_by": "system"
+            })
+            registry["last_updated"] = datetime.now().isoformat()
+            
+            # Save registry
+            with open(registry_path, 'w') as f:
+                json.dump(registry, f, indent=2)
+                
+            self.stdout.write("External backup registry updated")
+        except Exception as e:
+            self.stderr.write(f"Warning: Could not update external registry: {str(e)}")
+
+        self.stdout.write(self.style.SUCCESS(f"Backup completed successfully!"))

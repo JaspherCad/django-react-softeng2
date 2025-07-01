@@ -26,6 +26,17 @@ class Command(BaseCommand):
             self.stdout.write(self.style.ERROR("Restore cancelled"))
             return
         
+        # PRESERVE BACKUP HISTORY - Get all backup records before restore
+        self.stdout.write("Preserving backup history...")
+        try:
+            all_backups = list(BackupHistory.objects.all().values(
+                'id', 'backup_file', 'media_backup', 'timestamp', 'performed_by_id'
+            ))
+            self.stdout.write(f"Found {len(all_backups)} backup records to preserve")
+        except Exception as e:
+            self.stderr.write(f"Could not preserve backup history: {e}")
+            all_backups = []
+        
         # Create automatic backup before restore
         self.stdout.write("Creating safety backup before restore...")
         try:
@@ -77,4 +88,33 @@ class Command(BaseCommand):
             self.stderr.write(f"Database restore failed: {str(e)}")
             return
 
-        self.stdout.write(self.style.SUCCESS("Restore completed successfully"))
+        # RESTORE BACKUP HISTORY - Re-create all backup records
+        self.stdout.write("Restoring backup history...")
+        try:
+            from django.contrib.auth import get_user_model
+            User = get_user_model()
+            
+            for backup_data in all_backups:
+                # Skip if backup record already exists (from the restored database)
+                if not BackupHistory.objects.filter(id=backup_data['id']).exists():
+                    # Get user if exists, otherwise set to None
+                    performed_by = None
+                    if backup_data['performed_by_id']:
+                        try:
+                            performed_by = User.objects.get(id=backup_data['performed_by_id'])
+                        except User.DoesNotExist:
+                            pass
+                    
+                    BackupHistory.objects.create(
+                        id=backup_data['id'],
+                        backup_file=backup_data['backup_file'],
+                        media_backup=backup_data['media_backup'],
+                        timestamp=backup_data['timestamp'],
+                        performed_by=performed_by
+                    )
+            
+            self.stdout.write(self.style.SUCCESS(f"Restored {len(all_backups)} backup history records"))
+        except Exception as e:
+            self.stderr.write(f"Could not restore backup history: {str(e)}")
+
+        self.stdout.write(self.style.SUCCESS("Restore completed successfully with backup history preserved"))
