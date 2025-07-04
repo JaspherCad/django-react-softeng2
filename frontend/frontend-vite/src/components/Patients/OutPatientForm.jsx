@@ -1,4 +1,23 @@
-import React, { useEffect, useState, useRef } from "react";
+/*
+ * OutPatientForm Component - Hospital Management System
+ * 
+ * ROLE-BASED FIELD FILTERING IMPLEMENTATION:
+ * - Receptionist/Teller roles: Cannot access clinical fields
+ * - Admin/Doctor/Nurse roles: Full access to all fields
+ * 
+ * Restricted fields for Receptionist/Teller:
+ * - icd_code, diagnosis, treatment, clinical_findings
+ * - main_complaint, present_illness, attending_physician
+ * - principal_diagnosis, other_diagnosis
+ * 
+ * Features:
+ * - Fields are disabled with visual indicators
+ * - Restricted data is filtered from form submission
+ * - Role-based messages inform users of restrictions
+ * - Backend restrictions are mirrored in frontend UX
+ */
+
+import React, { useEffect, useState, useRef, useContext } from "react";
 import styles from "./BothPatientForm.module.css";
 import validationStyles from "./ValidationStyles.module.css";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
@@ -10,6 +29,7 @@ import {
   uploadPatientImageAPI,
 } from "../../api/axios";
 import SearchBar from "../AngAtingSeachBarWIthDropDown";
+import { AuthContext } from "../../context/AuthContext";
 
 // Get the API base URL from environment variables
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
@@ -134,6 +154,22 @@ const OutPatientForm = ({ onSubmit }) => {
   //onSubmit yung function pano sinend sa backend.
   const { id } = useParams();
   const location = useLocation();
+  const { user } = useContext(AuthContext);
+  
+  // Role-based field restriction logic
+  const isRestrictedRole = user?.role === 'Receptionist' || user?.role === 'Teller';
+  
+  // Define restricted fields based on backend logic
+  const restrictedFields = [
+    'icd_code', 'diagnosis', 'treatment', 'clinical_findings', 
+    'main_complaint', 'present_illness', 'attending_physician',
+    'principal_diagnosis', 'other_diagnosis' // Additional clinical fields
+  ];
+  
+  // Helper function to check if a field is restricted for current user
+  const isFieldRestricted = (fieldName) => {
+    return isRestrictedRole && restrictedFields.includes(fieldName);
+  };
   
   // Determine if this is an "existing" patient route (generates new case number)
   const isExistingPatientRoute = location.pathname.includes('/existing/');
@@ -200,6 +236,7 @@ const OutPatientForm = ({ onSubmit }) => {
     // Admission Information
     status: "Admitted",
     type_of_admission: "",
+    intended_admission_type: "",
     admission_date: "",
     admission_time: "",
     discharge_date: "",
@@ -486,6 +523,13 @@ const OutPatientForm = ({ onSubmit }) => {
     delete payload.case_number;
     delete payload.hospital_case_number;
 
+    // Remove restricted fields for receptionist/teller roles (matches backend logic)
+    if (isRestrictedRole) {
+      restrictedFields.forEach(field => {
+        delete payload[field];
+      });
+    }
+
     // // Validate ICD code
     // if (payload.icd_code && !isValidICDCode(payload.icd_code)) {
     //   alert('Please enter a valid ICD-10 code (e.g., J45.9).');
@@ -669,6 +713,17 @@ const OutPatientForm = ({ onSubmit }) => {
     return (
       <div className={validationStyles.warningText}>
         {sanitizedFields[fieldName].message}
+      </div>
+    );
+  };
+
+  // Component to show restricted field message
+  const RestrictedFieldMessage = ({ fieldName }) => {
+    if (!isFieldRestricted(fieldName)) return null;
+    
+    return (
+      <div className={validationStyles.infoText}>
+        🔒 This field is restricted for your role ({user?.role}). Only clinical staff can access this field.
       </div>
     );
   };
@@ -1063,6 +1118,49 @@ const OutPatientForm = ({ onSubmit }) => {
               </div>
             </div>
 
+            {/* -- Patient Intent for Admission Type */}
+            <div className={styles.checkboxGroup}>
+              <label className={styles.formLabel}>
+                Patient Intent
+                <span className={styles.helpText}> (What type of care does the patient expect?)</span>
+              </label>
+              <div className={styles.radioGroup}>
+                <label className={styles.radioLabel}>
+                  <input
+                    type="radio"
+                    name="intended_admission_type"
+                    value="Inpatient"
+                    checked={formData.intended_admission_type === "Inpatient"}
+                    onChange={handleInputChange}
+                  />
+                  Inpatient (Expects to stay overnight)
+                </label>
+                <label className={styles.radioLabel}>
+                  <input
+                    type="radio"
+                    name="intended_admission_type"
+                    value="Outpatient"
+                    checked={formData.intended_admission_type === "Outpatient"}
+                    onChange={handleInputChange}
+                  />
+                  Outpatient (Same-day treatment)
+                </label>
+                <label className={styles.radioLabel}>
+                  <input
+                    type="radio"
+                    name="intended_admission_type"
+                    value="Undecided"
+                    checked={formData.intended_admission_type === "Undecided"}
+                    onChange={handleInputChange}
+                  />
+                  Undecided (Depends on doctor's assessment)
+                </label>
+              </div>
+              <small className={styles.helpText}>
+                This is the patient's initial expectation. The final admission type will be determined by the attending physician.
+              </small>
+            </div>
+
             {/* -- Consultation Date & Time */}
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>
@@ -1097,24 +1195,36 @@ const OutPatientForm = ({ onSubmit }) => {
             <div className={styles.formGrid}>
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>Attending Physician</label>
-                <SearchBar
-                  // data={dummyBillingData}
-                  placeholder={"Search hospital User"}
-                  searchApi={SearchHospitalUserApi}
-                  // accept the argument passed by the SearchBar component (item) when onSelectSuggestion is invoked
-                  //to accept *-*
-                  onSelectSuggestion={(filtered) => {
-                    handleSelected(filtered)
-                    setSearchTerm(filtered.first_name + " " + filtered.last_name);
-                  }}
-                  suggestedOutput={['user_id', 'last_name', 'first_name']}
-                  searchTerm={searchTerm}
-                  setSearchTerm={setSearchTerm}
-                  isDropdownVisible={isDropdownVisible}
-                  setIsDropdownVisible={setIsDropdownVisible}
-                  maxDropdownHeight="500px"
-
-                />
+                {isFieldRestricted('attending_physician') ? (
+                  <div>
+                    <input
+                      type="text"
+                      className={styles.formInput}
+                      disabled
+                      placeholder="This field is restricted for your role"
+                      style={{ backgroundColor: '#f5f5f5', color: '#6c757d' }}
+                    />
+                    <RestrictedFieldMessage fieldName="attending_physician" />
+                  </div>
+                ) : (
+                  <SearchBar
+                    // data={dummyBillingData}
+                    placeholder={"Search hospital User"}
+                    searchApi={SearchHospitalUserApi}
+                    // accept the argument passed by the SearchBar component (item) when onSelectSuggestion is invoked
+                    //to accept *-*
+                    onSelectSuggestion={(filtered) => {
+                      handleSelected(filtered)
+                      setSearchTerm(filtered.first_name + " " + filtered.last_name);
+                    }}
+                    suggestedOutput={['user_id', 'last_name', 'first_name']}
+                    searchTerm={searchTerm}
+                    setSearchTerm={setSearchTerm}
+                    isDropdownVisible={isDropdownVisible}
+                    setIsDropdownVisible={setIsDropdownVisible}
+                    maxDropdownHeight="500px"
+                  />
+                )}
                 {/* <input
                   type="text"
                   name="attending_physician"
@@ -1235,7 +1345,10 @@ const OutPatientForm = ({ onSubmit }) => {
                   className={styles.formTextarea}
                   rows="3"
                   required
+                  disabled={isFieldRestricted('main_complaint')}
+                  placeholder={isFieldRestricted('main_complaint') ? 'This field is restricted for your role' : ''}
                 />
+                <RestrictedFieldMessage fieldName="main_complaint" />
               </div>
             </div>
 
@@ -1250,7 +1363,10 @@ const OutPatientForm = ({ onSubmit }) => {
                   className={styles.formTextarea}
                   rows="3"
                   required
+                  disabled={isFieldRestricted('present_illness')}
+                  placeholder={isFieldRestricted('present_illness') ? 'This field is restricted for your role' : ''}
                 />
+                <RestrictedFieldMessage fieldName="present_illness" />
               </div>
             </div>
           </div>
@@ -1269,7 +1385,10 @@ const OutPatientForm = ({ onSubmit }) => {
                   value={formData.icd_code}
                   onChange={handleInputChange}
                   className={styles.formInput}
+                  disabled={isFieldRestricted('icd_code')}
+                  placeholder={isFieldRestricted('icd_code') ? 'This field is restricted for your role' : 'e.g., J45.9'}
                 />
+                <RestrictedFieldMessage fieldName="icd_code" />
               </div>
             </div>
 
@@ -1291,8 +1410,11 @@ const OutPatientForm = ({ onSubmit }) => {
                   className={`${styles.formTextarea} ${fieldErrors.current_condition ? validationStyles.errorInput : ''}`}
                   rows="3"
                   required
+                  disabled={isFieldRestricted('diagnosis')}
+                  placeholder={isFieldRestricted('diagnosis') ? 'This field is restricted for your role' : ''}
                 />
                 <FieldError fieldName="current_condition" />
+                <RestrictedFieldMessage fieldName="diagnosis" />
               </div>
             </div>
 
@@ -1307,7 +1429,10 @@ const OutPatientForm = ({ onSubmit }) => {
                   className={styles.formTextarea}
                   rows="3"
                   required
+                  disabled={isFieldRestricted('treatment')}
+                  placeholder={isFieldRestricted('treatment') ? 'This field is restricted for your role' : ''}
                 />
+                <RestrictedFieldMessage fieldName="treatment" />
               </div>
             </div>
 

@@ -385,13 +385,18 @@ export const SearchBillingsApiExcludingDischarged = async (searchTerm) => {
   }
 };
 
-export const SearchHospitalUserApi = async (searchTerm) => {
+export const SearchHospitalUserApi = async (searchTerm, options = {}) => {
   try {
-    const response = await axiosInstance.get('/users/search', {
-      params: { q: searchTerm }
+    const params = { q: searchTerm };
+    
+    // Add icd_code filter if provided
+    if (options.icd_code) {
+      params.icd_code = options.icd_code;
     }
-
-    );
+    
+    const response = await axiosInstance.get('/users/search', {
+      params: params
+    });
     return response;
   } catch (error) {
     throw error;
@@ -947,6 +952,44 @@ export const getBackupHistoryAPI = async () => {
 export const restoreBackupAPI = async (backupId) => {
   try {
     const response = await axiosInstance.post(`/backup/restore/${backupId}/`);
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Clinical Review API functions
+export const updateClinicalDataAPI = async (patientId, clinicalData) => {
+  try {
+    const response = await axiosInstance.patch(`/patients/${patientId}/update-clinical/`, clinicalData);
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const confirmInpatientAPI = async (patientId, confirmData) => {
+  try {
+    const response = await axiosInstance.post(`/patients/${patientId}/confirm-inpatient/`, confirmData);
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const confirmOutpatientAPI = async (patientId, confirmData) => {
+  try {
+    const response = await axiosInstance.post(`/patients/${patientId}/confirm-outpatient/`, confirmData);
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Get ICD Code mappings for dropdown
+export const getICDMappingsAPI = async () => {
+  try {
+    const response = await axiosInstance.get('/icd-mapping/');
     return response;
   } catch (error) {
     throw error;

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import BillingItem, UserActionLog, UserImage
+from .models import BillingItem, Department, ICDToDepartmentMapping, UserActionLog, UserImage
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.forms import UserCreationForm, UserChangeForm
 from .models import (
@@ -8,6 +8,9 @@ from .models import (
 )
 
 admin.site.register(User)
+admin.site.register(Department)
+admin.site.register(ICDToDepartmentMapping)
+
 admin.site.register(Patient)
 admin.site.register(MedicalHistory)
 admin.site.register(Service)

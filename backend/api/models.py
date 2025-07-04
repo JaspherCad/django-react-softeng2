@@ -125,6 +125,16 @@ class CustomUserManager(BaseUserManager):
 #update file upload
 
 
+class Department(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True)
+    #one to many relationship with User(doctor)
+
+
+    def __str__(self):
+                return f" ID: {self.id} -- {self.name}"
+
+    
 # Custom User Model
 class User(AbstractBaseUser, PermissionsMixin):
     ROLE_CHOICES = [
@@ -137,7 +147,14 @@ class User(AbstractBaseUser, PermissionsMixin):
     #by default, user has username, i think, but password1 and passwrod2 are sure etc
     user_id = models.CharField(max_length=50, unique=True)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES)
-    department = models.CharField(max_length=255)
+    
+    department = models.ForeignKey(
+        Department,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
+    )
+
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False) #has access to admin site, in short ito ay admin
     
@@ -180,7 +197,6 @@ class User(AbstractBaseUser, PermissionsMixin):
 
 
 
-
 class UserSecurityQuestion(models.Model):
     user = models.ForeignKey(
         User,
@@ -203,7 +219,10 @@ class Patient(models.Model):
     STATUS_CHOICES = [
         ('Admitted', 'Admitted'), #Inpatient dapat!
         ('Discharged', 'Discharged'),
-        ('Outpatient', 'Outpatient')
+        ('Outpatient', 'Outpatient'), #3: outpatient/admitted is the final phase
+        ('Pending', 'Pending'), # 1: pending is a temporary status for new admissions
+        ('Ready_for_Coding', 'Ready_for_Coding') #2: Ready_for_Coding is a status for patients who are ready to be coded for billing or further processing
+
     ]
     IS_ACTIVE_CHOICES = [
         ('Active', 'Active'),
@@ -261,11 +280,25 @@ class Patient(models.Model):
         ('OPD', 'OPD')
     ]
 
+    INTENDED_ADMISSION_TYPE_CHOICES = [
+        ('Inpatient', 'Inpatient'),
+        ('Outpatient', 'Outpatient'),
+        ('Undecided', 'Undecided'),
+        (None, 'Not Set')
+    ]
+
     # Ward and Bed
     ward_service = models.CharField(max_length=100, null=True, blank=True)
     bed_number = models.CharField(max_length=20, null=True, blank=True)
 
-
+    #can be used for filtering, reporting, and task scheduling(??) basta lagay
+    department = models.ForeignKey(
+        Department,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        help_text="Assigned based on attending doctor's specialization"
+    )
 
     # Insurance & Case Information
     has_philhealth = models.BooleanField(default=False)
@@ -284,6 +317,7 @@ class Patient(models.Model):
         default=None,
         max_length=255
     )
+
 
 
     has_hmo = models.BooleanField(default=False)
@@ -329,7 +363,7 @@ class Patient(models.Model):
     religion = models.CharField(max_length=100, null=True, blank=True)
 
 
-
+    
     # Consultation Info
     attending_physician = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, blank=True, related_name='patients'
@@ -409,8 +443,15 @@ class Patient(models.Model):
     spouse_contact = models.CharField(max_length=15, null=True, blank=True)
 
 
-    #NEW
-    
+    #NEW == helper of Clinical staff to identify if patient is inpatient or outpatient even status is 'PENDING'
+    intended_admission_type = models.CharField(
+        max_length=20,
+        choices=INTENDED_ADMISSION_TYPE_CHOICES,
+        null=True,
+        blank=True,
+        default=None,
+        help_text="Set by clinical staff to indicate if patient will be inpatient or outpatient"
+    )
 
 
     #UPDATE! tracks historical record PER event. u know push get patch etc
@@ -437,8 +478,56 @@ class Patient(models.Model):
         self.is_active = 'Inactive'
         self.save()
 
+
+    def assign_department(self):
+        #assign_department based on ICD code
+
+        if self.department:
+            return  # dont override explicit department assignment
+
+
+        if not self.icd_code:
+            self.department = None
+            return
+
+        # find matching ICD  ==>  Department
+        try:
+            mapping = ICDToDepartmentMapping.objects.get(icd_code=self.icd_code)
+            self.department = mapping.department
+        except ICDToDepartmentMapping.DoesNotExist:
+            # backfall to General/Internal Medicine
+            default_dept, _ = Department.objects.get_or_create(name="Internal Medicine")
+            self.department = default_dept
+
+    #OPTIONAL
+    def assign_doctor(self):
+        #assign a random available doctor from department
+        if not self.department:
+            self.attending_physician = None
+            return
+
+        # Get active doctors in department
+        available_doctors = User.objects.filter(
+            role='Doctor',
+            is_active=True,
+            department=self.department
+        ).order_by('?')[:1]
+
+        if available_doctors.exists():
+            self.attending_physician = available_doctors.first()
+        else:
+            self.attending_physician = None
+
+
+
     def save(self, *args, **kwargs):
         """Override save to ensure case_number is generated properly and hospital_case_number equals code"""
+        
+        # ONLY Auto-assign department based on ICD code only IF "no" department is explicitly set
+        # This prevents overriding explicitly set departments from confirmation views
+        if self.icd_code and not self.department:
+            self.assign_department()
+
         # First ensure the case_number is generated
         if not self.case_number:
             # Generate case number with retry logic for race conditions
@@ -489,8 +578,14 @@ class MedicalHistory(models.Model):
 
 
 
+#mapper class.. get mapper.department or mapper.desc
+class ICDToDepartmentMapping(models.Model):
+    icd_code = models.CharField(max_length=20, unique=True)
+    department = models.ForeignKey(Department, on_delete=models.CASCADE)
+    description = models.TextField(blank=True)
 
-
+    def __str__(self):
+        return f"{self.icd_code} → {self.department.name}"
 
 
 

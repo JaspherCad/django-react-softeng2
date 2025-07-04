@@ -241,4 +241,21 @@ urlpatterns = [
     path('backup/', views.trigger_backup, name='trigger_backup'),
 
 
-]   
+    #department updates
+    path('patients/department/<int:dept_id>/', views.get_patients_by_department, name='patients_by_department'),
+
+    #ICD
+    path('icd-mapping/', views.icd_mapping_list, name='icd-mapping-list'),
+    path('icd-mapping/<int:pk>/', views.icd_mapping_detail, name='icd-mapping-detail'),
+    
+    # ICD code assignment for patients - medical staff only (PHASE 2)
+    path('patients/<int:patient_id>/icd-code/', views.update_patient_icd, name='update-patient-icd'),
+    #step 1 of phase 2
+    path('patients/<int:patient_id>/update-clinical/', views.update_clinical_data, name='update-patient-icd'),
+    #step 2 of phase 2
+    path('patients/<int:patient_id>/confirm-inpatient/', views.confirm_inpatient, name='confirm-inpatient'),
+    path('patients/<int:patient_id>/confirm-outpatient/', views.confirm_outpatient, name='confirm-outpatient'),
+
+
+
+]

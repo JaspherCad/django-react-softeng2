@@ -4,8 +4,9 @@ import { fetchClinicalNotesByCodeAPI, createClinicalNoteAPI, fetchPatientHistory
 import styles from "./PatientHistoryCaseCode.module.css";
 import PatientDataView from "./PatientDataView";
 import PatientHistoryModal from "./PatientHistoryModal";
+import PatientBillings from "../Billing/PatientBillings";
 
-const NOTE_TYPES = ["All", "General", "Nurse", "Doctor", "Medication", "Laboratories"];
+const NOTE_TYPES = ["All", "General", "Nurse", "Doctor", "Medication", "Laboratories", "BILLING OF THIS USER"];
 
 export default function PatientHistoryCaseCode() {
     const { patientid, caseCode, historyid } = useParams();
@@ -140,7 +141,7 @@ export default function PatientHistoryCaseCode() {
             const searchTerm = patientInformation?.code || patientInformation?.name || '';
             if (!searchTerm) {
                 // If no patient info available, go to general lab page
-                window.location.href = 'http://192.168.2.117:3000/laboratory';
+                navigate('/laboratory');
                 return;
             }
 
@@ -152,23 +153,13 @@ export default function PatientHistoryCaseCode() {
                 const firstLab = response.data[0];
                 navigate(`/laboratory/labId/${firstLab.id}`);
             } else {
-                // No lab records found, redirect to general laboratory page with patient code prefilled
-                const patientCode = patientInformation?.code || patientInformation?.name || '';
-                if (patientCode) {
-                    window.location.href = `http://192.168.2.117:3000/laboratory?q=${encodeURIComponent(patientCode)}`;
-                } else {
-                    window.location.href = 'http://192.168.2.117:3000/laboratory';
-                }
+                // No lab records found, redirect to general laboratory page
+                navigate('/laboratory');
             }
         } catch (error) {
             console.error('Error checking lab records:', error);
-            // On error, default to general laboratory page with patient code if available
-            const patientCode = patientInformation?.code || patientInformation?.name || '';
-            if (patientCode) {
-                window.location.href = `http://192.168.2.117:3000/laboratory?q=${encodeURIComponent(patientCode)}`;
-            } else {
-                window.location.href = 'http://192.168.2.117:3000/laboratory';
-            }
+            // On error, default to general laboratory page
+            navigate('/laboratory');
         }
     };
 
@@ -232,6 +223,13 @@ export default function PatientHistoryCaseCode() {
                                 Go to Laboratory Tab
                             </button>
                         </div>
+                    </>
+                )}
+
+                {/* BILLING REDIRECT */}
+                {filter === "BILLING OF THIS USER" && (
+                    <>
+                        <PatientBillings patientId={patientInformation?.id || patientid} />
                     </>
                 )}
 

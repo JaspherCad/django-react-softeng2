@@ -1,11 +1,13 @@
 import React from 'react';
 import styles from './BillingFormModal.module.css';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import ConfirmationModal from './ConfirmationModal';
 import { addBillingsApi, SearchPatientsApi } from '../../api/axios';
 import SearchBar from '../AngAtingSeachBarWIthDropDown/index';
 
 const AddBillingModalV2 = ({ show, onClose, setModalOpen }) => {
+  const navigate = useNavigate();
   const [patient, setPatient] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState();
@@ -33,9 +35,18 @@ const AddBillingModalV2 = ({ show, onClose, setModalOpen }) => {
 
       if (response?.status === 200 || response?.status === 201) {
         console.log('Billing successfully added');
+        console.log('New billing data:', response.data);
+        
         setError('');
         setShowConfirmModal(false);
         setModalOpen(false);
+        
+        // Redirect to the newly created billing
+        // Assuming the response contains the billing ID or code
+        const billingId = response.data.id || response.data.code;
+        if (billingId) {
+          navigate(`/billing/${billingId}`);
+        }
       } else {
         console.log('Failed to add billing:', response);
       }

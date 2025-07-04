@@ -72,6 +72,7 @@ const Navbar = () => {
         label: "Laboratory",
         icon: <i className="fas fa-file"></i>,
       },
+      
       {
         to: "/help_about",
         label: "Help & About",
@@ -96,6 +97,11 @@ const Navbar = () => {
         icon: <i className="fas fa-flask"></i>,
       },
       {
+        to: "/billing/lists_transactions",
+        label: "Billing",
+        icon: <i className="fas fa-file-invoice-dollar"></i>,
+      },
+      {
         to: "/help_about",
         label: "Help & About",
         icon: <i className="fas fa-question-circle"></i>,
@@ -113,15 +119,16 @@ const Navbar = () => {
         label: "Patients",
         icon: <i className="fas fa-users"></i>,
       },
-      {
-        to: "/user",
-        label: "Users",
-        icon: <i className="fas fa-user-cog"></i>,
-      },
+      
       {
         to: "/billing/lists_transactions",
         label: "Billing",
         icon: <i className="fas fa-file-invoice-dollar"></i>,
+      },
+      {
+        to: "/laboratory",
+        label: "Laboratory",
+        icon: <i className="fas fa-flask"></i>,
       },
       {
         to: "/inpatientroom",
@@ -183,9 +190,11 @@ const Navbar = () => {
   return (
     <>
       {/* Mobile Menu Toggle Button */}
-      <button className={styles.mobileMenuButton} onClick={toggleMobileMenu}>
-        <span className={styles.hamburger}></span>
-      </button>
+      {!isMobileMenuOpen && (
+        <button className={styles.mobileMenuButton} onClick={toggleMobileMenu}>
+          <span className={styles.hamburger}></span>
+        </button>
+      )}
       {/* Mobile Menu Toggle Button */}
 
       <div

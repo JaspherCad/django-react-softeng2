@@ -206,9 +206,11 @@ const PatientList = ({
               setIsDropdownVisible={setIsDropdownVisible}
               maxDropdownHeight="500px"
             />
-            <button className={styles.btnAddNewPatient} onClick={handleAdmitClick}>
-              Admit New Patient
-            </button>
+            {user.role !== 'Doctor' && user.role !== 'Nurse' && (
+              <button className={styles.btnAddNewPatient} onClick={handleAdmitClick}>
+                Admit New Patient
+              </button>
+            )}
           </div>
 
 

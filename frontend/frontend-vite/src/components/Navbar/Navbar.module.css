@@ -117,7 +117,7 @@
   top: 15px;
   left: 15px;
   z-index: 1001;
-  background: red;
+  background: none;
   border: none;
   padding: 10px;
   cursor: pointer;

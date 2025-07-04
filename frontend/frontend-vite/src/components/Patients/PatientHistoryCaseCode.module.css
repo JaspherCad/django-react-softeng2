@@ -218,6 +218,16 @@
   /* or 100% / 100vh, whatever fits your layout */
 }
 
+.billingRedirect {
+  display: flex;
+  justify-content: center;
+  /* horizontal */
+  align-items: center;
+  /* vertical */
+  height: 200px;
+  /* or 100% / 100vh, whatever fits your layout */
+}
+
 /* your button styles */
 .secondaryBtn {
   padding: 0.5rem 1rem;

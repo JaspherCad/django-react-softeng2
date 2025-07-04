@@ -13,6 +13,14 @@
   font-style: italic;
 }
 
+.infoText {
+  color: #6c757d;
+  font-size: 0.8rem;
+  margin-top: 4px;
+  margin-bottom: 0;
+  font-style: italic;
+}
+
 .errorInput {
   border-color: #d32f2f !important;
   background-color: rgba(211, 47, 47, 0.05);

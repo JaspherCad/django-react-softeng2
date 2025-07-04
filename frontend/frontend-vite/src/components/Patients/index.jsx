@@ -7,6 +7,7 @@ import OutPatientForm from './OutPatientForm';
 import InPatientForm from './InPatientForm';
 import PatientHistory from './PatientHistory';
 import PatientHistoryCaseCode from './PatientHistoryCaseCode';
+import ClinicalReviewForm from './ClinicalReviewForm';
 
 
 
@@ -157,9 +158,11 @@ const Patients = () => {
 
       <Route path="history/:patientid/casecode/:caseCode/historyId/:historyid" element={<PatientHistoryCaseCode setSelectedMedicalHistory={setSelectedMedicalHistory}  />} />
       
+      {/* Clinical Review Phase 2 Routing */}
+      <Route path="clinical-review/:patientId" element={<ClinicalReviewForm />} />
 
 
     </Routes>
   );
 };
-export default Patients; 
+export default Patients;

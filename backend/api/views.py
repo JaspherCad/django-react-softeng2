@@ -11,12 +11,11 @@ from django.db.models import Q
 from django.contrib.auth.models import Group, Permission
 from django.core.cache import cache
 from django.utils.crypto import get_random_string
-from .serializers import CustomTokenObtainPairSerializer, ClinicalNoteSerializer, GroupPermissionUpdateSerializer, GroupSerializer, PatientHistorySerializer, PatientImageSerializer, UserImageSerializer, UserSerializer, PatientSerializer, UserLogSerializer, BillingCreateSerializer, ServiceSerializer, PatientServiceSerializer, LaboratoryResultSerializer, LabResultFileSerializer, BillingItemSerializer, BillingSerializer, BillingSerializerNoList, Billing_PatientInfo_Serializer, LabResultFileGroupSerializer, LabResultFileInGroup, LabResultFileInGroupSerializer, RoomWithBedInfoSerializer, BedAssignmentSerializer, UserCreateSerializer
+from .serializers import CustomTokenObtainPairSerializer, ClinicalNoteSerializer, GroupPermissionUpdateSerializer, GroupSerializer, ICDToDepartmentMappingSerializer, PatientHistorySerializer, PatientImageSerializer, UserImageSerializer, UserSerializer, PatientSerializer, UserLogSerializer, BillingCreateSerializer, ServiceSerializer, PatientServiceSerializer, LaboratoryResultSerializer, LabResultFileSerializer, BillingItemSerializer, BillingSerializer, BillingSerializerNoList, Billing_PatientInfo_Serializer, LabResultFileGroupSerializer, LabResultFileInGroup, LabResultFileInGroupSerializer, RoomWithBedInfoSerializer, BedAssignmentSerializer, UserCreateSerializer
 from django.contrib.auth.hashers import make_password
 import hashlib
-
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from .models import BackupHistory, ClinicalNote, PatientImage, User, LabResultFileGroup, LabResultFileInGroup ,Patient, UserLog, Billing, BillingItem, BillingOperatorLog, PatientService, Service, LaboratoryResult, LabResultFile, Bed, BedAssignment, Room, UserSecurityQuestion
+from .models import BackupHistory, ClinicalNote, Department, ICDToDepartmentMapping, PatientImage, User, LabResultFileGroup, LabResultFileInGroup ,Patient, UserLog, Billing, BillingItem, BillingOperatorLog, PatientService, Service, LaboratoryResult, LabResultFile, Bed, BedAssignment, Room, UserSecurityQuestion
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -165,7 +164,7 @@ def patient_list(request):
 
 
 @api_view(['GET', 'POST'])
-@permission_classes([IsAdmin])
+@permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist])
 def archived_patients(request):
     if request.method == 'POST':
         patient_id = request.data.get('id')
@@ -468,39 +467,122 @@ def get_clinical_notes_by_patient(request, patient_id):
 
 # CLINICAL NOTES # CLINICAL NOTES# CLINICAL NOTES# CLINICAL NOTES# CLINICAL NOTES# CLINICAL NOTES
 
+
+
 @api_view(['POST'])
 @permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist])
 def patient_create(request):
+    """ #IMPORTANT!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    this creates new patient admission instance.
+    Always generates new case_number regardless of whether patient exists.
+    Role-based field restrictions apply.
+    """
+
+    #patient_update_new_case_number (New Admission for Existing Patient)
+        #Creates a new admission episode for an existing patient
+        #Generates new case number (new admission) bagong instace
+        #kunwari Patient returns after discharge, new medical episode
+
+    #patient_update (Same Admission Updates)
+    #Case number: Stays the same (same admission episode)
+
+
+
+
     if request.method == "POST":
         try:
-            data = request.data.copy()
-            
-            # Remove both case numbers - let the model's save method handle generation
-            data.pop('case_number', None)
-            data.pop('hospital_case_number', None)
-            
-            # Deserialize with the modified data
-            patient_serializer = PatientSerializer(data=data)
-            
-            if not patient_serializer.is_valid():
-                raise ValidationError(patient_serializer.errors)# Auto-400 with error details
+            with transaction.atomic():
 
-            if patient_serializer.is_valid():
-                patient_serializer.is_valid(raise_exception=True)
+                data = request.data.copy()
+                
+                # Remove both case numbers - let the model's save method handle generation
+                data.pop('case_number', None)
+                data.pop('hospital_case_number', None)
+
+
+
+
+                #ROLE BASED DATA INPUTS
+                # RESTRICT ICD CODE ACCESS BY ROLE
+                if request.user.role in ['Receptionist', 'Teller']:
+                    # Receptionists can only handle demographic and administrative data
+                    disallowed_fields = {
+                        'icd_code', 'diagnosis', 'treatment',
+                        'clinical_findings', 'main_complaint',
+                        'present_illness',  'attending_physician'
+                    }
+                    for field in disallowed_fields:
+                        data.pop(field, None)
+                
+                # Clinical staff (Admin, Doctor, Nurse) can input all fields during creation
+
+
+
+
+
+
+
+
+                
+
+                attending_id = data.get('attending_physician')
+                attending = None
+
+                # Validate attending physician only if provided
+                if attending_id:
+                    attending = get_object_or_404(User, id=attending_id)
+                    if attending.role != 'Doctor':
+                        return Response(
+                            {"attending_physician": ["Only users with role=Doctor may be assigned."]},
+                            status=status.HTTP_400_BAD_REQUEST
+                        )
+
+                    if not attending.department:
+                        return Response(
+                            {"attending_physician": ["Attending physician must be assigned to a department."]},
+                            status=status.HTTP_400_BAD_REQUEST
+                        )
+                
+                # if this view is clicked, force status to "Pending"
+                data['status'] = "Pending"
+
+                 # Allow patient to express intent (e.g., via frontend)
+                if 'intended_admission_type' in data:
+                    if data['intended_admission_type'] not in dict(Patient.INTENDED_ADMISSION_TYPE_CHOICES).keys():
+                        data['intended_admission_type'] = 'Undecided'
+
+
+
+
+
+
+                # Deserialize with the modified data
+                patient_serializer = PatientSerializer(data=data)
+                
+                if not patient_serializer.is_valid():
+                    raise ValidationError(patient_serializer.errors)# Auto-400 with error details
+
                 patient = patient_serializer.save()
-                return Response(patient_serializer.data, status=status.HTTP_201_CREATED)
-            
-            log_action(
-                user=request.user,
-                action="CREATE",
-                details={
-                    "message": "Created a new patient:",
-                    "patient_id": patient.id,
-                }
-            )
 
-            #fallback
-            return Response(patient_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                # If no department was assigned (likely no ICD code yet) and attending physician is provided,
+                # use the attending physician's department as fallback
+                if not patient.department and attending and attending.department:
+                    patient.department = attending.department
+                    patient.save(update_fields=['department'])
+
+
+
+                log_action(
+                    user=request.user,
+                    action="CREATE",
+                    details={
+                        "message": "Created a new patient:",
+                        "patient_id": patient.id,
+                    }
+                )
+
+                return Response(patient_serializer.data, status=status.HTTP_201_CREATED)
+                
         
         except ValidationError as ve:
             # Return structured validation errors
@@ -526,6 +608,307 @@ def patient_create(request):
 #   "emergency_contact_phone": "+0987654321",
 #   "is_active": "Active"
 # }
+
+
+######## ROLE BASED PATIENT UPDATES #######################
+# PHASE 2 - Step 2: Confirm Admission Type with Clinical Assessment
+# ✅ First: Step 1 saves vitals + clinical details (update_clinical_data)
+# ✅ Then: Step 2 enters Clinical Assessment + confirms admission type (confirm_inpatient/confirm_outpatient)
+@api_view(['POST'])
+@permission_classes([IsAdmin | IsDoctor])
+def confirm_inpatient(request, patient_id):
+    patient = get_object_or_404(Patient, id=patient_id)
+
+    if patient.status != "Pending":
+        return Response(
+            {"error": "Only Pending patients can be confirmed"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    icd_code = request.data.get('icd_code')
+    attending_id = request.data.get('attending_physician')
+
+    if not icd_code:
+        return Response(
+            {"error": "ICD code is required"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    if not attending_id:
+        return Response(
+            {"error": "Attending physician must be assigned"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    attending = get_object_or_404(User, id=attending_id)
+    if attending.role != "Doctor":
+        return Response(
+            {"error": "Only doctors can be attending physicians"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # Update patient with clinical data
+    patient.icd_code = icd_code
+    patient.attending_physician = attending
+    patient.department = attending.department
+    
+    # Also save principal diagnosis if provided
+    principal_diagnosis = request.data.get('principal_diagnosis')
+    if principal_diagnosis:
+        patient.principal_diagnosis = principal_diagnosis
+    
+    patient.status = "Ready_for_Coding"
+    patient.save(update_fields=[
+        'icd_code', 'attending_physician', 'department', 'status', 'principal_diagnosis'
+    ])
+
+    return Response(PatientSerializer(patient).data, status=200)
+
+
+@api_view(['POST'])
+@permission_classes([IsAdmin | IsDoctor])
+def confirm_outpatient(request, patient_id):
+    patient = get_object_or_404(Patient, id=patient_id)
+
+    if patient.status != "Pending":
+        return Response(
+            {"error": "Only Pending patients can be confirmed as outpatient"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    attending_id = request.data.get('attending_physician')
+    if not attending_id:
+        return Response(
+            {"error": "Attending physician must be assigned"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # Optional ICD code for outpatient (some may not require diagnosis codes)
+    icd_code = request.data.get('icd_code')
+
+    attending = get_object_or_404(User, id=attending_id)
+    if attending.role != "Doctor":
+        return Response(
+            {"error": "Only doctors can be assigned as attending physicians"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # Set outpatient status
+    patient.attending_physician = attending
+    patient.department = attending.department
+    
+    # Save ICD code if provided
+    if icd_code:
+        patient.icd_code = icd_code
+    
+    # Also save principal diagnosis if provided
+    principal_diagnosis = request.data.get('principal_diagnosis')
+    if principal_diagnosis:
+        patient.principal_diagnosis = principal_diagnosis
+    
+    patient.status = "Ready_for_Coding"
+    patient.save(update_fields=['attending_physician', 'department', 'status', 'icd_code', 'principal_diagnosis'])
+
+    return Response(PatientSerializer(patient).data, status=200)
+
+
+
+
+#PHASE 3 FINALIZE AND BILLING
+# views.py
+
+@api_view(['POST'])
+@permission_classes([IsAdmin | IsTeller])
+def finalize_inpatient(request, patient_id):
+    patient = get_object_or_404(Patient, id=patient_id)
+
+    if patient.status != "Ready_for_Coding":
+        return Response(
+            {"error": "Only Ready_for_Coding patients can be finalized"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    bed_id = request.data.get('bed_id')
+    if not bed_id:
+        return Response(
+            {"error": "Bed ID is required for inpatient admission"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    bed = get_object_or_404(Bed, id=bed_id)
+    if bed.is_occupied:
+        return Response(
+            {"error": f"Bed {bed.number} is already occupied"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # Assign bed
+    BedAssignment.objects.create(
+        patient=patient,
+        bed=bed,
+        assigned_by=request.user
+    )
+    bed.is_occupied = True
+    bed.save()
+
+    # Finalize patient status
+    patient.status = "Admitted"
+    patient.save(update_fields=['status'])
+
+    # Create billing
+    if not patient.bills.exists():
+        Billing.objects.create(
+            patient=patient,
+            status="Unpaid",
+            created_by=request.user
+        )
+
+    return Response({
+        "message": "Patient admitted as Inpatient",
+        "patient_id": patient.id,
+        "bed_id": bed.id
+    }, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([IsAdmin | IsTeller])
+def finalize_outpatient(request, patient_id):
+    patient = get_object_or_404(Patient, id=patient_id)
+
+    if patient.status != "Ready_for_Coding":
+        return Response(
+            {"error": "Only Ready_for_Coding patients can be confirmed as outpatient"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    attending_physician = patient.attending_physician
+    if not attending_physician:
+        return Response(
+            {"error": "Attending physician must be assigned"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # Finalize outpatient
+    patient.status = "Outpatient"
+    patient.save(update_fields=['status'])
+
+    # Create billing
+    if not patient.bills.exists():
+        Billing.objects.create(
+            patient=patient,
+            status="Unpaid",
+            created_by=request.user
+        )
+
+    return Response({
+        "message": "Patient confirmed as Outpatient",
+        "patient_id": patient.id
+    }, status=status.HTTP_200_OK)
+
+
+
+
+
+
+
+# Step 1: Update Clinical Data (Vitals + Clinical Details Only)
+@api_view(['PATCH'])
+@permission_classes([IsAdmin | IsDoctor | IsNurse])
+def update_clinical_data(request, patient_id):
+    patient = get_object_or_404(Patient, id=patient_id)
+    
+    # Step 1: Only allow vitals and clinical details (no Clinical Assessment)
+    allowed_fields = [
+        'treatment', 'blood_pressure', 'temperature', 'weight', 'height',
+        'pulse_rate', 'respiratory_rate', 'main_complaint', 'present_illness',
+        'physical_examination', 'clinical_findings'
+    ]
+    
+    # Role-based restrictions
+    if request.user.role == 'Nurse':
+        # Nurses can't update treatment or clinical findings
+        restricted_fields = {'treatment', 'clinical_findings'}
+        allowed_fields = [field for field in allowed_fields if field not in restricted_fields]
+    
+    data = {k: v for k, v in request.data.items() if k in allowed_fields}
+    
+    if not data:
+        return Response({"error": "No valid clinical fields provided"}, status=400)
+    
+    serializer = PatientSerializer(patient, data=data, partial=True)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+
+
+
+
+
+@api_view(['PUT', 'PATCH'])
+@permission_classes([IsAdmin | IsDoctor | IsNurse])  # Exclude Receptionist and Teller
+def update_patient_icd(request, patient_id):
+    patient = get_object_or_404(Patient, id=patient_id)
+    
+    if request.method in ['PUT', 'PATCH']:
+        icd_code = request.data.get('icd_code')
+        
+        if not icd_code:
+            return Response({"error": "ICD code is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if icd_code:
+            patient.icd_code = icd_code
+            # This will trigger assign_department() if the code exists in mapping
+            patient.save()
+            
+            log_action(
+                user=request.user,
+                action="UPDATE", 
+                details={
+                    "message": f"Updated ICD code for patient {patient.name}",
+                    "patient_id": patient.id,
+                    "icd_code": icd_code,
+                    "updated_by_role": request.user.role
+                }
+            )
+            
+            return Response({
+                "message": "ICD code updated successfully",
+                "icd_code": patient.icd_code,
+                "department": patient.department.name if patient.department else None
+            })
+        
+        return Response(
+            {"error": "ICD code is required"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+
+######## ROLE BASED PATIENT UPDATES #######################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 @api_view(['GET'])
 @permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist])
@@ -580,6 +963,20 @@ def patient_update(request, pk):
 
             patient = Patient.objects.get(pk=pk)
                                             #send the specific patient then serialize the request.data
+
+
+            # Allow manual override
+            if 'department' in data:
+                dept_id = data.pop('department', None)
+                if dept_id:
+                    patient.department = Department.objects.get(id=dept_id)
+            
+            if 'attending_physician' in data:
+                doctor_id = data.pop('attending_physician', None)
+                if doctor_id:
+                    patient.attending_physician = User.objects.get(id=doctor_id)
+
+
             serializer = PatientSerializer(patient, data=data, partial=True)
 
             
@@ -622,13 +1019,48 @@ def patient_update(request, pk):
 @api_view(['PUT'])
 @permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist])
 def patient_update_new_case_number(request, pk):
+    """
+    Creates a new admission episode for an existing patient.
+    Generates new case_number but preserves hospital_case_number.
+    Role-based field restrictions apply (same as patient_create).
+    """
     if request.method == "PUT":
         try:
             data = request.data.copy()
             data.pop('case_number', None)  # Prevent case_number from being passed
             data.pop('hospital_case_number', None)  # Prevent hospital_case_number from being modified
 
+            # ROLE BASED DATA INPUTS - Same restrictions as patient_create
+            # RESTRICT ICD CODE ACCESS BY ROLE
+            if request.user.role in ['Receptionist', 'Teller']:
+                # Receptionists/Tellers can only handle demographic and administrative data
+                disallowed_fields = {
+                    'icd_code', 'diagnosis', 'treatment',
+                    'clinical_findings', 'main_complaint',
+                    'present_illness', 'attending_physician'
+                }
+                for field in disallowed_fields:
+                    data.pop(field, None)
+            
+            # Clinical staff (Admin, Doctor, Nurse) can input all fields during new admission
+
             patient = Patient.objects.get(pk=pk)
+            
+            # Validate attending physician if provided (same logic as patient_create)
+            attending_id = data.get('attending_physician')
+            if attending_id:
+                attending = get_object_or_404(User, id=attending_id)
+                if attending.role != 'Doctor':
+                    return Response(
+                        {"attending_physician": ["Only users with role=Doctor may be assigned."]},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                if not attending.department:
+                    return Response(
+                        {"attending_physician": ["Attending physician must be assigned to a department."]},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+
             # Store the original hospital_case_number to preserve it
             original_hospital_case_number = patient.hospital_case_number
             patient.case_number = None  # Force new case number on save
@@ -1044,7 +1476,7 @@ def get_user_logs_all(request):
 
 
 @api_view(['POST'])
-@permission_classes([IsAdmin | IsTeller | IsReceptionist | IsDoctor | IsNurse])
+@permission_classes([IsAdmin | IsTeller | IsReceptionist ])
  # {
     #   "patient": 1,
     #   "status": "Unpaid"
@@ -1147,7 +1579,7 @@ def mark_billing_paid(request, billing_code):
 
 
 @api_view(['PATCH'])
-@permission_classes([IsAdmin | IsTeller | IsReceptionist | IsDoctor | IsNurse])
+@permission_classes([IsAdmin | IsTeller | IsReceptionist])
 def update_billing(request, pk):
     billing = get_object_or_404(Billing, id=pk)
 
@@ -1185,7 +1617,7 @@ def update_billing(request, pk):
     # path('billings/add-billing-item/<int:pk>', views.create_bill_item, name='create_billing_item'),
 
 @api_view(['PUT'])
-@permission_classes([IsAdmin | IsTeller | IsReceptionist | IsDoctor | IsNurse])
+@permission_classes([IsAdmin | IsTeller | IsReceptionist])
 def edit_bill_item(request, billing_pk, item_pk):
 
     #get the parent Billing
@@ -1504,44 +1936,84 @@ def search_patients_admitted_only(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
-
 @api_view(['GET'])
 @permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist])
 def search_users(request):
     q = request.query_params.get('q', '').strip()
+    icd_code = request.query_params.get('icd_code', '').strip()
+    
     if not q:
         return Response([], status=status.HTTP_200_OK)
 
     try:
+        # Base query for users
         qs = User.objects.filter(
             Q(user_id__icontains=q) |
             Q(role__icontains=q) |
             Q(last_name__icontains=q) |
             Q(first_name__icontains=q) |
-            Q(role__icontains=q) |
+            Q(department__name__icontains=q)
+        )
 
+        # Filter by department based on ICD code mapping
+        if icd_code:
+            try:
+                # Get department mapped to the ICD code
+                mapping = ICDToDepartmentMapping.objects.get(icd_code=icd_code)
+                mapped_department = mapping.department
+                
+                # Filter doctors to only those from the mapped department
+                qs = qs.filter(
+                    role='Doctor',
+                    department=mapped_department
+                )
+                
+            except ICDToDepartmentMapping.DoesNotExist:
+                # If ICD code doesn't exist in mapping, return empty result
+                return Response({
+                    "users": [],
+                    "message": f"No department mapping found for ICD code '{icd_code}'"
+                }, status=status.HTTP_200_OK)
 
-
-            Q(department__icontains=q)
-        )[:5]
+        # Limit results
+        qs = qs[:5]
+        
         serializer = UserSerializer(qs, many=True)
 
-        log_action(
-                user=request.user,
-                action="VIEW",
-                details={
-                    "message": "Searched a user:",
-                    "query": q
-                }
-            )
+        # Enhanced logging with filter information
+        log_details = {
+            "message": "Searched users:",
+            "query": q
+        }
         
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        if icd_code:
+            log_details["icd_code_filter"] = icd_code
+            log_details["mapped_department"] = mapping.department.name if 'mapping' in locals() else None
+
+        log_action(
+            user=request.user,
+            action="VIEW",
+            details=log_details
+        )
+        
+        # Enhanced response with metadata
+        response_data = {
+            "users": serializer.data,
+            "filters_applied": {
+                "search_query": q,
+                "icd_code": icd_code if icd_code else None,
+                "mapped_department": mapping.department.name if icd_code and 'mapping' in locals() else None
+            },
+            "total_results": len(serializer.data)
+        }
+        
+        return Response(response_data, status=status.HTTP_200_OK)
+        
     except Exception as e:
         return Response(
             {"error": "Something went wrong while searching users", "details": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
-
 
 
 
@@ -2248,7 +2720,7 @@ def generate_report(request):
 
 #Laboratory Views
 @api_view(['POST'])
-@permission_classes([IsAdmin | IsDoctor])
+@permission_classes([IsAdmin | IsDoctor | IsNurse])
 def create_laboratory_file_result_for_laboratory_class(request, pk):
     # - file: <binary file>
     # - description: optional text
@@ -2547,7 +3019,7 @@ def get_laboratory_file_group(request, group_id):
 
 
 @api_view(['POST'])
-@permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist])
+@permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist | IsTeller])
 @parser_classes([MultiPartParser, FormParser])
 def upload_user_image(request, user_id):
     """
@@ -2620,7 +3092,7 @@ def upload_user_image(request, user_id):
 
 
 @api_view(['POST'])
-@permission_classes([IsAdmin | IsDoctor | IsNurse])
+@permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist | IsTeller])
 def patientImageupload(request):
     #  -F "patient=123" \
     #  -F "file=@/path/to/image.jpg" \
@@ -2652,13 +3124,34 @@ def patientImageupload(request):
 
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
+
+
+
+
+
+#DEPARTMETNS
+
 @api_view(['GET'])
-@permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist])
+@permission_classes([IsAdmin | IsDoctor])
+def get_patients_by_department(request, dept_id):
+    patients = Patient.objects.filter(department_id=dept_id)
+    serializer = PatientSerializer(patients, many=True)
+    return Response(serializer.data)
+
+
+
+
+
+
+
+
+
+
+@api_view(['GET'])
+@permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist | IsTeller])
 def get_patient_images(request, patient_id):
-    """
-    Fetch all images for a specific patient by ID
-    URL: /api/patient-images/<patient_id>/
-    """
+    
     try:
         # Validate patient exists
         patient = get_object_or_404(Patient, id=patient_id)
@@ -2750,10 +3243,20 @@ def assign_bed(request, patient_id, bed_id, billing_id):
     bed.is_occupied = True
     bed.save()
 
-
-    #set bed_number to patient
+    attending_doctor = patient.attending_physician
+    #set bed_number to patient AND the department
     patient.bed_number = bed.number
+    patient.department = attending_doctor.department
+
+
+    # Dont override department if already set by ICD code
+
+    if not patient.department and patient.attending_physician and patient.attending_physician.department:
+        patient.department = patient.attending_physician.department
+    
     patient.save()
+
+    
 
     log_action(
                 user=request.user,
@@ -2822,6 +3325,7 @@ def discharge_patient(request, patient_id):
             # Mark patient as discharged
             patient.status = 'Discharged'
             patient.bed_number = None
+            patient.discharge_date = timezone.now()
 
             patient.save()
 
@@ -3048,6 +3552,48 @@ def about(request):
 #     users = User.objects.all().order_by('-date_joined')
 #     serializer = UserSerializer(users, many=True)
 #     return Response(serializer.data, status=status.HTTP_200_OK)
+
+#ICD CODEz
+@api_view(['GET', 'POST'])
+@permission_classes([IsAdmin])
+def icd_mapping_list(request):
+    if request.method == 'GET':
+        mappings = ICDToDepartmentMapping.objects.all()
+        serializer = ICDToDepartmentMappingSerializer(mappings, many=True)
+        return Response(serializer.data)
+
+    # POST
+    #create mapper values
+    serializer = ICDToDepartmentMappingSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
+    return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+#SPEICIFC ID SAERCH
+@api_view(['GET', 'PUT', 'DELETE'])
+@permission_classes([IsAdminUser])
+def icd_mapping_detail(request, pk):
+    mapping = get_object_or_404(ICDToDepartmentMapping, pk=pk)
+
+    if request.method == 'GET':
+        serializer = ICDToDepartmentMappingSerializer(mapping)
+        return Response(serializer.data)
+
+    if request.method == 'PUT':
+        serializer = ICDToDepartmentMappingSerializer(mapping, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+    # DELETE
+    mapping.delete()
+    return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+
+
+
+
 
 
 @api_view(['GET'])

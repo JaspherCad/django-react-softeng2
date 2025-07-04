@@ -4,7 +4,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from django.core.cache import cache
 from django.utils import timezone
-from .models import ClinicalNote, PatientImage, User, Patient, LaboratoryResult, LabResultFile, UserImage, UserLog, Service, PatientService, Billing, BillingItem, LabResultFileInGroup, LabResultFileGroup, Bed, Room, BedAssignment, MedicalHistory, UserSecurityQuestion
+from .models import ClinicalNote, Department, ICDToDepartmentMapping, PatientImage, User, Patient, LaboratoryResult, LabResultFile, UserImage, UserLog, Service, PatientService, Billing, BillingItem, LabResultFileInGroup, LabResultFileGroup, Bed, Room, BedAssignment, MedicalHistory, UserSecurityQuestion
 
 
 
@@ -75,7 +75,10 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
                 'first_name': user.first_name,
                 'last_name': user.last_name,
                 'role': user.role,
-                'department': user.department,
+                'department': {
+                    'id': user.department.id,
+                    'name': user.department.name
+                } if user.department else None,
             }
         }
     
@@ -91,13 +94,30 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             # Set failed attempts with 1 minute expiry (resets counter after 1 minute)
             cache.set(attempt_key, failed_attempts, timeout=60)
 
+
+
+class DepartmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Department
+        fields = ['id', 'name']
+
+
 class UserSerializer(serializers.ModelSerializer):
     groups = serializers.SerializerMethodField()
     images = serializers.SerializerMethodField()
 
+    
+    department = DepartmentSerializer(read_only=True)
+    department_id = serializers.PrimaryKeyRelatedField(
+        queryset=Department.objects.all(),
+        source='department',
+        write_only=True,
+        required=False,
+        allow_null=True
+    )
     class Meta:
         model = User
-        fields = ["id", "first_name","last_name","user_id", "groups","password", "role", "department", "is_active", "is_staff", "address", "birthdate","images"
+        fields = ["id", "first_name","last_name","user_id", "groups","password", "role", "department","department_id", "is_active", "is_staff", "address", "birthdate","images"
 ]
         extra_kwargs = {
             "password": {"write_only": True}, 
@@ -128,10 +148,13 @@ class UserSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         password = validated_data.pop('password', None)
         
+        # Extract department - it might not be present if not provided
+        department = validated_data.pop('department', None)  # This comes from the source='department' mapping
+        
         user = User.objects.create_user(
             user_id=validated_data['user_id'],
             role=validated_data['role'],
-            department=validated_data['department'],
+            department=department,
             is_active=validated_data.get('is_active', True),
             first_name=validated_data.get('first_name'),
             last_name=validated_data.get('last_name'),
@@ -233,7 +256,11 @@ class ClinicalNoteSerializer(serializers.ModelSerializer):
 
 
 
+
 class PatientSerializer(serializers.ModelSerializer):
+    attending_physician = UserSerializer(read_only=True)
+    department = DepartmentSerializer(read_only=True)
+    
     class Meta:
         model = Patient
         fields = '__all__'
@@ -243,6 +270,20 @@ class PatientSerializer(serializers.ModelSerializer):
             if data.get(field) == "":
                 data[field] = None
         return data
+
+class ICDToDepartmentMappingSerializer(serializers.ModelSerializer):
+    department = DepartmentSerializer(read_only=True)  
+    department_id = serializers.PrimaryKeyRelatedField(
+        queryset=Department.objects.all(),
+        source='department',
+        write_only=True
+    )
+
+
+
+    class Meta:
+        model = ICDToDepartmentMapping
+        fields = ['id', 'icd_code', 'description', 'department', 'department_id']
 
 
 class PatientImageSerializer(serializers.ModelSerializer):
@@ -459,8 +500,6 @@ class UserLogSerializer(serializers.ModelSerializer):
                 'department': 'Unknown',
                 'image': None
             }
-
-
 
 
 

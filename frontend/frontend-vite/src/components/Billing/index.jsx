@@ -292,6 +292,12 @@ const Billing = () => {
                 <button className={styles.viewDetailsButton} onClick={() => handleConfirm()}>
                   <i className="fa fa-eye"></i> View Full Details
                 </button>
+                <button 
+                  className={styles.viewPatientBillingsButton} 
+                  onClick={() => navigate(`/billing/patient/${selectedItem.patient.id}`)}
+                >
+                  <i className="fa fa-user"></i> View All Patient Billings
+                </button>
               </div>
             </div>
           ) : (

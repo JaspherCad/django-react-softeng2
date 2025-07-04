@@ -3,8 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { getBillingsByPatientAPI, patientDetailsAPI } from '../../api/axios';
 import styles from './Billing.module.css';
 
-const PatientBillings = () => {
-  const { patientId } = useParams();
+const PatientBillings = ({ patientId: propPatientId }) => {
+  const { patientId: urlPatientId } = useParams();
+  const patientId = propPatientId || urlPatientId; // Use prop if available, otherwise URL param
   const [billings, setBillings] = useState([]);
   const [patient, setPatient] = useState(null);
   const [loading, setLoading] = useState(true);
