@@ -996,4 +996,43 @@ export const getICDMappingsAPI = async () => {
   }
 };
 
+// Step 3 (Phase 3): Coding & Bed Assignment - for Medical Coders/Billers
+export const finalizeInpatientAPI = async (patientId, bedData) => {
+  try {
+    const response = await axiosInstance.post(`/patients/${patientId}/finalize-inpatient/`, bedData);
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const finalizeOutpatientAPI = async (patientId) => {
+  try {
+    const response = await axiosInstance.post(`/patients/${patientId}/finalize-outpatient/`);
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Get patients with Ready_for_Coding status
+export const getReadyForCodingPatientsAPI = async () => {
+  try {
+    const response = await axiosInstance.get('/patients/list?status=Ready_for_Coding');
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Get available beds for inpatient assignment
+export const getAvailableBedsAPI = async () => {
+  try {
+    const response = await axiosInstance.get('/room_bed_list');
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
 export default axiosInstance;

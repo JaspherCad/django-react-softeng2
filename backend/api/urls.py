@@ -255,6 +255,10 @@ urlpatterns = [
     #step 2 of phase 2
     path('patients/<int:patient_id>/confirm-inpatient/', views.confirm_inpatient, name='confirm-inpatient'),
     path('patients/<int:patient_id>/confirm-outpatient/', views.confirm_outpatient, name='confirm-outpatient'),
+    
+    # Step 3 (Phase 3): Coding & Bed Assignment - for Medical Coders/Billers
+    path('patients/<int:patient_id>/finalize-inpatient/', views.finalize_inpatient, name='finalize-inpatient'),
+    path('patients/<int:patient_id>/finalize-outpatient/', views.finalize_outpatient, name='finalize-outpatient'),
 
 
 

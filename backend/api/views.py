@@ -103,6 +103,11 @@ def patient_list(request):
             #1: go to DATABASE (orm) then FETCH all the object (IN OUR CASE PATIENT)
             list_of_patient_query = Patient.objects.filter(is_active='Active', archived=False).order_by('-admission_date')
 
+            # Support status filtering for Phase 3 workflow
+            status_filter = request.GET.get('status')
+            if status_filter:
+                list_of_patient_query = list_of_patient_query.filter(status=status_filter)
+
             #basecase IF USER IS DOCTOR filterout only that are assigned to them
             if hasattr(request.user, 'role') and request.user.role == 'Doctor':
                 # Get patient IDs where doctor is current attending physician
@@ -717,9 +722,16 @@ def confirm_outpatient(request, patient_id):
 #PHASE 3 FINALIZE AND BILLING
 # views.py
 
+
 @api_view(['POST'])
 @permission_classes([IsAdmin | IsTeller])
+@transaction.atomic
 def finalize_inpatient(request, patient_id):
+    """
+    Finalize inpatient admission:
+    - Create billing with patient and case_number
+    - Assign bed and link billing to BedAssignment
+    """
     patient = get_object_or_404(Patient, id=patient_id)
 
     if patient.status != "Ready_for_Coding":
@@ -735,44 +747,60 @@ def finalize_inpatient(request, patient_id):
             status=status.HTTP_400_BAD_REQUEST
         )
 
-    bed = get_object_or_404(Bed, id=bed_id)
+    # Lock bed to prevent race conditions
+    bed = Bed.objects.select_for_update().get(id=bed_id)
     if bed.is_occupied:
         return Response(
             {"error": f"Bed {bed.number} is already occupied"},
             status=status.HTTP_400_BAD_REQUEST
         )
 
-    # Assign bed
+    # Prepare billing data with patient and case_number
+    billing_data = {
+        "patient": patient.id,
+        "case_number": patient.case_number,  # Link to episode
+        "status": "Unpaid"
+    }
+
+    # Validate and create billing
+    serializer = BillingCreateSerializer(data=billing_data)
+    serializer.is_valid(raise_exception=True)
+    billing = serializer.save(created_by=request.user)
+
+    # Create BedAssignment with billing
     BedAssignment.objects.create(
         patient=patient,
         bed=bed,
+        billing=billing,
         assigned_by=request.user
     )
-    bed.is_occupied = True
-    bed.save()
 
-    # Finalize patient status
+    # Update bed and patient status
+    bed.is_occupied = True
+    bed.save(update_fields=['is_occupied'])
+
     patient.status = "Admitted"
     patient.save(update_fields=['status'])
 
-    # Create billing
-    if not patient.bills.exists():
-        Billing.objects.create(
-            patient=patient,
-            status="Unpaid",
-            created_by=request.user
-        )
-
     return Response({
-        "message": "Patient admitted as Inpatient",
-        "patient_id": patient.id,
-        "bed_id": bed.id
+        "message": "Inpatient finalized",
+        "billing_id": billing.id,
+        "case_number": billing.case_number
     }, status=status.HTTP_200_OK)
+
+
+
+
 
 
 @api_view(['POST'])
 @permission_classes([IsAdmin | IsTeller])
+@transaction.atomic
 def finalize_outpatient(request, patient_id):
+    """
+    Finalize outpatient admission:
+    - Create billing with patient and case_number
+    """
     patient = get_object_or_404(Patient, id=patient_id)
 
     if patient.status != "Ready_for_Coding":
@@ -781,34 +809,33 @@ def finalize_outpatient(request, patient_id):
             status=status.HTTP_400_BAD_REQUEST
         )
 
-    attending_physician = patient.attending_physician
-    if not attending_physician:
+    if not patient.attending_physician:
         return Response(
             {"error": "Attending physician must be assigned"},
             status=status.HTTP_400_BAD_REQUEST
         )
 
-    # Finalize outpatient
+    # Prepare billing data with patient and case_number
+    billing_data = {
+        "patient": patient.id,
+        "case_number": patient.case_number,  # Link to episode
+        "status": "Unpaid"
+    }
+
+    # Validate and create billing
+    serializer = BillingCreateSerializer(data=billing_data)
+    serializer.is_valid(raise_exception=True)
+    billing = serializer.save(created_by=request.user)
+
+    # Update patient status
     patient.status = "Outpatient"
     patient.save(update_fields=['status'])
 
-    # Create billing
-    if not patient.bills.exists():
-        Billing.objects.create(
-            patient=patient,
-            status="Unpaid",
-            created_by=request.user
-        )
-
     return Response({
-        "message": "Patient confirmed as Outpatient",
-        "patient_id": patient.id
+        "message": "Outpatient finalized",
+        "billing_id": billing.id,
+        "case_number": billing.case_number
     }, status=status.HTTP_200_OK)
-
-
-
-
-
 
 
 # Step 1: Update Clinical Data (Vitals + Clinical Details Only)

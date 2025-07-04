@@ -735,7 +735,16 @@ class Billing(models.Model):
 
     #TODO: THIS IS TWO WAY RELATIONSHIO.. implicitly / hidden association
     # billing_items = models.ForeignKey(Billing, on_delete=models.CASCADE, related_name='billing_items')
-
+    
+    
+    
+    #link to historical Patient.case_number
+    case_number = models.CharField(
+        max_length=50,
+        null=True,
+        blank=True,
+        help_text="Historical patient case number (nullable until linked)"
+    )
 
 
     def update_total(self):

@@ -35,7 +35,10 @@ export default function BedAssignmentList() {
     setLoading(true);
     setError(null);
     fetchBedAssignments(activeOnly)
-      .then(data => setAssignments(data))
+      .then(data => {
+        setAssignments(data)
+        console.log(data)
+      })
       .catch(() => setError('Failed to load assignments'))
       .finally(() => setLoading(false));
   };

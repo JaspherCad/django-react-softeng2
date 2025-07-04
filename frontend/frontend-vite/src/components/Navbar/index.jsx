@@ -35,6 +35,11 @@ const Navbar = () => {
         icon: <i className="fas fa-file-invoice-dollar"></i>,
       },
       {
+        to: "/coding-bed-assignment",
+        label: "Coding & Bed Assignment",
+        icon: <i className="fas fa-clipboard-check"></i>,
+      },
+      {
         to: "/inpatientroom",
         label: "Rooms",
         icon: <i className="fas fa-procedures"></i>,
@@ -153,6 +158,11 @@ const Navbar = () => {
         to: "/billing/lists_transactions",
         label: "Billing",
         icon: <i className="fas fa-file-invoice-dollar"></i>,
+      },
+      {
+        to: "/coding-bed-assignment",
+        label: "Coding & Bed Assignment",
+        icon: <i className="fas fa-clipboard-check"></i>,
       },
       {
         to: "/inpatientroom",

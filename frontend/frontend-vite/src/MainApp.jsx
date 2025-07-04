@@ -14,6 +14,7 @@ import InPatientRoom from './components/InPatientRoom';
 import AdminPage from './components/AdminPage';
 import ReportPage from './components/Reports';
 import HelpAbout from './components/HelpAndABout';
+import CodingAndBedAssignment from './components/CodingAndBedAssignment';
 
 
 import UserManagement from './components/UserManagement/UserManagement';
@@ -120,12 +121,14 @@ const MainApp = () => {
           <Route path="/billing/*" element={<Billing />} />
           <Route path="/laboratory/*" element={<Laboratory />} />
           <Route path="/InPatientRoom/*" element={<InPatientRoom />} />
+          <Route path="/coding-bed-assignment" element={<CodingAndBedAssignment />} />
 
           <Route path="/Admin/*" element={<AdminPage />} />
           <Route path="/Reports/*" element={<ReportPage />} />
 
 
           <Route path="/help_about/" element={<HelpAbout />} />
+          <Route path="/coding_and_bed_assignment/*" element={<CodingAndBedAssignment />} />
 
 
 

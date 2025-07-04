@@ -330,13 +330,14 @@ const BillingItemsOfThatBill = ({ modalBillId, isModal = false }) => {
           {created_by.user_id})
         </p>
         <p>
-          <strong>Department:</strong> {created_by.department}
+          <strong>Department:</strong> {created_by.department?.name || 'Not specified'}
         </p>
         <p>
           <strong>Operators:</strong>{' '}
-          {operator.map((op) => `${op.role} (User ID: ${op.user_id})`).join(
-            ', '
-          )}
+          {operator && operator.length > 0 
+            ? operator.map((op) => `${op.role} (User ID: ${op.user_id})`).join(', ')
+            : 'None'
+          }
         </p>
       </div>
 
