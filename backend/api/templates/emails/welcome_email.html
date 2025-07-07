@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to {{ hospital_name }}</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .email-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .content {
+            padding: 30px;
+        }
+        .welcome-message {
+            font-size: 18px;
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+        .patient-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 6px;
+            margin: 20px 0;
+            border-left: 4px solid #667eea;
+        }
+        .setup-button {
+            display: inline-block;
+            background: #27ae60;
+            color: white;
+            padding: 15px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .setup-button:hover {
+            background: #229954;
+        }
+        .features {
+            background: #e8f5e8;
+            padding: 20px;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+        .features h3 {
+            color: #27ae60;
+            margin-top: 0;
+        }
+        .features ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .features li {
+            margin-bottom: 8px;
+        }
+        .footer {
+            background: #f1f1f1;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .button-container {
+            text-align: center;
+            margin: 30px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <h1>🏥 Welcome to {{ hospital_name }}!</h1>
+        </div>
+        
+        <div class="content">
+            <div class="welcome-message">
+                Hello {% if patient %}{{ patient.name }}{% elif user.patient %}{{ user.patient.name }}{% else %}Patient{% endif %},
+            </div>
+            
+            <p>Congratulations! Your patient account has been successfully created and approved by our medical team.</p>
+            
+            <div class="patient-info">
+                <h3>📋 Your Account Details</h3>
+                <p><strong>Patient Name:</strong> {% if patient %}{{ patient.name }}{% elif user.patient %}{{ user.patient.name }}{% else %}N/A{% endif %}</p>
+                <p><strong>User ID:</strong> {{ user.user_id }}</p>
+                <p><strong>Patient Code:</strong> {% if patient %}{{ patient.code }}{% elif user.patient %}{{ user.patient.code }}{% else %}N/A{% endif %}</p>
+                <p><strong>Email:</strong> {% if patient %}{{ patient.email }}{% elif user.patient %}{{ user.patient.email }}{% else %}{{ user.email }}{% endif %}</p>
+            </div>
+            
+            <p>To complete your registration and start accessing your patient portal, please click the button below to set up your password:</p>
+            
+            <div class="button-container">
+                <a href="{{ setup_url }}" class="setup-button">
+                    🔐 Complete Registration & Set Password
+                </a>
+            </div>
+            
+            <div class="features">
+                <h3>🌟 What You Can Do With Your Patient Portal:</h3>
+                <ul>
+                    <li>📊 View your medical records and test results</li>
+                    <li>💳 Access billing information and payment history</li>
+                    <li>📅 Schedule and manage appointments</li>
+                    <li>💬 Communicate securely with your healthcare team</li>
+                    <li>🔔 Receive important health notifications</li>
+                    <li>📱 Access your account from any device</li>
+                </ul>
+            </div>
+            
+            <div class="warning">
+                <strong>⚠️ Important Security Note:</strong>
+                <br>
+                This link is valid for 24 hours and can only be used once. If you don't complete the setup within this timeframe, please contact our support team.
+            </div>
+            
+            <p>If you have any questions or need assistance, please don't hesitate to contact our patient support team.</p>
+            
+            <p>We look forward to serving your healthcare needs!</p>
+            
+            <p>Best regards,<br>
+            <strong>{{ hospital_name }} Patient Services Team</strong></p>
+        </div>
+        
+        <div class="footer">
+            <p>This is an automated message from {{ hospital_name }}. Please do not reply to this email.</p>
+            <p>If you did not create this account, please contact us immediately.</p>
+        </div>
+    </div>
+</body>
+</html>

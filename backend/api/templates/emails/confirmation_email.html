@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Account Approved</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .email-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .content {
+            padding: 30px;
+        }
+        .welcome-message {
+            font-size: 18px;
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+        .patient-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 6px;
+            margin: 20px 0;
+            border-left: 4px solid #667eea;
+        }
+        .setup-button {
+            display: inline-block;
+            background: #27ae60;
+            color: white;
+            padding: 15px 30px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+            margin: 20px 0;
+            font-size: 16px;
+        }
+        .setup-button:hover {
+            background: #229954;
+        }
+        .footer {
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 14px;
+        }
+        .security-note {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+        .contact-info {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            font-size: 14px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <h1>🏥 {{ hospital_name }}</h1>
+            <p>Patient Account Approved</p>
+        </div>
+        
+        <div class="content">
+            <div class="welcome-message">
+                <strong>Hello {{ patient.name }},</strong>
+            </div>
+            
+            <p>Great news! Your patient account has been <strong>approved</strong> by our hospital administrator.</p>
+            
+            <div class="patient-info">
+                <strong>Patient Information:</strong><br>
+                <strong>Name:</strong> {{ patient.name }}<br>
+                <strong>Patient ID:</strong> {{ patient.code }}<br>
+                <strong>Email:</strong> {{ patient.email }}
+            </div>
+            
+            <p>You can now set your password and access your medical records, billing information, and other patient services through our secure portal.</p>
+            
+            <p><strong>To get started:</strong></p>
+            <ol>
+                <li>Click the "Set Password" button below</li>
+                <li>Create a secure password</li>
+                <li>Log in to your patient portal</li>
+                <li>Access your medical records and billing information</li>
+            </ol>
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{{ setup_url }}" class="setup-button">
+                    🔐 Set Your Password
+                </a>
+            </div>
+            
+            <div class="security-note">
+                <strong>🔒 Security Note:</strong> This link will expire in 24 hours for your security. If you don't set your password within this time, please contact our support team.
+            </div>
+            
+            <p><strong>What you can do with your patient account:</strong></p>
+            <ul>
+                <li>📋 View your medical history and records</li>
+                <li>💰 Check billing information and payment status</li>
+                <li>📅 View appointment schedules</li>
+                <li>📞 Contact medical staff securely</li>
+                <li>💊 View prescriptions and lab results</li>
+            </ul>
+            
+            <div class="contact-info">
+                <strong>Need Help?</strong><br>
+                If you have any questions or need assistance, please contact our support team:<br>
+                📧 Email: support@hospital.com<br>
+                📞 Phone: (555) 123-4567<br>
+                🕒 Hours: Monday - Friday, 8:00 AM - 6:00 PM
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p><strong>{{ hospital_name }}</strong></p>
+            <p>Providing Quality Healthcare Since 1985</p>
+            <p style="font-size: 12px; margin-top: 15px;">
+                This is an automated message. Please do not reply to this email.<br>
+                If you received this email in error, please contact us immediately.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

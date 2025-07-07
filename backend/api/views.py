@@ -1,7 +1,9 @@
 from django.utils import timezone
 import json
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 import os
+from django.db.models import Count
+from django.db.models.functions import TruncMonth
 
 from rest_framework import generics
 from rest_framework import status
@@ -11,17 +13,17 @@ from django.db.models import Q
 from django.contrib.auth.models import Group, Permission
 from django.core.cache import cache
 from django.utils.crypto import get_random_string
-from .serializers import CustomTokenObtainPairSerializer, ClinicalNoteSerializer, GroupPermissionUpdateSerializer, GroupSerializer, ICDToDepartmentMappingSerializer, PatientHistorySerializer, PatientImageSerializer, UserImageSerializer, UserSerializer, PatientSerializer, UserLogSerializer, BillingCreateSerializer, ServiceSerializer, PatientServiceSerializer, LaboratoryResultSerializer, LabResultFileSerializer, BillingItemSerializer, BillingSerializer, BillingSerializerNoList, Billing_PatientInfo_Serializer, LabResultFileGroupSerializer, LabResultFileInGroup, LabResultFileInGroupSerializer, RoomWithBedInfoSerializer, BedAssignmentSerializer, UserCreateSerializer
+from .serializers import CustomTokenObtainPairSerializer, ClinicalNoteSerializer, GroupPermissionUpdateSerializer, GroupSerializer, ICDToDepartmentMappingSerializer, PatientConfirmationDetailSerializer, PatientConfirmationSerializer, PatientHistorySerializer, PatientImageSerializer, UserImageSerializer, UserSerializer, PatientSerializer, UserLogSerializer, BillingCreateSerializer, ServiceSerializer, PatientServiceSerializer, LaboratoryResultSerializer, LabResultFileSerializer, BillingItemSerializer, BillingSerializer, BillingSerializerNoList, Billing_PatientInfo_Serializer, LabResultFileGroupSerializer, LabResultFileInGroup, LabResultFileInGroupSerializer, RoomWithBedInfoSerializer, BedAssignmentSerializer, UserCreateSerializer
 from django.contrib.auth.hashers import make_password
 import hashlib
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from .models import BackupHistory, ClinicalNote, Department, ICDToDepartmentMapping, PatientImage, User, LabResultFileGroup, LabResultFileInGroup ,Patient, UserLog, Billing, BillingItem, BillingOperatorLog, PatientService, Service, LaboratoryResult, LabResultFile, Bed, BedAssignment, Room, UserSecurityQuestion
+from .models import BackupHistory, ClinicalNote, Department, ICDToDepartmentMapping, PatientConfirmation, PatientImage, User, LabResultFileGroup, LabResultFileInGroup ,Patient, UserLog, Billing, BillingItem, BillingOperatorLog, PatientService, Service, LaboratoryResult, LabResultFile, Bed, BedAssignment, Room, UserSecurityQuestion
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from .permissions import HasRole  # Example custom permission
 from django.shortcuts import get_object_or_404
-from .permissions import IsTeller, IsAdmin, IsDoctor, IsNurse, IsReceptionist  # Use the subclass
+from .permissions import IsTeller, IsAdmin, IsDoctor, IsNurse, IsReceptionist, IsPatient
 from rest_framework.pagination import PageNumberPagination
 
 from django.core.management import call_command
@@ -36,7 +38,13 @@ from rest_framework.exceptions import (
     ValidationError,
     NotFound
 )
-
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
+from django.contrib.auth.tokens import default_token_generator
+from django.conf import settings
+from django.utils.http import urlsafe_base64_decode
 
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.decorators import parser_classes
@@ -95,7 +103,7 @@ def auth_check(request):
 ####################################################################
 
 @api_view(['GET'])
-@permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist])
+@permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist | IsPatient | IsAuthenticated])
 def patient_list(request):
     if request.method == "GET":
         try:
@@ -108,8 +116,13 @@ def patient_list(request):
             if status_filter:
                 list_of_patient_query = list_of_patient_query.filter(status=status_filter)
 
+
+
             #basecase IF USER IS DOCTOR filterout only that are assigned to them
-            if hasattr(request.user, 'role') and request.user.role == 'Doctor':
+            assigned_only = request.GET.get('assigned_only', 'false').lower() in ('true', '1', 'yes')
+
+
+            if hasattr(request.user, 'role') and request.user.role == 'Doctor' and assigned_only:
                 # Get patient IDs where doctor is current attending physician
                 current_patients = Patient.objects.filter(attending_physician=request.user).values_list('id', flat=True)
                 
@@ -169,7 +182,7 @@ def patient_list(request):
 
 
 @api_view(['GET', 'POST'])
-@permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist])
+@permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist | IsAuthenticated | IsPatient])
 def archived_patients(request):
     if request.method == 'POST':
         patient_id = request.data.get('id')
@@ -244,7 +257,7 @@ def archived_patients(request):
 
 # CLINICAL NOTES # CLINICAL NOTES# CLINICAL NOTES# CLINICAL NOTES# CLINICAL NOTES# CLINICAL NOTES
 @api_view(['GET'])
-@permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist])
+@permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist | IsAuthenticated | IsPatient])
 def get_patient_history_by_case(request, case_number):
     """
     Return all historical snapshots for the patient who ever had the given case_number,
@@ -279,7 +292,7 @@ def get_patient_history_by_case(request, case_number):
 
 #dashboards
 @api_view(['GET'])
-@permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist | IsTeller])
+@permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist | IsTeller  | IsAuthenticated | IsPatient])
 def dashboard_totals(request):
     
     now = timezone.now()
@@ -397,21 +410,25 @@ def create_clinical_note(request, pk, case_number):
     serializer.is_valid(raise_exception=True)
     serializer.save()
 
+
     log_action(
-                user=request.user,
-                action="CREATE",
-                details={
-                    "message": "Created a clinical note:",
-                    "patient_id": patient.id,
-                    "patient_name": patient.name
-                }
-            )
+        user=request.user,
+        action="CREATE",
+        details={
+            "message": "Created a clinical note:",
+            "patient_id": patient.id,
+            "patient_name": patient.name,
+            "patient_department_id": patient.department.id if patient.department else None,
+            "patient_department_name": patient.department.name if patient.department else None,
+            "case_number": case_number,
+        }
+    )
 
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 @api_view(['GET'])
-@permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist])
+@permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist | IsAuthenticated | IsPatient])
 def get_clinical_notes_by_case_number(request, case_number):
     #notes/history/<str:case_number>
 
@@ -450,7 +467,7 @@ def get_clinical_notes_by_case_number(request, case_number):
 
 
 @api_view(['GET'])
-@permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist])
+@permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist  | IsAuthenticated | IsPatient])
 def get_clinical_notes_by_patient(request, patient_id):
     # Use select_related to fetch author information in a single query
     notes = ClinicalNote.objects.filter(patient_id=patient_id).select_related('author').order_by('-created_at')
@@ -615,6 +632,8 @@ def patient_create(request):
 # }
 
 
+
+
 ######## ROLE BASED PATIENT UPDATES #######################
 # PHASE 2 - Step 2: Confirm Admission Type with Clinical Assessment
 # ✅ First: Step 1 saves vitals + clinical details (update_clinical_data)
@@ -656,6 +675,7 @@ def confirm_inpatient(request, patient_id):
     patient.icd_code = icd_code
     patient.attending_physician = attending
     patient.department = attending.department
+    patient.final_admission_type = "Inpatient"  # Doctor's final decision
     
     # Also save principal diagnosis if provided
     principal_diagnosis = request.data.get('principal_diagnosis')
@@ -664,7 +684,7 @@ def confirm_inpatient(request, patient_id):
     
     patient.status = "Ready_for_Coding"
     patient.save(update_fields=[
-        'icd_code', 'attending_physician', 'department', 'status', 'principal_diagnosis'
+        'icd_code', 'attending_physician', 'department', 'status', 'principal_diagnosis', 'final_admission_type'
     ])
 
     return Response(PatientSerializer(patient).data, status=200)
@@ -701,6 +721,7 @@ def confirm_outpatient(request, patient_id):
     # Set outpatient status
     patient.attending_physician = attending
     patient.department = attending.department
+    patient.final_admission_type = "Outpatient"  # Doctor's final decision
     
     # Save ICD code if provided
     if icd_code:
@@ -712,7 +733,7 @@ def confirm_outpatient(request, patient_id):
         patient.principal_diagnosis = principal_diagnosis
     
     patient.status = "Ready_for_Coding"
-    patient.save(update_fields=['attending_physician', 'department', 'status', 'icd_code', 'principal_diagnosis'])
+    patient.save(update_fields=['attending_physician', 'department', 'status', 'icd_code', 'principal_diagnosis', 'final_admission_type'])
 
     return Response(PatientSerializer(patient).data, status=200)
 
@@ -938,20 +959,13 @@ def update_patient_icd(request, patient_id):
 
 
 @api_view(['GET'])
-@permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist])
+@permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist | IsAuthenticated | IsPatient])
 def patient_details(request, pk):
     if request.method == "GET":
         try:
             patient_queryset = Patient.objects.all()
 
-            if hasattr(request.user, 'role') and request.user.role == 'Doctor':
-                current_patients = Patient.objects.filter(attending_physician=request.user).values_list('id', flat=True)
-                
-                historical_patients = Patient.history.filter(attending_physician=request.user).values_list('id', flat=True)
-                
-                all_patient_ids = set(current_patients) | set(historical_patients)
-                
-                patient_queryset = patient_queryset.filter(id__in=all_patient_ids)
+            
 
             patient_detail = patient_queryset.get(pk=pk)
 
@@ -1131,11 +1145,22 @@ def patient_update_new_case_number(request, pk):
 
 
 @api_view(['GET'])
-@permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist])
+@permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist | IsAuthenticated | IsPatient])
 def patient_history(request, pk):
     if request.method == "GET":
         try:
             patient = Patient.objects.get(pk=pk)
+            
+            # Check if user has Patient role and restrict access to their own records only
+            user_roles = list(request.user.groups.values_list('name', flat=True))
+            if 'Patient' in user_roles:
+                # Patient users can only access their own patient records
+                if not request.user.patient or request.user.patient.id != patient.id:
+                    return Response(
+                        {"error": "You can only access your own patient records"},
+                        status=status.HTTP_403_FORBIDDEN
+                    )
+            
             history_records = patient.history.all().select_related('history_user')
             
             serializer = PatientHistorySerializer(history_records, many=True)
@@ -1146,10 +1171,10 @@ def patient_history(request, pk):
                     user=request.user,
                     action="VIEW",
                     details={
-                        "message": "Updated patient details RENZ",
+                        "message": "Viewed patient history",
                         "patient_id": patient.id,
                         "patient_name": patient.name,
-                        "updated_fields": list(request.data.keys())
+                        "access_type": "own_records" if 'Patient' in user_roles else "staff_access"
                     }
             )
 
@@ -1170,10 +1195,20 @@ def patient_history(request, pk):
             )
 
 @api_view(['GET'])
-@permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist])
+@permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist | IsAuthenticated | IsPatient])
 def patient_history_byId(request, pk, historyId):
    
     patient = get_object_or_404(Patient, pk=pk)
+    
+    # Check if user has Patient role and restrict access to their own records only
+    user_roles = list(request.user.groups.values_list('name', flat=True))
+    if 'Patient' in user_roles:
+        # Patient users can only access their own patient records
+        if not request.user.patient or request.user.patient.id != patient.id:
+            return Response(
+                {"error": "You can only access your own patient records"},
+                status=status.HTTP_403_FORBIDDEN
+            )
 
     history_record = get_object_or_404(
         patient.history.select_related('history_user'),
@@ -1186,9 +1221,11 @@ def patient_history_byId(request, pk, historyId):
                 user=request.user,
                 action="VIEW",
                 details={
-                    "message": "Viewed a patient history:",
+                    "message": "Viewed specific patient history record",
                     "patient_id": patient.id,
-                    "patient_name": patient.name
+                    "patient_name": patient.name,
+                    "history_id": historyId,
+                    "access_type": "own_records" if 'Patient' in user_roles else "staff_access"
                 }
             )
 
@@ -1732,7 +1769,7 @@ def edit_bill_item(request, billing_pk, item_pk):
 
 
 @api_view(['GET'])
-@permission_classes([IsAdmin | IsTeller | IsReceptionist | IsDoctor | IsNurse])
+@permission_classes([IsAdmin | IsTeller | IsReceptionist | IsDoctor | IsNurse  | IsAuthenticated | IsPatient])
 def get_bill_item(request, billing_pk, item_pk):
     """
     Retrieve a single BillingItem that belongs to a specific Billing.
@@ -1857,7 +1894,7 @@ def search_service(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAdmin | IsTeller | IsReceptionist | IsDoctor | IsNurse])
+@permission_classes([IsAdmin | IsTeller | IsReceptionist | IsDoctor | IsNurse  | IsAuthenticated | IsPatient])
 def search_patients(request):
     #SAERCH ALL PATIENT REGARDLESS OF STATUS
     query = request.query_params.get('q', '').strip()
@@ -1896,7 +1933,7 @@ def search_patients(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAdmin | IsTeller | IsReceptionist | IsDoctor | IsNurse])
+@permission_classes([IsAdmin | IsTeller | IsReceptionist | IsDoctor | IsNurse  | IsAuthenticated | IsPatient])
 def search_patients_that_are_not_discharged(request):
     #search_patients_that_are_not_discharged
     query = request.query_params.get('q', '').strip()
@@ -1964,7 +2001,7 @@ def search_patients_admitted_only(request):
         )
 
 @api_view(['GET'])
-@permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist])
+@permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist  | IsAuthenticated | IsPatient])
 def search_users(request):
     q = request.query_params.get('q', '').strip()
     icd_code = request.query_params.get('icd_code', '').strip()
@@ -2045,7 +2082,7 @@ def search_users(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAdmin | IsTeller | IsReceptionist | IsDoctor | IsNurse])
+@permission_classes([IsAdmin | IsTeller | IsReceptionist | IsDoctor | IsNurse  | IsAuthenticated | IsPatient])
 def search_billings(request):
     
     query = request.query_params.get('q', '').strip()
@@ -2198,7 +2235,7 @@ def search_billings_exclud_discharged(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAdmin | IsTeller | IsReceptionist | IsDoctor | IsNurse]) 
+@permission_classes([IsAdmin | IsTeller | IsReceptionist | IsDoctor | IsNurse  | IsAuthenticated | IsPatient]) 
 def get_billing_item(request, pk):
     
     
@@ -2233,7 +2270,7 @@ def get_billing_item(request, pk):
 
 #PAGINATION FORMAT SAMPLE
 @api_view(['GET'])
-@permission_classes([IsAdmin | IsTeller | IsReceptionist | IsDoctor | IsNurse])
+@permission_classes([IsAdmin | IsTeller | IsReceptionist | IsDoctor | IsNurse  | IsAuthenticated | IsPatient])
 def get_bills(request):
 #   /api/billings/list
 #   /api/billings/list?page=2
@@ -2275,7 +2312,7 @@ def get_bills(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAdmin | IsTeller | IsReceptionist | IsDoctor | IsNurse])
+@permission_classes([IsAdmin | IsTeller | IsReceptionist | IsDoctor | IsNurse  | IsAuthenticated | IsPatient])
 def get_bills_with_bill_items(request):
     try:
         bills_queryset = Billing.objects.prefetch_related('billing_items').all().order_by('-date_created')
@@ -2335,13 +2372,20 @@ def get_bills_with_bill_items(request):
 #get_bills_by_patient
 
 @api_view(['GET'])
-@permission_classes([IsAdmin | IsTeller | IsReceptionist | IsDoctor | IsNurse])
+@permission_classes([IsAdmin | IsTeller | IsReceptionist | IsDoctor | IsNurse  | IsAuthenticated | IsPatient])
 def get_bills_by_patient(request, patient_id):
     try:
-               
+        # Check if user has Patient role and restrict access to their own records only
+        user_roles = list(request.user.groups.values_list('name', flat=True))
+        if 'Patient' in user_roles:
+            # Patient users can only access their own billing records
+            if not request.user.patient or str(request.user.patient.id) != str(patient_id):
+                return Response(
+                    {"error": "You can only access your own billing records"},
+                    status=status.HTTP_403_FORBIDDEN
+                )
 
         bill = Billing.objects.filter(patient=patient_id)
-
 
         if not bill:
             #get all existing Billing codes as return coz its confusing me.. id!=billing_code
@@ -2366,7 +2410,9 @@ def get_bills_by_patient(request, patient_id):
                 user=request.user,
                 action="VIEW",
                 details={
-                    "message": "Viewed bills:"
+                    "message": "Viewed bills by patient",
+                    "patient_id": patient_id,
+                    "access_type": "own_records" if 'Patient' in user_roles else "staff_access"
                 }
             )
         
@@ -2385,7 +2431,7 @@ def get_bills_by_patient(request, patient_id):
 
 
 @api_view(['GET'])
-@permission_classes([IsAdmin | IsTeller | IsReceptionist | IsDoctor | IsNurse])
+@permission_classes([IsAdmin | IsTeller | IsReceptionist | IsDoctor | IsNurse  | IsAuthenticated | IsPatient])
 def get_bills_by_id_with_bill_items(request, pk):
     try:
                 #get specific billing record by ID
@@ -2435,7 +2481,7 @@ def get_bills_by_id_with_bill_items(request, pk):
 
 
 @api_view(['GET'])
-@permission_classes([IsAdmin | IsTeller | IsReceptionist | IsDoctor | IsNurse])
+@permission_classes([IsAdmin | IsTeller | IsReceptionist | IsDoctor | IsNurse  | IsAuthenticated | IsPatient])
 def get_bills_by_ACTUAL_id_with_bill_items(request, pk):
     try:
                 #get specific billing record by ID
@@ -2855,7 +2901,7 @@ def create_laboratory_file_result_for_laboratory_class(request, pk):
 
 #ORDER MATTERS!
 @api_view(['GET'])
-@permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist])
+@permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist  | IsAuthenticated | IsPatient])
 def search_labId(request):
     query = request.query_params.get('q', '').strip()
     if not query:
@@ -2892,10 +2938,54 @@ def search_labId(request):
         )
 
 
+@api_view(['GET'])
+@permission_classes([IsAdmin | IsDoctor | IsNurse | IsAuthenticated | IsPatient])
+def get_patient_lab_results(request, patient_id):
+    
+    try:
 
+        #BASE CASE
+        user_roles = list(request.user.groups.values_list('name', flat=True))
+        if 'Patient' in user_roles:
+            # Patient users can only access their own laboratory results
+            if not request.user.patient or str(request.user.patient.id) != str(patient_id):
+                return Response(
+                    {"error": "You can only access your own laboratory results"},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
+        lab_results = LaboratoryResult.objects.filter(patient_id=patient_id)
+        
+        if not lab_results.exists():
+            return Response(
+                {"error": "No laboratory results found for this patient"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        serializer = LaboratoryResultSerializer(
+            lab_results, 
+            many=True, 
+            context={'request': request}
+        )
+        
+        log_action(
+            user=request.user,
+            action="VIEW",
+            details={
+                "message": f"Viewed laboratory results for patient {patient_id}"
+            }
+        )
+        
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    except Exception as e:
+        return Response(
+            {"error": "Failed to retrieve laboratory results", "details": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 @api_view(['GET'])
-@permission_classes([IsAdmin | IsDoctor | IsNurse])
+@permission_classes([IsAdmin | IsDoctor | IsNurse  | IsAuthenticated | IsPatient])
 def get_laboratory_by_id(request, pk):
     try:
         # Get the laboratory result with related files in a single query
@@ -3012,7 +3102,7 @@ def create_laboratory_file_group(request, labId):
 
 
 @api_view(['GET'])
-@permission_classes([IsAdmin | IsDoctor | IsNurse])
+@permission_classes([IsAdmin | IsDoctor | IsNurse  | IsAuthenticated | IsPatient])
 def get_laboratory_file_group(request, group_id):
     """
     Retrieve a specific LabResultFileGroup by ID, including its files.
@@ -3119,7 +3209,7 @@ def upload_user_image(request, user_id):
 
 
 @api_view(['POST'])
-@permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist | IsTeller])
+@permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist | IsTeller | IsAuthenticated | IsPatient])
 def patientImageupload(request):
     #  -F "patient=123" \
     #  -F "file=@/path/to/image.jpg" \
@@ -3160,7 +3250,7 @@ def patientImageupload(request):
 #DEPARTMETNS
 
 @api_view(['GET'])
-@permission_classes([IsAdmin | IsDoctor])
+@permission_classes([IsAdmin | IsDoctor  | IsAuthenticated | IsPatient ])
 def get_patients_by_department(request, dept_id):
     patients = Patient.objects.filter(department_id=dept_id)
     serializer = PatientSerializer(patients, many=True)
@@ -3176,7 +3266,7 @@ def get_patients_by_department(request, dept_id):
 
 
 @api_view(['GET'])
-@permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist | IsTeller])
+@permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist | IsTeller | IsAuthenticated | IsPatient])
 def get_patient_images(request, patient_id):
     
     try:
@@ -3421,7 +3511,7 @@ def discharge_patient(request, patient_id):
 #     return Response({"message": "Billing task executed"}, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
-@permission_classes([IsAdmin | IsDoctor | IsNurse | IsTeller | IsReceptionist])
+@permission_classes([IsAdmin | IsDoctor | IsNurse | IsTeller | IsReceptionist  | IsAuthenticated | IsPatient])
 def room_bed_list(request):
     rooms = Room.objects.prefetch_related('bed_set').all()
     serializer = RoomWithBedInfoSerializer(rooms, many=True)
@@ -3582,7 +3672,7 @@ def about(request):
 
 #ICD CODEz
 @api_view(['GET', 'POST'])
-@permission_classes([IsAdmin])
+@permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist|  IsTeller |IsAuthenticated])
 def icd_mapping_list(request):
     if request.method == 'GET':
         mappings = ICDToDepartmentMapping.objects.all()
@@ -3598,7 +3688,7 @@ def icd_mapping_list(request):
 
 #SPEICIFC ID SAERCH
 @api_view(['GET', 'PUT', 'DELETE'])
-@permission_classes([IsAdminUser])
+@permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist|  IsTeller |IsAuthenticated])
 def icd_mapping_detail(request, pk):
     mapping = get_object_or_404(ICDToDepartmentMapping, pk=pk)
 
@@ -4082,7 +4172,497 @@ def user_roles(request):
 
 
 
+####################################################################
+# % DASHBOARD % #
+####################################################################
 
+
+@api_view(['GET'])
+def patient_trends(request):
+    six_months_ago = timezone.now() - timedelta(days=180)
+    
+
+    """
+    SELECT
+        DATE_TRUNC('month', admission_date) AS month,
+        COUNT(id) AS count
+    FROM patient
+    WHERE admission_date >= NOW() - INTERVAL '180 days'
+    GROUP BY DATE_TRUNC('month', admission_date)
+    ORDER BY DATE_TRUNC('month', admission_date');
+
+    """
+
+    data = Patient.objects.filter(
+        admission_date__gte=six_months_ago
+    ).annotate(  #annotate + values is GROUP BY
+        month=TruncMonth('admission_date')
+    ).values('month').annotate(
+        count=Count('id')
+    ).order_by('month')
+    
+      # X and Y for Chart.js
+    labels = [item['month'].strftime('%Y-%m') for item in data]
+    values = [item['count'] for item in data]
+    
+    return Response({
+        "labels": labels,
+        "data": values
+    })
+
+
+@api_view(['GET'])
+def department_load(request):
+    six_months_ago = timezone.now() - timedelta(days=180)
+    """
+    SELECT 
+        d.name as department_name,
+        COUNT(p.id) as patient_count
+    FROM patient p
+    JOIN department d ON p.department_id = d.id
+
+    WHERE p.admission_date => NOW() - INTERVAL '180 days'
+    AND p.status IN ('Admitted', 'Outpatient')
+    GROUP BY
+    d.name
+
+        .values == groupby
+        .annotate == AS temp column as return
+
+    """
+    #c patients per department
+    data = Patient.objects.filter(
+        admission_date__gte=six_months_ago,
+        status__in=['Admitted', 'Outpatient'],
+        department__isnull=False
+    ).values('department__name').annotate(
+        count=Count('id')
+    ).order_by('-count')[:10]
+    
+    print(str(data.query))  # Log the raw SQL
+    print(data)  # Log the actual results
+
+    return Response({
+        "labels": [item['department__name'] for item in data],
+        "data": [item['count'] for item in data]
+    })
+
+
+
+
+@api_view(['GET'])
+def bed_occupancy(request):
+    six_months_ago = timezone.now() - timedelta(days=180)
+    
+    # Calculate average occupancy
+    total_beds = Bed.objects.count()
+    occupied_days = BedAssignment.objects.filter(
+        start_time__gte=six_months_ago,
+        end_time__isnull=True  # Currently occupied
+    ).count()
+    
+    # Daily occupancy rate
+    daily_rates = []
+    for i in range(6):
+        date = timezone.now() - timedelta(days=i*30)
+        active_beds = BedAssignment.objects.filter(
+            start_time__lte=date,
+            end_time__gte=date
+        ).count()
+        daily_rates.append(round((active_beds/total_beds)*100, 1))
+    
+    return Response({
+        "labels": ["Month "+str(i+1) for i in range(6)],
+        "data": daily_rates
+    })
+
+####################################################################
+# % DASHBOARD % #
+####################################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+####################################################################
+# % ALLOW PATIENT ACCESS % #
+####################################################################
+
+
+
+#PHASES
+# 1. Patient requess review_confirmation POST /api/confirm/upload/
+
+# 2. admin reviews and approves/rejects POST /api/admin/confirm/<confirmation_id>/
+
+# 3. then if approved... ADMIN can register with code and password POST /api/register/patient/
+
+#THIS IS THE LAST PHASE, go bottom first
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def register_patient(request):
+    """
+    Required api request:
+    - `code`: 
+    - `password`: New password
+    - `confirm_password`: Password confirmation
+    """
+    code = request.data.get('code')
+    password = request.data.get('password')
+    confirm_password = request.data.get('confirm_password')
+
+    # Validate required fields
+    if not all([code, password, confirm_password]):
+        return Response(
+            {"error": "code, password, and confirm_password are required"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    if password != confirm_password:
+        return Response(
+            {"error": "Passwords do not match"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    try:
+        patient = Patient.objects.get(code=code)
+    except Patient.DoesNotExist:
+        return Response(
+            {"error": "No matching patient found"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    if not patient.is_confirmed:
+        return Response({
+            "error": "Patient not yet verified by admin",
+            "hint": "Upload ID via /api/confirm/upload/ first"
+        }, status=status.HTTP_403_FORBIDDEN)
+
+    try:
+        patient_dept = Department.objects.get(id=19)
+    except Department.DoesNotExist:
+        return Response(
+            {"error": "Patient department (ID 19) does not exist. Please create it first."},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+    # Prevent duplicate accounts
+    if User.objects.filter(patient=patient).exists():
+        return Response(
+            {"error": "This patient already has a user account"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    try:
+        user = User.objects.create_user(
+            user_id=f"P-{code}",  
+            email=patient.email,
+            password=password,
+            role='Patient',
+            patient=patient,
+            department=patient_dept  
+        )
+
+        # Generate secure token for password setup
+        token = default_token_generator.make_token(user)
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        
+        # Build password setup URL
+        setup_url = f"{settings.FRONTEND_URL}/set-password/{uid}/{token}/"
+
+        try:
+            subject = f"🏥 Welcome to {settings.HOSPITAL_NAME}!"
+
+            # Add extra context for debugging
+            template_context = {
+                'user': user,
+                'patient': patient,  # Add direct patient reference
+                'setup_url': setup_url,
+                'hospital_name': settings.HOSPITAL_NAME,
+                'patient_name': patient.name if patient else 'N/A',
+                'patient_code': patient.code if patient else 'N/A',
+                'patient_email': patient.email if patient else 'N/A'
+            }
+
+            html_message = render_to_string('emails/welcome_email.html', template_context)
+            
+            # Plain text fallback
+            plain_message = f"""
+            Hello {patient.name if patient else 'Patient'},
+
+            Your patient account has been approved. Click the link below to complete registration:
+
+            {setup_url}
+
+            Thank you,
+            {settings.HOSPITAL_NAME} Team
+            """
+            
+            # Send email
+            from django.core.mail import EmailMultiAlternatives
+            
+            msg = EmailMultiAlternatives(
+                subject=subject,
+                body=plain_message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                to=[patient.email]
+            )
+            msg.attach_alternative(html_message, "text/html")
+            msg.send()
+            
+            return Response({"message": "Account created successfully! Check your email to complete registration"})
+
+        except Exception as e:
+            # More detailed error logging
+            import traceback
+            error_details = {
+                'error': f"Email sending failed: {str(e)}",
+                'traceback': traceback.format_exc(),
+                'user_id': user.user_id if user else 'N/A',
+                'patient_id': patient.id if patient else 'N/A',
+                'patient_name': patient.name if patient else 'N/A'
+            }
+            print(f"Email Error Details: {error_details}")
+            
+            return Response({
+                "message": "Account created successfully, but email notification failed. Please contact support.",
+                "error": str(e)
+            }, status=200)  # Return 200 since account was created successfully
+            
+    except Exception as e:
+        return Response({"error": f"Account creation failed: {str(e)}"}, status=500)
+#phase 1
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def upload_confirmation_document(request):
+    """
+    FLOW:::: 
+
+    1; Patients submit hospital code + ID for verification
+    2 Expected request: multipart/form-data with:
+    - `code`: Hospital-generated patient code (e.g., CJNQC)
+    - `file`: ID document (image/PDF)
+    """
+    data = request.data.copy()
+    
+    if 'code' in data:
+        data['requested_patient_code'] = data['code']
+    
+    code = data.get('requested_patient_code')
+    file = request.FILES.get('file')
+    email = request.data.get('email')
+
+    if not all([code, file, email]):
+        return Response(
+            {"error": "code, file, and email are required"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    try:
+        patient = Patient.objects.get(code=code)
+    except Patient.DoesNotExist:
+        return Response(
+            {"error": "No matching patient found for the provided code"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+
+
+    patient.email = email
+    patient.save(update_fields=['email'])
+
+    serializer = PatientConfirmationSerializer(
+        data=request.data,
+        context={'patient': patient} #the props wannabe
+    )
+    
+    if serializer.is_valid():
+        serializer.save()
+        return Response({
+            "message": "Verification document received",
+            "status": "Pending admin review",
+            "patient_code": code
+        }, status=status.HTTP_201_CREATED)
+    
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+#AFTER PATIENT SUBMITTED THE REQUEISRMENTS, admin side will hanlde the rest.
+#PHASE 2 to 3
+
+
+#ADMIN PART
+#ADMIN PART
+#ADMIN PART
+#ADMIN PART
+#ADMIN PART
+#ADMIN PART
+
+
+
+@api_view(['GET'])
+@permission_classes([IsAdmin])
+def list_pending_confirmations(request):
+    # all unprocessed verification requests
+    confirmations = PatientConfirmation.objects.all().order_by('status', '-submitted_at')
+
+    serializer = PatientConfirmationDetailSerializer(confirmations, many=True)
+    return Response(serializer.data)
+
+@api_view(['GET'])
+@permission_classes([IsAdmin])
+def get_confirmation_details(request, confirmation_id):
+    
+    try:
+        confirmation = PatientConfirmation.objects.get(id=confirmation_id)
+    except PatientConfirmation.DoesNotExist:
+        return Response(
+            {"error": "Confirmation request not found"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
+    serializer = PatientConfirmationDetailSerializer(confirmation)
+    return Response(serializer.data)
+
+
+#THIS VIEW SENDS SMTP EMAIL
+    #email notification after approval:
+    #Uses default django's set password
+
+
+@api_view(['POST'])
+@permission_classes([IsAdmin])
+def review_confirmation(request, confirmation_id):
+    """
+    Admin approves/rejects a verification request
+    Expected body: {"status": "Approved"} or {"status": "Rejected"}
+
+    POSTMAN
+    {"status": "Approved"}
+    """
+    try:
+        confirmation = PatientConfirmation.objects.get(id=confirmation_id)
+    except PatientConfirmation.DoesNotExist:
+        return Response(
+            {"error": "Confirmation request not found"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
+    new_status = request.data.get('status')
+    if new_status not in dict(PatientConfirmation.STATUS_CHOICES):
+        return Response(
+            {"error": "Invalid status value"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    confirmation.status = new_status
+    confirmation.reviewed_by = request.user
+    confirmation.reviewed_at = timezone.now()
+    
+    if new_status == 'Approved':
+        # Mark patient as confirmed
+        confirmation.patient.is_confirmed = True
+        confirmation.patient.save()
+
+        # ✅ Send APPROVAL NOTIFICATION EMAIL
+        try:
+            subject = f"✅ {settings.HOSPITAL_NAME}: Your Account is Approved!"
+            html_message = render_to_string('emails/approval_notification.html', {
+                'patient': confirmation.patient,
+                'setup_url': f"{settings.FRONTEND_URL}/patient-registration",
+                'hospital_name': settings.HOSPITAL_NAME
+            })
+
+            plain_message = f"""
+            Hello {confirmation.patient.name},
+
+            Your patient account has been approved by {settings.HOSPITAL_NAME}.
+
+            You can now complete your registration at:
+            {f"{settings.FRONTEND_URL}/patient-registration"}
+
+            Thank you,
+            {settings.HOSPITAL_NAME} Team
+            """
+            from django.core.mail import EmailMultiAlternatives
+
+            msg = EmailMultiAlternatives(
+                subject=subject,
+                body=plain_message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                to=[confirmation.patient.email]
+            )
+            msg.attach_alternative(html_message, "text/html")
+            msg.send()
+            
+            print(f"✅ Approval email sent successfully to {confirmation.patient.email}")
+            
+        except Exception as e:
+            # Log the error but don't fail the approval process
+            import traceback
+            print(f"❌ Failed to send approval email: {str(e)}")
+            print(f"Traceback: {traceback.format_exc()}")
+            # Continue with the approval process even if email fails
+
+    confirmation.save()
+    
+    return Response({
+        "message": f"Patient confirmation {new_status.lower()}",
+        "patient_code": confirmation.patient.code
+    })
+
+
+
+#set password using email
+#CHECK settings.py and backend's .env for setup.
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def set_password(request, uidb64, token):
+    try:
+        uid = urlsafe_base64_decode(uidb64).decode()
+        user = User.objects.get(pk=uid)  # ✅ Validate User, not Patient
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        user = None
+
+    if user and default_token_generator.check_token(user, token):
+        password = request.data.get('password')
+        confirm_password = request.data.get('confirm_password')
+
+        if not all([password, confirm_password]):
+            return Response({"error": "Password and confirm_password are required"}, status=400)
+
+        if password != confirm_password:
+            return Response({"error": "Passwords do not match"}, status=400)
+
+        try:
+            user.set_password(password)
+            user.save()
+            return Response({"message": "Password set successfully!"})
+        except Exception as e:
+            return Response({"error": str(e)}, status=500)
+    
+    return Response({"error": "Invalid or expired token"}, status=400)
+####################################################################
+# % ALLOW PATIENT ACCESS % #
+####################################################################
 
 
 
@@ -4122,7 +4702,6 @@ def trigger_restore(request, backup_id):
 def get_backup_history(request):
     import json
     import os
-    from django.conf import settings
     
     # Get backups from database
     db_backups = BackupHistory.objects.order_by('-timestamp')

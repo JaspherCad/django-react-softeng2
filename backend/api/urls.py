@@ -26,6 +26,7 @@ urlpatterns = [
     path('users/<int:user_id>/assign-roles', views.update_user_groups, name='user-role-assign'),
 
 
+
     # Password Recovery
     path('forgot-password', views.forgot_password, name='forgot_password'),
     path('verify-answers', views.verify_security_answers, name='verify_answers'),
@@ -40,6 +41,9 @@ urlpatterns = [
     # CRUD FOR PATIENTS 
     path('patients/list', views.patient_list, name='patient_list'),
     path('patients/create', views.patient_create, name='patient_create'),
+    
+
+
     path('patients/<int:pk>', views.patient_details, name='patient_get_specific'),
 
     #two types of update
@@ -152,7 +156,11 @@ urlpatterns = [
 
     #DEPRECATED
     path('laboratory/upload-file-laboratory/laboratory-id/<str:pk>', views.create_laboratory_file_result_for_laboratory_class, name='create_laboratory_file_result_for_laboratory_class'),
-    #DEPRECATED
+    
+
+
+    path('laboratory/patient/<int:patient_id>/lab-results/', views.get_patient_lab_results, name='get_patient_lab_results'),
+
     path('laboratory/get-laboratory/<str:pk>', views.get_laboratory_by_id, name='get_laboratory_by_id'),
 
 
@@ -262,4 +270,57 @@ urlpatterns = [
 
 
 
+    
+    # Dashboard Data
+    path('dashboard/patient-trends/', views.patient_trends, name='patient_trends'),
+
+    path('dashboard/department-load/', views.department_load, name='department_load'),
+
+    path('dashboard/bed-occupancy/', views.bed_occupancy, name='bed_occupancy'),
+
+
+
+
+    #FLOW
+# Step 1: Submit ID for verification
+# curl -X POST /api/confirm/upload/ \
+#      -F "code=CJNQC" \
+#      -F "file=@/path/to/id.jpg"
+
+
+#   BEFORE APPROVING, pick here
+#   views.list_pending_confirmations
+
+
+# Step 2: Admin approves
+# curl -X POST /api/admin/confirm/123/ \
+#      -H "Authorization: Bearer <admin_token>" \
+#      -H "Content-Type: application/json" \
+#      -d '{"status": "Approved"}'
+
+
+
+# Step 3: Create account (now allowed)
+# curl -X POST /api/register/patient/ \
+#      -H "Content-Type: application/json" \
+#      -d '{"code": "CJNQC", "password": "SecurePass123!", "confirm_password": "SecurePass123!"}'
+
+#last step
+# Step 4:  path('set-password/<str:uidb64>/<str:token>/', views.set_password),
+ 
+    
+
+    #Admission Confirmation Document
+    # Confirmation flow
+    path('confirm/upload/', views.upload_confirmation_document, name='upload_confirmation'),
+    path('admin/confirmations/', views.list_pending_confirmations, name='list_confirmations'),
+    path('admin/confirm/<int:confirmation_id>/', views.review_confirmation, name='review_confirmation'),
+    path('admin/confirmations/<int:confirmation_id>/', views.get_confirmation_details, name='get_confirmation_details'),
+
+    path('set-password/<str:uidb64>/<str:token>/', views.set_password),
+
+
+    
+    #PATIENT ACCESS TO APP!
+    path('register/patient/', views.register_patient, name='register_patient'),
 ]

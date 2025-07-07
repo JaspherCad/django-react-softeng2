@@ -4,7 +4,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from django.core.cache import cache
 from django.utils import timezone
-from .models import ClinicalNote, Department, ICDToDepartmentMapping, PatientImage, User, Patient, LaboratoryResult, LabResultFile, UserImage, UserLog, Service, PatientService, Billing, BillingItem, LabResultFileInGroup, LabResultFileGroup, Bed, Room, BedAssignment, MedicalHistory, UserSecurityQuestion
+from .models import ClinicalNote, Department, ICDToDepartmentMapping, PatientConfirmation, PatientImage, User, Patient, LaboratoryResult, LabResultFile, UserImage, UserLog, Service, PatientService, Billing, BillingItem, LabResultFileInGroup, LabResultFileGroup, Bed, Room, BedAssignment, MedicalHistory, UserSecurityQuestion
 
 
 
@@ -117,7 +117,7 @@ class UserSerializer(serializers.ModelSerializer):
     )
     class Meta:
         model = User
-        fields = ["id", "first_name","last_name","user_id", "groups","password", "role", "department","department_id", "is_active", "is_staff", "address", "birthdate","images"
+        fields = ["id", "first_name","last_name","user_id", "groups","password", "role", "department","department_id", "is_active", "is_staff", "address", "birthdate","images", "patient"
 ]
         extra_kwargs = {
             "password": {"write_only": True}, 
@@ -250,7 +250,10 @@ class ClinicalNoteSerializer(serializers.ModelSerializer):
                 'last_name': obj.author.last_name,
                 'full_name': f"{obj.author.first_name} {obj.author.last_name}".strip(),
                 'role': obj.author.role,
-                'department': obj.author.department
+                'department': {
+                    'id': obj.author.department.id,
+                    'name': obj.author.department.name
+                } if obj.author.department else None
             }
         return None
 
@@ -286,6 +289,31 @@ class ICDToDepartmentMappingSerializer(serializers.ModelSerializer):
         fields = ['id', 'icd_code', 'description', 'department', 'department_id']
 
 
+
+class PatientConfirmationDetailSerializer(serializers.ModelSerializer):
+    patient = PatientSerializer()
+
+    class Meta:
+        model = PatientConfirmation
+        fields = [
+            'id', 'file', 'status', 'submitted_at',
+            'reviewed_by', 'reviewed_at', 'patient'
+        ]
+        read_only_fields = fields
+
+
+
+#FOR PATIENT ACCESS
+class PatientRegistrationSerializer(serializers.Serializer):
+    code = serializers.CharField(max_length=50)  
+    password = serializers.CharField(write_only=True, min_length=8)
+    confirm_password = serializers.CharField(write_only=True, min_length=8)
+
+    def validate(self, data):
+        if data['password'] != data['confirm_password']:
+            raise serializers.ValidationError("Passwords do not match")
+        return data
+    
 class PatientImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = PatientImage
@@ -298,6 +326,51 @@ class PatientImageSerializer(serializers.ModelSerializer):
             validated_data['uploaded_by'] = request.user
         return super().create(validated_data)
 
+
+
+
+
+
+
+
+
+class PatientConfirmationSerializer(serializers.ModelSerializer):
+    requested_patient_code = serializers.CharField(write_only=True)
+
+    class Meta:
+        model = PatientConfirmation
+        fields = [
+            'id', 'requested_patient_code', 'file', 'status',
+            'submitted_at', 'reviewed_by', 'reviewed_at'
+        ]
+        read_only_fields = [
+            'status', 'submitted_at', 'reviewed_by', 'reviewed_at', 'patient'
+        ]
+
+    def validate(self, data):
+        requested_code = data['requested_patient_code']
+        patient = self.context['patient'] #nasa views.py contexxt 
+        
+        if requested_code != patient.code:
+            raise serializers.ValidationError({
+                "requested_patient_code": "Submitted code does not match hospital records"
+            })
+        
+        return data
+
+    def create(self, validated_data):
+        patient = self.context['patient']
+        validated_data.pop('requested_patient_code') 
+        return PatientConfirmation.objects.create(patient=patient, **validated_data)
+    
+
+
+
+
+
+
+
+    
 
 class MedicalHistorySerializer(serializers.ModelSerializer):
     diagnosed_by = serializers.SerializerMethodField()
@@ -410,7 +483,9 @@ class PatientHistorySerializer(serializers.ModelSerializer):
     changed_by = serializers.SerializerMethodField()
     changes = serializers.SerializerMethodField()
     original_case_number = serializers.SerializerMethodField()
-
+    attending_physician = UserSerializer(read_only=True)
+    attending_physician = UserSerializer(read_only=True)
+    
         
     class Meta:
         model = Patient.history.model
@@ -485,7 +560,10 @@ class UserLogSerializer(serializers.ModelSerializer):
                 'last_name': obj.user.last_name,
                 'full_name': f"{obj.user.first_name} {obj.user.last_name}".strip(),
                 'role': obj.user.role,
-                'department': obj.user.department,
+                'department': {
+                    'id': obj.user.department.id,
+                    'name': obj.user.department.name
+                } if obj.user.department else None,
                 'image': image_url
             }
         else:

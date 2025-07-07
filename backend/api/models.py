@@ -142,7 +142,9 @@ class User(AbstractBaseUser, PermissionsMixin):
         ('Doctor', 'Doctor'),
         ('Nurse', 'Nurse'),
         ('Teller', 'Teller'),
-        ('Receptionist', 'Receptionist')
+        ('Receptionist', 'Receptionist'),
+        ('Patient', 'Patient')
+
     ]
     #by default, user has username, i think, but password1 and passwrod2 are sure etc
     user_id = models.CharField(max_length=50, unique=True)
@@ -162,6 +164,16 @@ class User(AbstractBaseUser, PermissionsMixin):
     #this is where the actual user creation is happening
     objects = CustomUserManager()
 
+    #FOR PATIENT ACCESS TO APP! - OPTIONAL FIELD
+    patient = models.ForeignKey(
+        'Patient', 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,  # Allow empty values in forms
+        related_name='user_account',
+        help_text="Optional: Link to patient record if this user is a patient"
+    ) 
+
 
     # personal Information --- update.
     first_name = models.CharField(max_length=30, blank=True, null=True)
@@ -176,10 +188,14 @@ class User(AbstractBaseUser, PermissionsMixin):
     birthdate  = models.DateField(blank=True, null=True)
     USERNAME_FIELD = 'user_id'
     #USERNAME_FIELD = 'user_id' so if i said this, then the username field is changed to user_id?
-    REQUIRED_FIELDS = ['role', 'department']
+    REQUIRED_FIELDS = ['role']
 
     def __str__(self):
-        return self.user_id
+        dept = self.department
+        if dept:
+            return f"{self.user_id} (ID {self.id}) → {dept.name} (Dept ID {dept.id}  ROLE={self.role} )"
+        else:
+            return f"{self.user_id} (ID {self.id}) → No Department"
 
     def save(self, *args, **kwargs):
         """Automatically add to appropriate group based on role"""
@@ -287,6 +303,12 @@ class Patient(models.Model):
         (None, 'Not Set')
     ]
 
+    #FOR PATIENT TO ACCESS APP!
+    is_confirmed = models.BooleanField(default=False)
+    confirmation_date = models.DateTimeField(null=True, blank=True)
+
+
+
     # Ward and Bed
     ward_service = models.CharField(max_length=100, null=True, blank=True)
     bed_number = models.CharField(max_length=20, null=True, blank=True)
@@ -385,7 +407,7 @@ class Patient(models.Model):
 
 
     phone = models.CharField(max_length=15, blank=True, null=True)
-    # email = models.EmailField(blank=True, null=True)
+    email = models.EmailField(blank=True, null=True)
     emergency_contact_name = models.CharField(max_length=255, blank=True, null=True)
     emergency_contact_phone = models.CharField(max_length=15, blank=True, null=True)
     is_active = models.CharField(max_length=10, choices=IS_ACTIVE_CHOICES, default='Active')
@@ -451,6 +473,16 @@ class Patient(models.Model):
         blank=True,
         default=None,
         help_text="Set by clinical staff to indicate if patient will be inpatient or outpatient"
+    )
+    
+    # Doctor's final decision on admission type (may differ from intended)
+    final_admission_type = models.CharField(
+        max_length=20,
+        choices=INTENDED_ADMISSION_TYPE_CHOICES,
+        null=True,
+        blank=True,
+        default=None,
+        help_text="Doctor's final decision on admission type after clinical review"
     )
 
 
@@ -574,6 +606,54 @@ class MedicalHistory(models.Model):
     def __str__(self):
         return f"{self.patient.name} - {self.entry_date}"
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+def patient_confirmation_upload_path(instance, filename):
+    return f'patient_images/verification/patient_{instance.patient.id}/{filename}'
+
+
+class PatientConfirmation(models.Model):
+    STATUS_CHOICES = [
+        ('Pending', 'Pending'),
+        ('Approved', 'Approved'),
+        ('Rejected', 'Rejected')
+    ]
+    
+    patient = models.ForeignKey(
+        Patient,
+        on_delete=models.CASCADE,
+        related_name='confirmations'
+    )
+    
+    file = models.FileField(
+        upload_to=patient_confirmation_upload_path,
+        validators=[validate_file_extension]
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='Pending'
+    )
+    submitted_at = models.DateTimeField(auto_now_add=True)
+    reviewed_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='confirmed_patients'
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
 
 
 

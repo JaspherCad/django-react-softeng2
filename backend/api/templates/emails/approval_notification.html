@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Approved - {{ hospital_name }}</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .email-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .header .checkmark {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+        .content {
+            padding: 30px;
+        }
+        .approval-message {
+            font-size: 18px;
+            color: #28a745;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .patient-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 6px;
+            margin: 20px 0;
+            border-left: 4px solid #28a745;
+        }
+        .register-button {
+            display: inline-block;
+            background: #28a745;
+            color: white;
+            padding: 15px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .register-button:hover {
+            background: #218838;
+        }
+        .button-container {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .next-steps {
+            background: #e8f5e8;
+            padding: 20px;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+        .next-steps h3 {
+            color: #28a745;
+            margin-top: 0;
+        }
+        .next-steps ol {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .next-steps li {
+            margin-bottom: 8px;
+        }
+        .footer {
+            background: #f1f1f1;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+        }
+        .footer a {
+            color: #28a745;
+            text-decoration: none;
+        }
+        .important-note {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .important-note h4 {
+            color: #856404;
+            margin-top: 0;
+        }
+        .important-note p {
+            color: #856404;
+            margin-bottom: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <div class="checkmark">✅</div>
+            <h1>Account Approved!</h1>
+            <p>{{ hospital_name }}</p>
+        </div>
+        
+        <div class="content">
+            <div class="approval-message">
+                🎉 Great news! Your patient account has been approved.
+            </div>
+            
+            <p>Hello {% if patient %}{{ patient.name }}{% else %}Patient{% endif %},</p>
+            
+            <p>We're pleased to inform you that your patient account verification has been <strong>approved</strong> by our medical team at {{ hospital_name }}.</p>
+            
+            <div class="patient-info">
+                <h3>📋 Your Account Details</h3>
+                <p><strong>Patient Name:</strong> {% if patient %}{{ patient.name }}{% else %}N/A{% endif %}</p>
+                <p><strong>Patient Code:</strong> {% if patient %}{{ patient.code }}{% else %}N/A{% endif %}</p>
+                <p><strong>Email:</strong> {% if patient %}{{ patient.email }}{% else %}N/A{% endif %}</p>
+                <p><strong>Status:</strong> <span style="color: #28a745; font-weight: bold;">APPROVED</span></p>
+            </div>
+            
+            <div class="next-steps">
+                <h3>🚀 Next Steps</h3>
+                <ol>
+                    <li>Click the button below to complete your registration</li>
+                    <li>Enter your patient code: <strong>{{ patient.code }}</strong></li>
+                    <li>Create a secure password for your account</li>
+                    <li>Start accessing your patient portal</li>
+                </ol>
+            </div>
+            
+            <div class="button-container">
+                <a href="{{ setup_url }}" class="register-button">
+                    🔐 Complete Registration Now
+                </a>
+            </div>
+            
+            <div class="important-note">
+                <h4>⚠️ Important - Your Patient Code</h4>
+                <p>You will need your patient code <strong>{{ patient.code }}</strong> to complete registration. Please keep this information safe and do not share it with anyone else.</p>
+            </div>
+            
+            <p>Once you complete your registration, you'll be able to:</p>
+            <ul>
+                <li>📋 Access your medical records and test results</li>
+                <li>💰 View and manage billing information</li>
+                <li>📅 Schedule appointments online</li>
+                <li>💬 Communicate with your healthcare team</li>
+                <li>🔔 Receive important health notifications</li>
+            </ul>
+            
+            <p>If you have any questions or need assistance, please don't hesitate to contact our support team.</p>
+            
+            <p>Welcome to {{ hospital_name }}!</p>
+            
+            <p>Best regards,<br>
+            The {{ hospital_name }} Team</p>
+        </div>
+        
+        <div class="footer">
+            <p>&copy; {{ hospital_name }} - Patient Portal System</p>
+            <p>This is an automated message. Please do not reply to this email.</p>
+            <p>If you need assistance, please contact our support team.</p>
+        </div>
+    </div>
+</body>
+</html>

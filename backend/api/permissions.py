@@ -81,3 +81,6 @@ class IsNurse(HasRole):
 
 class IsReceptionist(HasRole):
     role_name = "Receptionist"
+
+class IsPatient(HasRole):
+    role_name = "Patient"   
