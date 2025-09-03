@@ -14,11 +14,13 @@ from pathlib import Path
 from datetime import timedelta
 from dotenv import load_dotenv
 import os
+from .config import CORS_ALLOWED_ORIGINS, CSRF_TRUSTED_ORIGINS, ALLOWED_HOSTS
 
 load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent 
+#CLUE: this is the react+django/backend folder only.
 
 
 # Quick-start development settings - unsuitable for production
@@ -139,9 +141,17 @@ WSGI_APPLICATION = "backend.wsgi.application"
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'hospital_db',
+        'USER': 'hospital_user',
+        'PASSWORD': 'your_secure_password', #ITO PASSWORD NG DATABASE LITERALLY> wtf
+        'HOST': 'localhost',
+        'PORT': '3306',
+        'OPTIONS': {
+            'charset': 'utf8mb4',
+            'sql_mode': 'STRICT_TRANS_TABLES'
+        }
     }
 }
 
@@ -190,7 +200,10 @@ STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOWED_ORIGINS = CORS_ALLOWED_ORIGINS
+
+CORS_TRUSTED_ORIGINS = CSRF_TRUSTED_ORIGINS  # Fixed typo from CORSE_TRUSTED_ORIGINS
+
 CORS_ALLOW_CREDENTIALS = True  # Note the spelling correction
 
 
@@ -214,3 +227,5 @@ CORS_ALLOW_HEADERS = [
     'x-csrftoken',
     'x-requested-with',
 ]
+
+ALLOWED_HOSTS = ALLOWED_HOSTS

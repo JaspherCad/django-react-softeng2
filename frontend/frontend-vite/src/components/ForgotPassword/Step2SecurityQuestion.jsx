@@ -3,6 +3,7 @@ import React, { useContext, useState } from 'react'
 import { useNavigate }         from 'react-router-dom'
 import { ForgotPasswordContext } from './ForgotPasswordLayout'
 import axios from 'axios'
+import config from '../../config/config'
 
 export default function Step2SecurityQuestion() {
   const {
@@ -23,7 +24,7 @@ export default function Step2SecurityQuestion() {
     e.preventDefault()
     try {
       const { data } = await axios.post(
-        'http://127.0.0.1:8000/api/verify-answers',
+        config.getApiEndpoint('/verify-answers'),
         { user_id: userId, answers }
       )
       setResetToken(data.token)

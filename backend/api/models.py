@@ -172,7 +172,7 @@ class Patient(models.Model):
         ('Inactive', 'Inactive'),
         ('Deleted', 'Deleted'),
     ]
-
+    
 
     CIVIL_STATUS_CHOICES = [
         ('Single', 'Single'),
@@ -378,6 +378,23 @@ class Patient(models.Model):
     #UPDATE! tracks historical record PER event. u know push get patch etc
     history = HistoricalRecords()
 
+
+    #archiving
+    archived = models.BooleanField(default=False)
+
+
+    def deactivate_patient(self):
+        self.is_active = 'Inactive'
+        self.save()
+
+    def archive(self):
+        """Soft-archive this patient."""
+        self.archived = True
+        self.save()
+
+    def unarchive(self):
+        self.archived = False
+        self.save()
     def deactivate_patient(self):
         self.is_active = 'Inactive'
         self.save()
@@ -942,7 +959,23 @@ class BedAssignment(models.Model):
 
 
 
+class BackupHistory(models.Model):
+    backup_file = models.CharField(max_length=255)  #to .sql file
+    media_backup = models.CharField(max_length=255)  #to .zip file
+    backup_location = models.CharField(
+        max_length=255,
+        default='local'
+    )  # 'local', 'network_drive', 'usb', etc.
+    timestamp = models.DateTimeField(auto_now_add=True)
+    performed_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True
+    )
+    notes = models.TextField(blank=True)  
 
+    def __str__(self):
+        return f"Backup {self.id} - {self.timestamp}"
 
 
 

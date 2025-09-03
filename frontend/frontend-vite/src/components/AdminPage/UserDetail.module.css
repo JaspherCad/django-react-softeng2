@@ -90,3 +90,30 @@
   padding: 2rem;
   color: #6b7280;
 }
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: #fff;
+  padding: 2rem;
+  border-radius: 8px;
+  min-width: 340px;
+  max-width: 95vw;
+}
+
+.cancelButton {
+  background: #eee;
+  color: #222;
+  border: none;
+  padding: 0.5em 1em;
+  border-radius: 4px;
+  cursor: pointer;
+}

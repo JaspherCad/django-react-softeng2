@@ -1,6 +1,3 @@
-
-
-
 import React, { useEffect, useState } from "react";
 import styles from "./BothPatientForm.module.css";
 import validationStyles from "./ValidationStyles.module.css";
@@ -13,6 +10,9 @@ import {
   uploadPatientImageAPI,
 } from "../../api/axios";
 import SearchBar from "../AngAtingSeachBarWIthDropDown";
+
+// Get the API base URL from environment variables
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 //----------------------------------------date format fix--------------------------------------
 //pseudo: when edit, we have to get the FORMATTED String 00:z from backend to frontend BUT we have to convert that into input format (YYYY-MM-DDTHH:MM)
@@ -441,24 +441,25 @@ const OutPatientForm = ({ onSubmit }) => {
   //all renders use this, some file are image some files actual files,,,,,
   function FilePreview({ url }) {
     const isImage = /\.(jpe?g|png|gif|webp)$/i.test(url);
+    const fullUrl = `${API_BASE}:8000${url}`;
 
     return (
       <div className={styles.filePreviewContainer}>
         {isImage ? (
           <a
-            href={`http://localhost:8000${url}`}
+            href={fullUrl}
             target="_blank"
             rel="noopener noreferrer"
           >
             <img
-              src={`http://localhost:8000${url}`}
+              src={fullUrl}
               alt="Preview"
               className={styles.filePreviewImage}
             />
           </a>
         ) : (
           <a
-            href={`http://localhost:8000${url}`}
+            href={fullUrl}
             target="_blank"
             rel="noopener noreferrer"
             className={styles.fileLink}
@@ -1128,7 +1129,7 @@ const OutPatientForm = ({ onSubmit }) => {
                     src={
                       existingImages[0].file.startsWith('http')
                         ? existingImages[0].file
-                        : `http://localhost:8000${existingImages[0].file}`
+                        : `${API_BASE}:8000${existingImages[0].file}`
                     }
                     alt="Patient"
                     className={styles.firstImage}
@@ -1157,7 +1158,7 @@ const OutPatientForm = ({ onSubmit }) => {
                         src={
                           img.file.startsWith('http')
                             ? img.file
-                            : `http://localhost:8000${img.file}`
+                            : `${API_BASE}:8000${img.file}`
                         }
                         alt="Patient"
                         className={styles.gridImage}

@@ -1,3 +1,6 @@
+// Get the API base URL from environment variables
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+
 import { useParams } from "react-router-dom";
 import { addLabFilesToLaboratory, fetchLab, SearchPatientsApi } from "../../api/axios";
 import SearchBar from "../AngAtingSeachBarWIthDropDown";
@@ -152,21 +155,21 @@ const AddLaboratory = ({
   //all renders use this, some file are image some files actual files,,,,,
   function FilePreview({ url }) {
     const isImage = /\.(jpe?g|png|gif|webp)$/i.test(url);
+    const fullUrl = `${API_BASE}:8000${url}`;
 
     return (
       <div className={styles.filePreviewContainer}>
         {isImage ? (
-          <a href={`http://localhost:8000${url}`} target="_blank" rel="noopener noreferrer">
+          <a href={fullUrl} target="_blank" rel="noopener noreferrer">
             <img
-              src={`http://localhost:8000${url}`}
+              src={fullUrl}
               alt="Preview"
               className={styles.filePreviewImage}
             />
           </a>
-
         ) : (
           <a
-            href={`http://localhost:8000${url}`}
+            href={fullUrl}
             target="_blank"
             rel="noopener noreferrer"
             className={styles.fileLink}

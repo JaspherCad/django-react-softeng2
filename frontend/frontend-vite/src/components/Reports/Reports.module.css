@@ -216,3 +216,111 @@
   cursor: pointer;
   z-index: 1100;
 }
+
+/* Action badge styles for user logs */
+.actionBadge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  display: inline-block;
+}
+
+.actionBadge.view {
+  background-color: #e0f2fe;
+  color: #0277bd;
+}
+
+.actionBadge.create {
+  background-color: #e8f5e8;
+  color: #2e7d32;
+}
+
+.actionBadge.update {
+  background-color: #fff3e0;
+  color: #f57c00;
+}
+
+.actionBadge.delete {
+  background-color: #ffebee;
+  color: #d32f2f;
+}
+
+.actionBadge.login {
+  background-color: #f3e5f5;
+  color: #7b1fa2;
+}
+
+.actionBadge.logout {
+  background-color: #e8eaf6;
+  color: #3f51b5;
+}
+
+/* No data message */
+.noData {
+  text-align: center;
+  padding: 2rem;
+  color: var(--color-secondary);
+  font-style: italic;
+}
+
+/* Navigation bar styles */
+.navigationBar {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid var(--color-border);
+}
+
+.navButton {
+  padding: 0.75rem 1.5rem;
+  border: 2px solid #22c55e;
+  background-color: #22c55e;
+  color: white;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+}
+
+.navButton:hover {
+  background-color: #16a34a;
+  border-color: #16a34a;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(34, 197, 94, 0.3);
+}
+
+.navButtonActive {
+  background-color: #15803d;
+  border-color: #15803d;
+  box-shadow: 0 2px 4px rgba(34, 197, 94, 0.4);
+}
+
+.navButtonActive:hover {
+  background-color: #166534;
+  border-color: #166534;
+}
+
+.contentArea {
+  min-height: 400px;
+}
+
+/* Responsive navigation */
+@media (max-width: 768px) {
+  .navigationBar {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .navButton {
+    width: 100%;
+    justify-content: center;
+  }
+}

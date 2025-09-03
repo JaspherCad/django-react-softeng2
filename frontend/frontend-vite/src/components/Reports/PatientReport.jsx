@@ -51,6 +51,8 @@ const PatientReport = () => {
     try {
       const response = await getPatientReportAPI(startDate, endDate, currentPage, itemsPerPage);
       setPatients(response.data.results);
+      console.log(response.data.results);
+
       setTotalItems(response.data.count);
       setTotalPages(Math.ceil(response.data.count / itemsPerPage));
     } catch (error) {
@@ -233,8 +235,6 @@ const PatientReport = () => {
 
   return (
     <div className={styles.container}>
-      <h2 className={styles.title}>Patient Admission Report</h2>
-
       {isMedicalHistory && (<div className={styles.searchBar}>
         <SearchBar
           // data={dummyBillingData}

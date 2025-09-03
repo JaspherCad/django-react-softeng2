@@ -40,12 +40,10 @@ const PatientHistory = ({ setSelectedMedicalHistory }) => {
   );
 
 
-    // Generate CSV content
     const csvContent = [headers, ...rows]
       .map(row => row.map(val => `"${val || ''}"`).join(','))
       .join('\r\n');
 
-    // Create and trigger download
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -57,7 +55,6 @@ const PatientHistory = ({ setSelectedMedicalHistory }) => {
     URL.revokeObjectURL(url);
   };
 
-  /* ───────── fetch once per patient ───────── */
   useEffect(() => {
     (async () => {
       try {

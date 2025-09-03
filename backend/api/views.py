@@ -1,6 +1,7 @@
 from django.utils import timezone
 import json
 from datetime import datetime, time
+import os
 
 from rest_framework import generics
 from rest_framework import status
@@ -14,7 +15,7 @@ from django.contrib.auth.hashers import make_password
 import hashlib
 
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from .models import ClinicalNote, PatientImage, User, LabResultFileGroup, LabResultFileInGroup ,Patient, UserLog, Billing, BillingItem, BillingOperatorLog, PatientService, Service, LaboratoryResult, LabResultFile, Bed, BedAssignment, Room, UserSecurityQuestion
+from .models import BackupHistory, ClinicalNote, PatientImage, User, LabResultFileGroup, LabResultFileInGroup ,Patient, UserLog, Billing, BillingItem, BillingOperatorLog, PatientService, Service, LaboratoryResult, LabResultFile, Bed, BedAssignment, Room, UserSecurityQuestion
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -23,6 +24,10 @@ from django.shortcuts import get_object_or_404
 from .permissions import IsTeller, IsAdmin, IsDoctor, IsNurse, IsReceptionist  # Use the subclass
 from rest_framework.pagination import PageNumberPagination
 
+from django.core.management import call_command
+from rest_framework.permissions import IsAdminUser
+from rest_framework.response import Response
+from rest_framework import status
 
 from rest_framework.exceptions import (
     APIException,
@@ -96,7 +101,7 @@ def patient_list(request):
         try:
             
             #1: go to DATABASE (orm) then FETCH all the object (IN OUR CASE PATIENT)
-            list_of_patient_query = Patient.objects.filter(is_active='Active').order_by('-admission_date')
+            list_of_patient_query = Patient.objects.filter(is_active='Active', archived=False).order_by('-admission_date')
 
             #Initialize paginator
             paginator = PageNumberPagination()
@@ -141,7 +146,57 @@ def patient_list(request):
 
 
 
+@api_view(['GET', 'POST'])
+@permission_classes([IsAdmin])
+def archived_patients(request):
+    if request.method == 'POST':
+        patient_id = request.data.get('id')
+        unarchive_flag = request.data.get('unarchive', False)
 
+        if not patient_id:
+            return Response(
+                {"detail": "Missing patient 'id' in request."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            patient = Patient.objects.get(pk=patient_id, archived=True)
+        except Patient.DoesNotExist:
+            return Response(
+                {"detail": "Archived patient not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        if unarchive_flag:
+            patient.unarchive()  
+            serializer = PatientSerializer(patient)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+            return Response(
+                {"detail": "`unarchive` flag must be true to unarchive."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    # GET: 
+    try:
+        qs = Patient.objects.filter(is_active='Active', archived=True).order_by('-admission_date')
+
+        paginator = PageNumberPagination()
+        paginator.page_size = 10  
+
+        page = paginator.paginate_queryset(qs, request)
+        if page is not None:
+            ser = PatientSerializer(page, many=True)
+            return paginator.get_paginated_response(ser.data)
+
+        ser = PatientSerializer(qs, many=True)
+        return Response(ser.data, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response(
+            {"error": "Error fetching archived patients", "details": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 
 
@@ -193,6 +248,56 @@ def get_patient_history_by_case(request, case_number):
             )
     
     return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+
+
+
+
+
+#dashboards
+@api_view(['GET'])
+@permission_classes([IsAdmin | IsDoctor | IsNurse | IsReceptionist | IsTeller])
+def dashboard_totals(request):
+    
+    now = timezone.now()
+    week_ago = now - timezone.timedelta(days=7)
+
+    total_patients    = Patient.objects.exclude(status='Discharged').count()
+    active_members    = User.objects.filter(is_active=True).count()
+    new_patients      = Patient.objects.filter(admission_date__gte=week_ago).count()
+
+    data = {
+        "total_patients": total_patients,
+        "active_members": active_members,
+        "new_patients_last_7_days": new_patients,
+    }
+    return Response(data, status=status.HTTP_200_OK)
+
+
+
+
+
+#await axios.post(`/api/patients/${patientId}/archive/`, { archive: true });
+@api_view(['POST'])
+@permission_classes([IsAdmin])
+def archive_patient(request, pk):
+    
+    try:
+        patient = Patient.objects.get(pk=pk)
+    except Patient.DoesNotExist:
+        return Response({"detail": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    action = request.data.get('archive', True)
+    if action:
+        patient.archive()
+    else:
+        patient.unarchive()
+
+    return Response({"id": pk, "archived": patient.archived}, status=status.HTTP_200_OK)
+
+
+
 
 
 
@@ -900,7 +1005,7 @@ def create_billing(request):
         )
 
 
-@api_view(['POST'])
+@api_view(['PUT'])
 @permission_classes([IsAdmin | IsTeller])
 def mark_billing_paid(request, billing_code):
     billing = get_object_or_404(Billing, code=billing_code)
@@ -1853,14 +1958,14 @@ def get_bill_items_intuition_never_mind_this(request):
 # % BILLING VIEWS % #
 ####################################################################
 
-#http://127.0.0.1:8000/api/billings/add-billing-item/27
+#http://:8000/api/billings/add-billing-item/27
 # { dummy input
 #     "service-iD": 1,
 #     "quantity": 1,
 #     "cost_at_time": 9
 # }
 
-# http://127.0.0.1:8000/api/billings
+# http://17.8.147:8000/api/billings
 # {
 #     "patient-iD(from PK)": 5,
 #     "status": "Unpaid"
@@ -2519,6 +2624,11 @@ def assign_bed(request, patient_id, bed_id, billing_id):
     bed.is_occupied = True
     bed.save()
 
+
+    #set bed_number to patient
+    patient.bed_number = bed.number
+    patient.save()
+
     log_action(
                 user=request.user,
                 action="CREATE",
@@ -2533,7 +2643,8 @@ def assign_bed(request, patient_id, bed_id, billing_id):
         "id": assignment.id,
         "patient": {
             "id": patient.id,
-            "name": patient.name
+            "name": patient.name,
+            "bed_number": patient.bed_number,
         },
         "bed": {
             "id": bed.id,
@@ -2571,39 +2682,43 @@ def discharge_patient(request, patient_id):
         )
 
     try:
-        #NOTE: goal is to put end_time value,, if end_time the tasks.py stops hrly incremental
-        # Set end_time
-        assignment.end_time = timezone.now()
-        assignment.save(update_fields=['end_time'])
+        with transaction.atomic():
 
-        #note to anyone: THIS IS JUST LIKE A BASE
-        # create billing but only when there are unbilled minutes/hours at the time of discharge.
-        assignment.create_final_billing_item()
+            #NOTE: goal is to put end_time value,, if end_time the tasks.py stops hrly incremental
+            # Set end_time
+            assignment.end_time = timezone.now()
+            assignment.save(update_fields=['end_time'])
 
-        # Mark patient as discharged
-        patient.status = 'Discharged'
-        patient.save()
+            #note to anyone: THIS IS JUST LIKE A BASE
+            # create billing but only when there are unbilled minutes/hours at the time of discharge.
+            assignment.create_final_billing_item()
 
-        # Free up bed
-        bed = assignment.bed
-        bed.is_occupied = False
-        bed.save()
+            # Mark patient as discharged
+            patient.status = 'Discharged'
+            patient.bed_number = None
 
-        log_action(
-                user=request.user,
-                action="UPDATE",
-                details={
-                    "message": "Discharged a patient:",
-                    "patient_id": patient.id,
-                    "patient_name": patient.name
-                }
-            )
+            patient.save()
 
-        return Response({
-            "message": "Patient discharged successfully",
-            "final_hours": assignment.get_current_hours() - assignment.total_hours,
-            "billing_id": assignment.billing.id if assignment.billing else None
-        }, status=status.HTTP_200_OK)
+            # Free up bed
+            bed = assignment.bed
+            bed.is_occupied = False
+            bed.save()
+
+            log_action(
+                    user=request.user,
+                    action="UPDATE",
+                    details={
+                        "message": "Discharged a patient:",
+                        "patient_id": patient.id,
+                        "patient_name": patient.name
+                    }
+                )
+
+            return Response({
+                "message": "Patient discharged successfully",
+                "final_hours": assignment.get_current_hours() - assignment.total_hours,
+                "billing_id": assignment.billing.id if assignment.billing else None
+            }, status=status.HTTP_200_OK)
 
     except Exception as e:
         return Response(
@@ -3139,6 +3254,9 @@ def reset_password(request):
             {"error": "User not found"},
             status=status.HTTP_404_NOT_FOUND
         )
+    
+
+
 
 #RAW --> JSON
 # {
@@ -3208,6 +3326,66 @@ def user_roles(request):
                       status=status.HTTP_403_FORBIDDEN)
     
     return Response(dict(User.ROLE_CHOICES))
+
 ####################################################################
 # % ADMIN PANEL % #
+####################################################################
+
+
+
+
+
+
+
+
+
+
+
+
+####################################################################
+# % BACKUP DATA % #
+####################################################################
+@api_view(['POST'])
+@api_view(['POST'])
+@api_view(['POST'])
+@permission_classes([IsAdmin])
+def trigger_backup(request):
+    try:
+        call_command('backup')
+        return Response({"message": "Backup completed successfully"}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+
+@api_view(['POST'])
+@permission_classes([IsAdmin])
+def trigger_restore(request, backup_id):
+    # DISABLED FOR SAFETY - Use management command instead
+    return Response({
+        "error": "API restore disabled for safety. Use management command: python manage.py restore <backup_id>",
+        "status": "disabled"
+    }, status=status.HTTP_403_FORBIDDEN)
+    
+
+
+
+
+@api_view(['GET'])
+@permission_classes([IsAdmin])
+def get_backup_history(request):
+    backups = BackupHistory.objects.order_by('-timestamp')
+    return Response([
+        {
+            "id": b.id,
+            "db_file": os.path.basename(b.backup_file),
+            "media_file": os.path.basename(b.media_backup),
+            "timestamp": b.timestamp,
+            "performed_by": b.performed_by.user_id if b.performed_by else "System"
+        } for b in backups
+    ])
+
+
+
+####################################################################
+# % BACKUP DATA % #
 ####################################################################

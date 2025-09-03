@@ -228,15 +228,18 @@ export default function PatientHistoryCaseCode() {
                                 <strong>By:</strong> {note.author + " thats id, ADD BACKEND NAMES FOR AUTHOR! serializer clue" || "—"}
                             </p>
                             <hr />
-                            <p>
+
+                            {formData.note_type === "Nurse" && (<p>
                                 <strong>Focus Problem:</strong> {note.focus_problem || "—"}
-                            </p>
+                            </p>)}
+
                             <p>
                                 <strong>Progress Notes:</strong> {note.progress_notes || "—"}
                             </p>
-                            <p>
+                            {formData.note_type === "Doctor" && (<p>
                                 <strong>Orders:</strong> {note.orders || "—"}
-                            </p>
+                            </p>)}
+
                             {note.medication && (
                                 <p>
                                     <strong>Medication:</strong> {note.medication} (

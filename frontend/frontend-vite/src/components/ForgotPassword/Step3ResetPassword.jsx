@@ -3,6 +3,7 @@ import React, { useContext, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ForgotPasswordContext } from './ForgotPasswordLayout'
 import axios from 'axios'
+import config from '../../config/config'
 
 export default function Step3ResetPassword() {
   const { userId, resetToken } = useContext(ForgotPasswordContext)
@@ -17,7 +18,7 @@ export default function Step3ResetPassword() {
       return setError('Passwords do not match')
     }
     try {
-      await axios.post('http://127.0.0.1:8000/api/reset-password', {
+      await axios.post(config.getApiEndpoint('/reset-password'), {
         user_id:        userId,
         new_password:   newPwd,
         confirm_password: confirmPwd,

@@ -16,7 +16,7 @@ const PatientBillings = () => {
       try {
         setLoading(true);
         
-        // Get patient details
+        // Get patient details jakol
         const patientResponse = await patientDetailsAPI(patientId);
         setPatient(patientResponse.data);
         

@@ -16,9 +16,31 @@ export default function AddUserModal({ onClose, onUserAdded }) {
         birthdate: ''
     });
 
+    // Security questions state
+    const [securityQuestions, setSecurityQuestions] = useState([
+        { question: '', answer: '' },
+        { question: '', answer: '' },
+        { question: '', answer: '' }
+    ]);
+
+    // Predefined security questions
+    const predefinedQuestions = [
+        "What was the name of your first pet?",
+        "What is your mother's maiden name?",
+        "What city were you born in?",
+        "What was the name of your elementary school?",
+        "What is your favorite food?",
+        "What was your childhood nickname?",
+        "What is the name of the street you grew up on?",
+        "What was your first car?",
+        "What is your favorite movie?",
+        "What was the name of your first boss?"
+    ];
+
     const [imageFile, setImageFile] = useState(null);
     const [previewUrl, setPreviewUrl] = useState(null);
     const [errors, setErrors] = useState({});
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleChange = e => {
         const { name, value } = e.target;
@@ -30,9 +52,50 @@ export default function AddUserModal({ onClose, onUserAdded }) {
         }
     };
 
+    const handleSecurityQuestionChange = (index, field, value) => {
+        setSecurityQuestions(prev => {
+            const updated = [...prev];
+            if (field === 'question' && value !== 'CUSTOM') {
+                // If selecting a predefined question, set it directly
+                updated[index] = { ...updated[index], question: value };
+            } else if (field === 'question' && value === 'CUSTOM') {
+                // If selecting custom, reset to empty for custom input
+                updated[index] = { ...updated[index], question: '' };
+            } else {
+                // For answer or custom question text
+                updated[index] = { ...updated[index], [field]: value };
+            }
+            return updated;
+        });
+
+        // Clear error when field is edited
+        if (errors[`security_${index}_${field}`]) {
+            setErrors(prev => ({ ...prev, [`security_${index}_${field}`]: null }));
+        }
+    };
+
     const handleImageChange = e => {
         const file = e.target.files[0];
         if (file) {
+            // Validate file type
+            const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+            if (!validTypes.includes(file.type)) {
+                setErrors(prev => ({ ...prev, image: 'Please select a valid image file (JPEG, PNG, GIF)' }));
+                return;
+            }
+            
+            // Validate file size (5MB max)
+            const maxSize = 5 * 1024 * 1024; // 5MB
+            if (file.size > maxSize) {
+                setErrors(prev => ({ ...prev, image: 'Image size must be less than 5MB' }));
+                return;
+            }
+            
+            // Clear image error if valid
+            if (errors.image) {
+                setErrors(prev => ({ ...prev, image: null }));
+            }
+            
             setImageFile(file);
             const reader = new FileReader();
             reader.onloadend = () => setPreviewUrl(reader.result);
@@ -44,7 +107,7 @@ export default function AddUserModal({ onClose, onUserAdded }) {
         const newErrors = {};
 
         // Required fields validation
-        ['user_id', 'password', 'role', 'department', 'first_name', 'last_name', 'birthdate'].forEach(field => {
+        ['user_id', 'password', 'role', 'department', 'first_name', 'last_name', 'address', 'phone', 'birthdate'].forEach(field => {
             if (!formData[field]) {
                 const fieldName = field.replace('_', ' ').toUpperCase();
                 newErrors[field] = `${fieldName} is required`;
@@ -67,32 +130,100 @@ export default function AddUserModal({ onClose, onUserAdded }) {
             }
         }
 
+        // Validate security questions
+        securityQuestions.forEach((sq, index) => {
+            if (!sq.question.trim()) {
+                newErrors[`security_${index}_question`] = `Security question ${index + 1} is required`;
+            }
+            if (!sq.answer.trim()) {
+                newErrors[`security_${index}_answer`] = `Security answer ${index + 1} is required`;
+            }
+            if (sq.answer.trim().length < 3) {
+                newErrors[`security_${index}_answer`] = `Security answer ${index + 1} must be at least 3 characters`;
+            }
+        });
+
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
 
     const handleSubmit = async e => {
         e.preventDefault();
-        console.log(1)
+        console.log('Form submission started');
+        
         if (!validateForm()) return;
+
+        setIsSubmitting(true);
+        setErrors({}); // Clear previous errors
 
         try {
             // 1) Create user
+            console.log('Creating user with data:', formData);
             const { data } = await axiosInstance.post('/user/register', formData);
             const newUser = data;
-            console.log(newUser)
+            console.log('User created successfully:', newUser);
+            console.log('New user ID:', newUser.id, 'Type:', typeof newUser.id);
+            
             // 2) If image selected, upload
             if (imageFile) {
-                const form = new FormData();
-                form.append('file', imageFile);
-                await uploadUSERSADMINImageAPI(newUser.id, form);
+                console.log('Attempting to upload image for user ID:', newUser.id);
+                console.log('Image file details:', {
+                    name: imageFile.name,
+                    size: imageFile.size,
+                    type: imageFile.type
+                });
+                
+                const imageFormData = new FormData();
+                imageFormData.append('file', imageFile);
+                imageFormData.append('description', 'User profile image');
+                
+                // Debug: Log FormData contents
+                console.log('FormData contents:');
+                for (let pair of imageFormData.entries()) {
+                    console.log(`${pair[0]}:`, pair[1]);
+                }
+                
+                try {
+                    const uploadResponse = await uploadUSERSADMINImageAPI(newUser.id, imageFormData);
+                    console.log('Image upload successful:', uploadResponse.data);
+                } catch (imageError) {
+                    console.error('Image upload failed:', imageError);
+                    console.error('Image upload error details:', {
+                        status: imageError.response?.status,
+                        statusText: imageError.response?.statusText,
+                        data: imageError.response?.data,
+                        message: imageError.message
+                    });
+                    // Don't fail the entire operation if just image upload fails
+                    setErrors({ apiError: 'User created but image upload failed. You can upload it later.' });
+                }
             }
 
-            // 3) Notify parent and close
+            // 3) Set security questions
+            try {
+                const securityQuestionsData = {
+                    user_id: newUser.id,
+                    questions: securityQuestions.map(sq => ({
+                        question: sq.question.trim(),
+                        answer: sq.answer.trim()
+                    }))
+                };
+                
+                await axiosInstance.post('/set-security-questions', securityQuestionsData);
+                console.log('Security questions set successfully');
+            } catch (securityError) {
+                console.error('Security questions setup failed:', securityError);
+                setErrors({ apiError: 'User created but security questions setup failed. Please set them manually.' });
+            }
+
+            // 4) Notify parent and close
             onUserAdded(newUser);
             //   onClose();
         } catch (err) {
+            console.error('User creation failed:', err);
             setErrors({ apiError: err.response?.data?.message || 'Failed to add user' });
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -134,16 +265,7 @@ export default function AddUserModal({ onClose, onUserAdded }) {
                             {errors.first_name && <div className={styles.error}>{errors.first_name}</div>}
                         </div>
 
-                        {/* Middle Name */}
-                        <div className={styles.field}>
-                            <label className={styles.label}>Middle Name (optional)</label>
-                            <input
-                                name="middle_name"
-                                value={formData.middle_name}
-                                onChange={handleChange}
-                                className={styles.input}
-                            />
-                        </div>
+                        
 
                         {/* Address */}
                         <div className={styles.field}>
@@ -257,6 +379,81 @@ export default function AddUserModal({ onClose, onUserAdded }) {
                         </div>
                     </div>
 
+                    {/* Security Questions Section */}
+                    <div className={styles.section}>
+                        <h5 className={styles.sectionHeader}>Security Questions</h5>
+                        <hr />
+                        <p className={styles.sectionDescription}>
+                            Set up 3 security questions for password recovery. These will be used if the user forgets their password.
+                        </p>
+                        
+                        {securityQuestions.map((sq, index) => (
+                            <div key={index} className={styles.securityQuestionGroup}>
+                                <h6 className={styles.questionNumber}>Question {index + 1}</h6>
+                                
+                                <div className={styles.field}>
+                                    <label className={styles.label}>
+                                        Security Question <span className={styles.required}>*</span>
+                                    </label>
+                                    <select
+                                        value={sq.question && predefinedQuestions.includes(sq.question) ? sq.question : sq.question ? 'CUSTOM' : ''}
+                                        onChange={e => {
+                                            if (e.target.value === 'CUSTOM') {
+                                                handleSecurityQuestionChange(index, 'question', '');
+                                            } else {
+                                                handleSecurityQuestionChange(index, 'question', e.target.value);
+                                            }
+                                        }}
+                                        className={`${styles.input} ${errors[`security_${index}_question`] ? styles.errorInput : ''}`}
+                                        required
+                                    >
+                                        <option value="">Select a question or choose custom</option>
+                                        {predefinedQuestions.map((question, qIndex) => (
+                                            <option key={qIndex} value={question}>{question}</option>
+                                        ))}
+                                        <option value="CUSTOM">Custom Question</option>
+                                    </select>
+                                    {errors[`security_${index}_question`] && (
+                                        <div className={styles.error}>{errors[`security_${index}_question`]}</div>
+                                    )}
+                                </div>
+
+                                {(sq.question && !predefinedQuestions.includes(sq.question)) && (
+                                    <div className={styles.field}>
+                                        <label className={styles.label}>
+                                            Custom Question <span className={styles.required}>*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            placeholder="Enter your custom security question"
+                                            value={sq.question}
+                                            onChange={e => handleSecurityQuestionChange(index, 'question', e.target.value)}
+                                            className={`${styles.input} ${errors[`security_${index}_question`] ? styles.errorInput : ''}`}
+                                            required
+                                        />
+                                    </div>
+                                )}
+
+                                <div className={styles.field}>
+                                    <label className={styles.label}>
+                                        Answer <span className={styles.required}>*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        placeholder="Enter the answer"
+                                        value={sq.answer}
+                                        onChange={e => handleSecurityQuestionChange(index, 'answer', e.target.value)}
+                                        className={`${styles.input} ${errors[`security_${index}_answer`] ? styles.errorInput : ''}`}
+                                        required
+                                    />
+                                    {errors[`security_${index}_answer`] && (
+                                        <div className={styles.error}>{errors[`security_${index}_answer`]}</div>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
                     {/* Profile Image */}
                     <div className={styles.field}>
                         <label className={styles.label}>Profile Image</label>
@@ -266,6 +463,7 @@ export default function AddUserModal({ onClose, onUserAdded }) {
                             onChange={handleImageChange}
                             className={styles.input}
                         />
+                        {errors.image && <div className={styles.error}>{errors.image}</div>}
                     </div>
 
                     {previewUrl && (
@@ -280,8 +478,8 @@ export default function AddUserModal({ onClose, onUserAdded }) {
                         <button type="button" onClick={onClose} className={styles.cancel}>
                             Cancel
                         </button>
-                        <button type="submit" className={styles.submit}>
-                            Register
+                        <button type="submit" className={styles.submit} disabled={isSubmitting}>
+                            {isSubmitting ? 'Registering...' : 'Register'}
                         </button>
                     </div>
                 </form>

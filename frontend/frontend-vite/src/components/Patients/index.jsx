@@ -110,9 +110,12 @@ const Patients = () => {
         <PatientList
           patients={patients}
           loading={loading}
+          setTotalPages={setTotalPages}
+          setTotalItems={setTotalItems}
           errorMsg={errorMsg}
           setSelectedPatient={setSelectedPatient}
           selectedPatient={selectedPatient}
+          setPatients={setPatients}
           // PPAGINATION PROPS props
             currentPage={currentPage}
             totalPages={totalPages}

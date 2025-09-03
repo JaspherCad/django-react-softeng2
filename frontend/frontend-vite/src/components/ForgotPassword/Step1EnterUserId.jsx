@@ -3,6 +3,7 @@ import React, { useContext, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ForgotPasswordContext } from './ForgotPasswordLayout'
 import axios from 'axios'
+import config from '../../config/config'
 
 export default function Step1EnterUserId() {
   const { setUserId, setQuestions } = useContext(ForgotPasswordContext)
@@ -18,7 +19,7 @@ export default function Step1EnterUserId() {
 
       // 2) Call your API to get the security questions
       const { data } = await axios.post(
-        'http://127.0.0.1:8000/api/forgot-password',
+        config.getApiEndpoint('/forgot-password'),
         { user_id: localId }
       )
       setQuestions(data.questions)

@@ -1,14 +1,15 @@
 import axios from 'axios';
+import config from '../config/config';
 
 // You can toggle this based on your backend configuration
 const USE_HTTP_ONLY = false; // Set to false if using localStorage JWT
 
 const axiosInstance = axios.create({
-  baseURL: 'http://127.0.0.1:8000/api',
+  baseURL: config.API_URL,
   withCredentials: true, // Always true for both approaches to handle cookies
   headers: {
     'Content-Type': 'application/json',
-    'Accept': 'application/json',
+    Accept: 'application/json',
   },
 });
 
@@ -244,6 +245,30 @@ export const listOfPatientAPI = async (page = 1) => {
   }
 };
 
+export const archivedPatients = async (page = 1) => {
+  try {
+    const response = await axiosInstance.get('/patients/archived/', {
+      params: { page }
+    });
+    return response;   
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const unarchivePatient = async (patientId) => {
+  try {
+    const response = await axiosInstance.post(`/patients/archived/`, {
+      id: patientId,
+      unarchive: true
+    });
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+
 
 export const addBillingsApi = async (patientData) => {
   try {
@@ -286,6 +311,20 @@ export const dischargePatientAPI = async (patientId) => {
     throw error;
   }
 };
+
+
+
+//.post(`/api/patients/${patientId}/archive/`, { archive: true });
+export const archiveOrUnarchivePatient = async (patientId, archive = true) => {
+  try {
+    const response = await axiosInstance.post(`/patients/${patientId}/archive/`, { archive });
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+
 
 
 
@@ -509,18 +548,18 @@ export const addPatientAPI = async (newPatientData) => {
       error.validationErrors = errorData;
       console.error("TRUE");
       console.error(error.validationErrors)
-//       { SAMPLE ERROR.validationErrors
-//     "case_number": [
-//         "patient with this case number already exists."
-//     ],
-//     "date_of_birth": [
-//         "Date has wrong format. Use one of these formats instead: YYYY-MM-DD."
-//     ]
-// }
+      //       { SAMPLE ERROR.validationErrors
+      //     "case_number": [
+      //         "patient with this case number already exists."
+      //     ],
+      //     "date_of_birth": [
+      //         "Date has wrong format. Use one of these formats instead: YYYY-MM-DD."
+      //     ]
+      // }
 
     } else if (errorData.error) {
       console.error("FALSE");
-      
+
     }
 
     throw error;
@@ -552,18 +591,18 @@ export const editPatientAPI = async (patientId, updatedPatientData) => {
       error.validationErrors = errorData;
       console.error("TRUE");
       console.error(error.validationErrors)
-//       { SAMPLE ERROR.validationErrors
-//     "case_number": [
-//         "patient with this case number already exists."
-//     ],
-//     "date_of_birth": [
-//         "Date has wrong format. Use one of these formats instead: YYYY-MM-DD."
-//     ]
-// }
+      //       { SAMPLE ERROR.validationErrors
+      //     "case_number": [
+      //         "patient with this case number already exists."
+      //     ],
+      //     "date_of_birth": [
+      //         "Date has wrong format. Use one of these formats instead: YYYY-MM-DD."
+      //     ]
+      // }
 
     } else if (errorData.error) {
       console.error("FALSE");
-      
+
     }
 
     throw error;
@@ -663,19 +702,19 @@ export const uploadPatientImageAPI = async (labFiles) => {
 
 
 
-export const uploadUSERSADMINImageAPI = async (userid, labFiles) => {
+export const uploadUSERSADMINImageAPI = async (userId, formData) => {
   try {
-    const response = await axiosInstance.post(`/user/${userid}/upload-image`,
-      labFiles,
+    const response = await axiosInstance.post(`/user/${userId}/upload-image`, 
+      formData,
       {
         headers: {
-
           'Content-Type': 'multipart/form-data',
         },
       }
     );
     return response;
   } catch (error) {
+    console.error('Upload API Error:', error.response?.data || error.message);
     throw error;
   }
 };
@@ -715,7 +754,7 @@ export const fetchLab = async (labId) => {
 
 
 
-//http://127.0.0.1:8000/api/notes/history/4678NEW
+//http://:8000/api/notes/history/4678NEW
 export const fetchClinicalNotesByCodeAPI = async (code) => {
   try {
     const response = await axiosInstance.get(`/notes/history/${code}`);
@@ -794,6 +833,56 @@ export const currentUserLogs = async () => {
   }
 };
 
+// Get user logs with date filtering and pagination
+export const getUserLogsAPI = async (startDate, endDate, page = 1, pageSize = 10) => {
+  try {
+    const response = await axiosInstance.get('/userlogs/', {
+      params: {
+        start_date: startDate,
+        end_date: endDate,
+        page: page,
+        page_size: pageSize
+      }
+    });
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Get user logs by specific user ID
+export const getUserLogsByIdAPI = async (userId, startDate, endDate, page = 1, pageSize = 10) => {
+  try {
+    const response = await axiosInstance.get(`/userlogs/${userId}/`, {
+      params: {
+        start_date: startDate,
+        end_date: endDate,
+        page: page,
+        page_size: pageSize
+      }
+    });
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Get all user logs (admin access)
+export const getAllUserLogsAPI = async (startDate, endDate, page = 1, pageSize = 10) => {
+  try {
+    const response = await axiosInstance.get('/userlogs/all', {
+      params: {
+        start_date: startDate,
+        end_date: endDate,
+        page: page,
+        page_size: pageSize
+      }
+    });
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
 
 export const getBillingsByPatientAPI = async (patientId) => {
   try {

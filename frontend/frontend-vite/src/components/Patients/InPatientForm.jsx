@@ -11,6 +11,9 @@ import SearchBar from "../AngAtingSeachBarWIthDropDown";
 import validationStyles from "./ValidationStyles.module.css";
 import styles from "./BothPatientForm.module.css";
 
+// Get the API base URL from environment variables
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+
 //----------------------------------------date format fix--------------------------------------
 //pseudo: when edit, we have to get the FORMATTED String 00:z from backend to frontend BUT we have to convert that into input format (YYYY-MM-DDTHH:MM)
 
@@ -409,6 +412,8 @@ const InPatientForm = ({ onSubmit }) => {
         setImagePreviews([]);
         navigate("/patients");
       }
+        navigate("/patients");
+
     } catch (error) {
       console.error("Error submitting form:", error);
       
@@ -464,24 +469,25 @@ const InPatientForm = ({ onSubmit }) => {
   //all renders use this, some file are image some files actual files,,,,,
   function FilePreview({ url }) {
     const isImage = /\.(jpe?g|png|gif|webp)$/i.test(url);
+    const fullUrl = `${API_BASE}:8000${url}`;
 
     return (
       <div className={styles.filePreviewContainer}>
         {isImage ? (
           <a
-            href={`http://localhost:8000${url}`}
+            href={fullUrl}
             target="_blank"
             rel="noopener noreferrer"
           >
             <img
-              src={`http://localhost:8000${url}`}
+              src={fullUrl}
               alt="Preview"
               className={styles.filePreviewImage}
             />
           </a>
         ) : (
           <a
-            href={`http://localhost:8000${url}`}
+            href={fullUrl}
             target="_blank"
             rel="noopener noreferrer"
             className={styles.fileLink}
@@ -655,7 +661,7 @@ const InPatientForm = ({ onSubmit }) => {
                     src={
                       existingImages[0].file.startsWith('http')
                         ? existingImages[0].file
-                        : `http://localhost:8000${existingImages[0].file}`
+                        : `${API_BASE}:8000${existingImages[0].file}`
                     }
                     alt="Patient"
                     className={styles.firstImage}
@@ -684,7 +690,7 @@ const InPatientForm = ({ onSubmit }) => {
                         src={
                           img.file.startsWith('http')
                             ? img.file
-                            : `http://localhost:8000${img.file}`
+                            : `${API_BASE}:8000${img.file}`
                         }
                         alt="Patient"
                         className={styles.gridImage}
@@ -766,7 +772,7 @@ const InPatientForm = ({ onSubmit }) => {
 
           {/* Patient Details */}
           <div className={styles.formSection}>
-            <h3 className={styles.sectionTitle}>Patient Details</h3>
+            <h3 className={styles.sectionTitle}>Patient Detailss</h3>
 
             {/* -- Patient Name */}
             <div className={styles.formGrid}>
@@ -819,7 +825,7 @@ const InPatientForm = ({ onSubmit }) => {
                   value={formData.bed_number}
                   onChange={handleInputChange}
                   className={styles.formInput}
-                  required
+                  readOnly
                 />
               </div>
             </div>
@@ -1565,48 +1571,66 @@ export default InPatientForm;
 
 //
 
+
 // {
-//     "id": 4,
 //     "has_philhealth": true,
-//     "case_number": "CN-20250617-001",
+//     "case_number": "CN-20250617-jaak",
 //     "hospital_case_number": "HCN-20250617-001",
-//     "has_hmo": true,
 //     "hmo": "Acme Health Plan",
-//     "code": "K8XA4",
-//     "name": "Juan Dela Cruz",
-//     "status": "Admitted",
-//     "admission_date": "2025-06-17T09:30:00Z",
-//     "current_condition": "Stable but requires monitoring for possible complications.",
-//     "date_of_birth": "1985-04-23",
-//     "address": "123 Mabini St., Manila, Philippines",
-//     "occupation": "Software Engineer",
-//     "civil_status": "Married",
+//     "name": "Cong Velasquez",
+//     "ward_service": "private",
+//     "bed_number": "2",
+//     "address": "Somewhere around city",
+//     "phone": "09357773518",
+//     "date_of_birth": "2025-06-27",
+//     "birth_place": "Taytay Rizal",
+//     "age": "45",
 //     "nationality": "Filipino",
-//     "religion": "Roman Catholic",
-//     "visit_type": "New",
-//     "consultation_datetime": "2025-06-17T10:15:00Z",
-//     "referred_by": "Dr. Santos",
-//     "next_consultation_date": "2025-06-24T10:00:00Z",
+//     "religion": "Catholic",
+//     "occupation": "Vlogger",
+//     "gender": "Male",
+//     "civil_status": "Married",
+//     "father_name": "Cong Velasquez Sr",
+//     "father_address": "block 1 lot 38, Hinapao Street",
+//     "father_contact": "",
+//     "mother_name": "Cong Velasquez Sis",
+//     "mother_address": "block 1 lot 38, Hinapao Street",
+//     "mother_contact": "",
+//     "spouse_name": "",
+//     "spouse_address": "",
+//     "spouse_contact": "",
+//     "status": "Admitted",
+//     "type_of_admission": "New",
+//     "admission_date": "2025-06-26T17:11:00.000Z",
 //     "discharge_date": null,
-//     "phone": "+639171234567",
-//     "emergency_contact_name": "Maria Cruz",
-//     "emergency_contact_phone": "+639189876543",
-//     "is_active": "Active",
-//     "entry_date": "2025-06-17T09:36:39.131806Z",
-//     "notes": "Patient allergic to penicillin. Family history of hypertension.",
-//     "height": "170.00",
-//     "weight": "68.50",
-//     "blood_pressure": "120/80",
-//     "pulse_rate": "72.00",
-//     "respiratory_rate": "16.00",
-//     "temperature": "36.80",
-//     "physical_examination": "Lungs clear, heart sounds normal.",
-//     "main_complaint": "Shortness of breath on exertion.",
-//     "present_illness": "Developed mild dyspnea over the past 2 days.",
-//     "clinical_findings": "No cyanosis, no chest pain.",
-//     "icd_code": "J45.9",
-//     "diagnosis": "Mild asthma exacerbation",
-//     "treatment": "Nebulized salbutamol every 4 hours; continue maintenance inhaler.",
-//     "attending_physician": 1,
-//     "diagnosed_by": 1
+//     "total_days": "",
+//     "attending_physician": 2,
+//     "visit_type": "New",
+//     "consultation_datetime": null,
+//     "next_consultation_date": null,
+//     "referred_by": "Dr. Santos",
+//     "emergency_contact_name": "",
+//     "emergency_contact_phone": "",
+//     "current_condition": "Not specified",
+//     "height": null,
+//     "weight": null,
+//     "blood_pressure": "",
+//     "pulse_rate": null,
+//     "respiratory_rate": null,
+//     "temperature": null,
+//     "physical_examination": "",
+//     "main_complaint": "",
+//     "present_illness": "",
+//     "clinical_findings": "",
+//     "icd_code": "na",
+//     "diagnosis": "High BP",
+//     "treatment": "",
+//     "membership": "SSS",
+//     "principal_diagnosis": "na",
+//     "other_diagnosis": "na",
+//     "principal_operation": "na",
+//     "other_operation": "na",
+//     "disposition": "Discharged",
+//     "result": "48h_plus",
+//     "totalDays": "1"
 // }

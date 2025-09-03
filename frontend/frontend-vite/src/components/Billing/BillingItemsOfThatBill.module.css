@@ -248,9 +248,6 @@
   cursor: pointer;
 }
 
-
-
-
 /* UPDATES */
 /* src/components/Billing/BillingItemsOfThatBill.module.css */
 
@@ -415,4 +412,25 @@
   text-align: center;
   margin-top: 40px;
   font-size: 1rem;
+}
+
+.addNewBillingButton:hover {
+  background-color: #219a52;
+}
+
+.markPaidButton {
+  background-color: #e67e22;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  margin-bottom: 16px;
+  font-size: 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  font-weight: bold;
+}
+
+.markPaidButton:hover {
+  background-color: #d35400;
 }
