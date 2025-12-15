@@ -1,14 +1,14 @@
-# 🏥 Hospital Management System
+# (Antipolo) Centro De Medikal Hospital
 
 A full-stack hospital management application built to streamline patient care workflows, from reception check-in to clinical documentation and billing. This system handles everything a modern hospital needs - patient admissions, laboratory results, billing management, room assignments, and much more.
 
-## 📖 About This Project
+## About This Project
 
 We built this system to solve real workflow challenges in hospital operations. The application follows a multi-phase patient admission process that mirrors how hospitals actually work - starting with reception check-in, moving through clinical assessment, coding and bed assignment, and finally billing.
 
 The system enforces role-based access control to ensure that receptionists, doctors, nurses, billing operators, and administrators each have access to exactly what they need, when they need it.
 
-## ✨ Key Features
+## Key Features
 
 ### Patient Management
 - **Multi-phase admission workflow** - From reception to discharge
@@ -35,7 +35,7 @@ The system enforces role-based access control to ensure that receptionists, doct
 - Role-based route protection
 - Password reset workflow with email verification
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Backend
 - **Django 4.2** - Python web framework
@@ -59,7 +59,7 @@ The system enforces role-based access control to ensure that receptionists, doct
 - **Nginx** - Production web server (frontend)
 - **Gunicorn** - WSGI HTTP server (backend)
 
-## 🚀 Getting Started
+## HOW TO START???
 
 ### Prerequisites
 
@@ -156,7 +156,7 @@ DATABASES = {
 }
 ```
 
-## 🐳 Docker Deployment
+## Docker Deployment
 
 For production deployment or if you prefer containerized development:
 
@@ -169,7 +169,7 @@ This will start both the backend and frontend in containers:
 - Backend: `http://localhost:8000`
 - Frontend: `http://localhost:3000`
 
-## 📚 Project Structure
+## Project Structure
 
 ```
 hospital-management-system/
@@ -205,7 +205,7 @@ hospital-management-system/
 └── README.md
 ```
 
-## 🔑 Default User Roles
+## Default User Roles
 
 The system supports five user roles, each with specific permissions:
 
@@ -217,7 +217,7 @@ The system supports five user roles, each with specific permissions:
 | **Receptionist** | Patient registration | Check-in, demographics, insurance info |
 | **Teller** | Billing & payments | Process payments, generate invoices, manage billing |
 
-## 📋 Patient Admission Workflow
+## Patient Admission Workflow
 
 The system implements a three-phase admission process:
 
@@ -240,7 +240,7 @@ The system implements a three-phase admission process:
 
 For detailed workflow documentation, see [PATIENT_ADMISSION_WORKFLOW.md](PATIENT_ADMISSION_WORKFLOW.md)
 
-## 🔧 Development
+## Development
 
 ### Running Tests
 
@@ -267,7 +267,7 @@ python manage.py makemigrations
 python manage.py migrate
 ```
 
-## 📊 API Documentation
+## API Documentation
 
 The REST API is documented within the codebase. Key endpoints include:
 
@@ -280,7 +280,7 @@ The REST API is documented within the codebase. Key endpoints include:
 
 Authentication requires JWT tokens obtained via `/api/token/` endpoint.
 
-## 🤝 Contributing
+## Contributing
 
 This is a learning project, but we welcome suggestions and improvements! If you find bugs or have ideas for features:
 
@@ -290,9 +290,6 @@ This is a learning project, but we welcome suggestions and improvements! If you 
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 📝 License
-
-This project is open source and available for educational purposes.
 
 ## 🙏 Acknowledgments
 
